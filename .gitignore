@@ -1,0 +1,28 @@
+# 不纳入版本库的文件
+# 原图（未压缩的 40MB 级照片）不要进仓库，网站只用 images/ 里压缩后的图
+raw/
+原始/
+rawcn/
+椰青/
+*.psd
+*.tif
+*.tiff
+*.cr2
+*.cr3
+*.nef
+*.arw
+*.dng
+*.raf
+
+# 系统 / 编辑器
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# 临时文件
+*.tmp
+*.log
+.tmp-*/
+

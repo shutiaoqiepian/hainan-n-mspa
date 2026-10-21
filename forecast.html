@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>海南霞光预报 · 朝霞晚霞指数 · 北纬18度椰青摄联</title>
+<meta name="description" content="海南朝霞、晚霞指数预报，覆盖东岸、西岸、南部与中部主要机位。基于公开气象模型计算，供摄影参考。" />
+<meta property="og:title" content="海南霞光预报 · 朝霞晚霞指数 · 北纬18度椰青摄联" />
+<meta property="og:description" content="海南朝霞、晚霞指数预报，覆盖东岸、西岸、南部与中部主要机位。基于公开气象模型计算，供摄影参考。" />
+<meta name="theme-color" content="#101113" />
+<link rel="canonical" href="https://hainan-n-mspa.netlify.app/forecast" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://hainan-n-mspa.netlify.app/forecast" />
+<meta property="og:site_name" content="北纬18度椰青摄联 18N-MSPA" />
+<meta property="og:locale" content="zh_CN" />
+<meta property="og:image" content="https://hainan-n-mspa.netlify.app/images/og-cover.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="海口世纪大桥火烧云 · 18N-MSPA" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="海南霞光预报 · 朝霞晚霞指数 · 北纬18度椰青摄联" />
+<link rel="icon" href="images/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="96x96" href="images/favicon.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png" />
+<noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <span class="logo-mark"><img src="images/mspa透明底.png" alt="" /></span>
+      <span class="mark silver">18N-MSPA</span>
+      <span class="cn">北纬18度椰青摄联</span>
+    </a>
+    <button class="nav-toggle" aria-label="打开菜单" aria-expanded="false">☰</button>
+    <nav>
+      <ul>
+        <li><a href="index.html">首页</a></li>
+        <li><a href="about.html">关于</a></li>
+        <li><a href="gallery.html">作品集</a></li>
+        <li><a href="forecast.html">霞光预报</a></li>
+        <li><a href="members.html">成员</a></li>
+        <li><a href="join.html">加入我们</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section class="page-head">
+    <div class="wrap">
+      <p class="eyebrow">Sunset Forecast · Hainan</p>
+      <h1 class="silver">这两天，海南哪里值得跑一趟</h1>
+      <p>
+        根据云层高度、气溶胶与降水，估算海南各机位今天、明天的朝霞与晚霞条件。
+        数值越高，越有可能出现火烧云。
+      </p>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:48px">
+    <div class="wrap">
+
+      <div class="fc-controls">
+        <div class="fc-picks">
+          <div class="fc-modes" role="group" aria-label="日期">
+            <button class="fc-mode is-on" type="button" data-day="0">今天</button>
+            <button class="fc-mode" type="button" data-day="1">明天</button>
+          </div>
+          <div class="fc-modes" role="group" aria-label="时段">
+            <button class="fc-mode" type="button" data-kind="sunrise">日出</button>
+            <button class="fc-mode is-on" type="button" data-kind="sunset">日落</button>
+          </div>
+        </div>
+        <div class="fc-areas" id="fc-areas"></div>
+      </div>
+
+      <div class="fc-stamp" id="fc-stamp"></div>
+
+      <div class="fc-legend">
+        <span><i style="background:#ff6a3d"></i>火烧云 92+</span>
+        <span><i style="background:#ff9640"></i>大烧 82+</span>
+        <span><i style="background:#ffd166"></i>中烧 66+</span>
+        <span><i style="background:#9ad9b8"></i>小烧 48+</span>
+        <span><i style="background:#8f979f"></i>微烧 30+</span>
+        <span><i style="background:#5b636a"></i>不烧</span>
+      </div>
+
+      <div class="fc-detail glass" id="fc-detail" style="display:none"></div>
+
+      <div class="fc-list" id="fc-list"></div>
+
+      <p class="fc-fb-hint">
+        <b>拍完请回填一次</b>：点每行右侧的「✎」，记录实际烧到什么程度。
+        攒够数据就能校准算法——这是让这个工具变准的唯一办法。
+      </p>
+
+      <div class="fc-note glass">
+        <p>
+          <b>怎么算的</b>：高云是火烧云的“画布”，太少没得烧、太多糊成一片；
+          低云挡住地平线，越少越好；中云太厚会盖住光。
+          <b>用的是乘法而不是加权平均</b>——任何一项差都会被放大，不会被别的项补回来。
+          再按<b>太阳方位角</b>判断机位朝向对不对得上，并用日落前后各一小时做<b>平滑</b>，
+          减少单点噪声。
+        </p>
+        <p>
+          <b>AOD 分级</b>参照
+          <a href="https://www.sunsetbot.top/halo/" target="_blank" rel="noopener">SunsetBot 团队公开发布的对照表</a>：
+          0.1 以下水晶天、0.2 湛蓝、0.3 较蓝、0.5 普通、0.8 有霾、更高就是“污烧”。
+          <b>彩虹</b>按教程的判据：太阳高度角在 4°–40° 之间，且日落前两小时内有降水。
+        </p>
+        <p>
+          <b>分数为什么偏保守</b>：总云量预报本身技巧有限。
+          <a href="http://qxqk.nmc.cn/qx/ch/reader/view_abstract.aspx?file_no=20240903&amp;flag=1" target="_blank" rel="noopener">《CMA-BJ系统总云量预报性能检验评估》</a>
+          给出的 1 天时效真实技巧评分（TCC）只有 0.47，有技巧的预报最多维持 48–72 小时。
+          所以这里宁可压低分数也不虚高：<b>80 分以上才值得专门跑一趟</b>。
+        </p>
+        <p>
+          <b>我们做不到的</b>：这套方法的核心是看斜温图判断云底高度与云相态，
+          我们的免费数据源只有高/中/低三层云量百分比，没有云底高度、云量和云的含水量，
+          所以<b>达不到 SunsetBot 的精度</b>。
+          数据空间分辨率约 11 公里，相邻机位可能共享同一格点。
+          <b>本页仅作摄影参考，不构成天气预报</b>，请以官方气象台发布为准。
+        </p>
+      </div>
+
+      <details class="fc-refs glass">
+        <summary>参考文献与方法来源（10 条）</summary>
+        <ol>
+
+          <li>
+            张帅, 吴捷, 陈敏, 仲跻芹, 黄向宇, 卢冰, 杨扬.
+            CMA-BJ 系统总云量预报性能检验评估[J]. 气象, 2024, 50(9): 1057–1070.
+            DOI: 10.7519/j.issn.1000-0526.2024.063001.
+            <a href="http://qxqk.nmc.cn/qx/ch/reader/view_abstract.aspx?file_no=20240903&amp;flag=1" target="_blank" rel="noopener">查看原文</a>
+            <span class="ref-note">
+              用于：1 天时效真实技巧评分 TCC 仅 0.47、有技巧预报上限 48–72 h → 整体 1.8 次方压缩与时效折扣；
+              模式相对湿度偏小会造成云量低估 → 湿度剖面阈值放宽至 80%。
+            </span>
+          </li>
+
+          <li>
+            MetCoOp (Met Norway), 2012. Verification of cloud forecasts.
+            <a href="https://www.met.no/en/projects/metcoop/publications/_/attachment/inline/70164a86-e9de-4ef2-88d3-6df5ad6d9d82:3e4aabae7016e8a034ef84018938c84a9b890d48/2012-01-MetCoOp_MEMO.pdf" target="_blank" rel="noopener">报告原文</a>
+            <span class="ref-note">
+              用于：ECMWF、AROME 等模式会高估“无云”出现频率，报晴不代表真晴 →
+              因此高云为 0 时不做硬性归零，低端保留缓坡。
+            </span>
+          </li>
+
+          <li>
+            SunsetBot 团队. 火烧云定量预报速成（长三角适用）· 第一章节：大气科学常识、几何知识、光谱消光.
+            <a href="https://www.sunsetbot.top/halo/posts/2026/huo-shao-yun-yu-bao-jiao-cheng-zhang-jie-yi/" target="_blank" rel="noopener">原文</a>
+            <span class="ref-note">
+              用于：火烧云静态几何模型（阳光需从云底下方照上来）、霞光深入距离、
+              瑞利散射与米散射对色彩饱和度的不同影响 → 解释为何 AOD 低才“通透”。
+            </span>
+          </li>
+
+          <li>
+            SunsetBot 团队. 同书 · 第二、三章节：云、气象观测知识、数据来源.
+            <a href="https://www.sunsetbot.top/halo/posts/2026/huo-shao-yun-yu-bao-jiao-cheng-zhang-jie-er-san/" target="_blank" rel="noopener">原文</a>
+            <span class="ref-note">
+              用于：AOD 与通透度对照表（0.1 水晶天 / 0.2 湛蓝 / 0.3 较蓝 / 0.5 普通 / 0.8 有霾）；
+              彩虹判据（虹总在太阳对面、太阳高度低于 42°、雨滴需大于 0.5 mm）；
+              各类云对火烧云的不同贡献。
+            </span>
+          </li>
+
+          <li>
+            WMO. International Cloud Atlas（国际云图）, 2017 版.
+            <a href="https://cloudatlas.wmo.int/" target="_blank" rel="noopener">cloudatlas.wmo.int</a>
+            <span class="ref-note">
+              用于：云属定义与高度分界（低云 &lt;2500 m、中云 2500–7000 m、高云 &gt;6000 m），
+              对应把 850 / 700 / 500 / 400 hPa 划成低中高三层。
+            </span>
+          </li>
+
+          <li>
+            Open-Meteo. Weather Forecast API 文档.
+            <a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener">open-meteo.com/en/docs</a>
+            <span class="ref-note">
+              用于：全部预报变量的来源与定义（分层云量、2 m 湿度、降水概率、
+              边界层高度、CAPE、各气压层相对湿度）。
+            </span>
+          </li>
+
+          <li>
+            Open-Meteo. Air Quality API（底层为 CAMS 再分析／预报）.
+            <a href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noopener">文档</a>
+            <span class="ref-note">用于：气溶胶光学厚度 AOD 与 PM2.5 数据来源。</span>
+          </li>
+
+          <li>
+            NOAA Global Monitoring Laboratory. Solar Calculator（太阳位置算法）.
+            <a href="https://gml.noaa.gov/grad/solcalc/" target="_blank" rel="noopener">gml.noaa.gov/grad/solcalc</a>
+            <span class="ref-note">
+              用于：太阳高度角与方位角计算（本站用同一套低精度解析式），
+              进而决定机位朝向匹配与彩虹判据。
+            </span>
+          </li>
+
+          <li>
+            Bohren, C. F. &amp; Huffman, D. R. <i>Absorption and Scattering of Light by Small Particles</i>.
+            Wiley, 1983.
+            <span class="ref-note">背景阅读：米散射与瑞利散射的经典教材，理解 AOD 为何影响色彩饱和度。</span>
+          </li>
+
+          <li>
+            Petty, G. W. <i>A First Course in Atmospheric Radiation</i>. 2nd ed.
+            Sundog Publishing, 2006.
+            <span class="ref-note">背景阅读：大气辐射传输基础，云的光学厚度与透射率的定性关系。</span>
+          </li>
+
+        </ol>
+
+        <p class="ref-disclaimer">
+          <b>说明</b>：本站评分公式由上述材料中的结论组合而成，
+          <b>并未经过同行评议或历史回测验证</b>。
+          前两条文献给出的是“预报有多不准”，而不是“火烧云概率模型”——那种论文目前几乎不存在。
+          真正的验证只能靠群友回填的实际结果。
+        </p>
+      </details>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="row">
+      <div>
+        <img class="logo" src="images/mspa透明底.png" alt="18N-MSPA 北纬18度椰青摄联" />
+      </div>
+      <div class="links">
+        <a href="about.html">关于我们</a>
+        <a href="gallery.html">作品集</a>
+        <a href="forecast.html">霞光预报</a>
+        <a href="members.html">成员</a>
+        <a href="join.html">加入我们</a>
+      </div>
+    </div>
+    <div class="copy">
+      <span>© 2026 北纬18度椰青摄联 18N-MSPA · 保留所有权利</span>
+      <span>海南省 · 海口</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/forecast.js"></script>
+<script src="assets/main.js"></script>
+
+<!-- Netlify 表单：静态声明，供部署时识别；实际提交由 JS 完成 -->
+<form name="sunset-feedback" method="POST" action="/" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input type="hidden" name="form-name" value="sunset-feedback" />
+  <input type="text" name="spot" />
+  <input type="text" name="score" />
+  <input type="text" name="level" />
+  <input type="text" name="mode" />
+  <input type="text" name="date" />
+  <input type="text" name="actual" />
+  <input type="text" name="note" />
+  <input type="text" name="nickname" />
+  <input type="text" name="bot-field" />
+</form>
+
+<!-- 反馈弹窗 -->
+<div class="fb-modal" id="fb-modal">
+  <div class="fb-panel glass" role="dialog" aria-modal="true">
+    <button class="fb-close" id="fb-close" aria-label="关闭">✕</button>
+
+    <p class="eyebrow">Feedback</p>
+    <h3 class="fb-title" id="fb-title">实际烧到什么程度？</h3>
+    <p class="fb-sub" id="fb-sub"></p>
+
+    <div class="fb-options" id="fb-options">
+      <button type="button" data-v="火烧云">火烧云</button>
+      <button type="button" data-v="大烧">大烧</button>
+      <button type="button" data-v="中烧">中烧</button>
+      <button type="button" data-v="小烧">小烧</button>
+      <button type="button" data-v="微烧">微烧</button>
+      <button type="button" data-v="没烧">没烧</button>
+      <button type="button" data-v="没去">我没去</button>
+    </div>
+
+    <input class="fb-input" id="fb-note" maxlength="140"
+           placeholder="补充说明（可选）：几点最红？哪个方向？翻车原因？" />
+    <input class="fb-input" id="fb-name" maxlength="24"
+           placeholder="你的称呼（可选）" />
+
+    <button class="btn btn-primary fb-submit" id="fb-submit" type="button">提交反馈</button>
+    <p class="fb-tip">反馈会连同当前分数一起记录，用来校准算法。</p>
+  </div>
+</div>
+
+</body>
+</html>
