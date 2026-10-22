@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 import { rootStatic } from './tools/plugins/root-static'
+import { publishRoot } from './tools/publish-root'
 
 /** 每个 HTML 都是独立入口：多页应用，产物文件名与线上 URL 一一对应 */
 const PAGES = ['index', 'about', 'gallery', 'forecast', 'members', 'join', '404']
@@ -9,8 +10,6 @@ const PAGES = ['index', 'about', 'gallery', 'forecast', 'members', 'join', '404'
 export default defineConfig({
   base: '/',
   plugins: [
-    // 模板里的 images/... 一律保持字面量，交给根目录静态资源直通，
-    // 不要被当成模块引入（否则会复制一份带哈希的图，且缓存头对不上）
     vue({
       template: {
         // images/... 保持字面量，交给根目录静态资源直通（否则会多出一份带哈希的副本，
@@ -24,7 +23,8 @@ export default defineConfig({
         }
       }
     }),
-    ...rootStatic()
+    ...rootStatic(),
+    publishRoot()
   ],
   resolve: {
     alias: {
@@ -32,6 +32,11 @@ export default defineConfig({
     }
   },
   build: {
+    /**
+     * 产物放到独立的 dist/，同时也要写一份到仓库根目录——根目录那份是给线上看的。
+     * 仓库根目录仍保留源 HTML（含 <head> 元信息），只是构建时被同名的成品覆盖。
+     * 这样 Cloudflare Pages 沿用旧配置（无构建命令、输出目录=仓库根）也能发布正确内容。
+     */
     assetsDir: 'assets',
     target: 'es2020',
     rollupOptions: {
