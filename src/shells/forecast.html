@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>海南霞光预报 · 朝霞晚霞指数 · 北纬18度椰青摄联</title>
+<meta name="description" content="海南朝霞、晚霞指数预报，覆盖东岸、西岸、南部与中部主要机位。基于公开气象模型计算，供摄影参考。" />
+<meta property="og:title" content="海南霞光预报 · 朝霞晚霞指数 · 北纬18度椰青摄联" />
+<meta property="og:description" content="海南朝霞、晚霞指数预报，覆盖东岸、西岸、南部与中部主要机位。基于公开气象模型计算，供摄影参考。" />
+<meta name="theme-color" content="#101113" />
+<link rel="canonical" href="https://hainan-n-mspa.pages.dev/forecast" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://hainan-n-mspa.pages.dev/forecast" />
+<meta property="og:site_name" content="北纬18度椰青摄联 18N-MSPA" />
+<meta property="og:locale" content="zh_CN" />
+<meta property="og:image" content="https://hainan-n-mspa.pages.dev/images/og-cover.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="海口世纪大桥火烧云 · 18N-MSPA" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="海南霞光预报 · 朝霞晚霞指数 · 北纬18度椰青摄联" />
+<link rel="icon" href="images/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="96x96" href="images/favicon.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png" />
+<noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+</head>
+<body>
+
+<div id="app">
+  <noscript><p class="muted" style="padding:48px 24px;text-align:center">本站需要浏览器启用 JavaScript 才能显示内容。</p></noscript>
+</div>
+
+<!-- Netlify 表单：静态声明，供部署时识别；实际提交由 JS 完成 -->
+<form name="sunset-feedback" method="POST" action="/" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input type="hidden" name="form-name" value="sunset-feedback" />
+  <input type="text" name="spot" />
+  <input type="text" name="score" />
+  <input type="text" name="level" />
+  <input type="text" name="mode" />
+  <input type="text" name="date" />
+  <input type="text" name="actual" />
+  <input type="text" name="note" />
+  <input type="text" name="nickname" />
+  <input type="text" name="bot-field" />
+</form>
+
+<script type="module" src="/src/entries/forecast.ts"></script>
+
+</body>
+</html>

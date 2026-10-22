@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "predev": "node tools/restore-shells.mjs",
+    "prebuild": "node tools/restore-shells.mjs"
   },
   "dependencies": {
     "vue": "^3.5.13"
