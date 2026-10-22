@@ -10,6 +10,9 @@
 七个页面各有自己的 HTML 入口，URL 与旧版完全一致（`index.html` / `about.html` / `gallery.html` /
 `forecast.html` / `members.html` / `join.html` / `404.html`）。
 
+> 接手开发请看 **[交接文档.md](交接文档.md)**：目录职责、四条不能违反的硬规矩、
+> 回归比对工具、部署链路与踩坑记录都在里面。
+
 ## 本地开发
 
 ```bash
