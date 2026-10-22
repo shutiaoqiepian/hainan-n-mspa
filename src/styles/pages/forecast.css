@@ -1,0 +1,639 @@
+/* ============================================================
+   霞光预报页
+   ============================================================ */
+
+.fc-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.fc-modes {
+  display: flex;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--line);
+}
+
+.fc-mode {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 14.5px;
+  letter-spacing: 0.05em;
+  padding: 9px 22px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fc-mode.is-on {
+  background: linear-gradient(100deg, var(--accent-a), var(--accent-b));
+  color: #06171d;
+  font-weight: 600;
+}
+
+.fc-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.fc-areas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fc-stamp {
+  font-size: 12.5px;
+  color: #6d757c;
+  letter-spacing: 0.08em;
+  margin: 0 0 16px;
+  min-height: 18px;
+}
+
+.fc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 等级图例 */
+.fc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0 0 22px;
+  font-size: 12.5px;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+
+.fc-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.fc-legend i {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.fc-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 15px 22px;
+  border-radius: 16px;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.fc-row:hover {
+  background: var(--glass-hover);
+  transform: translateX(3px);
+  border-color: var(--line-strong);
+}
+
+.fc-row.is-top {
+  border-color: rgba(79, 179, 232, 0.38);
+  box-shadow: 0 10px 34px rgba(79, 179, 232, 0.12);
+}
+
+.fc-score {
+  --p: 0;
+  --c: #8f979f;
+  flex: 0 0 auto;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--c) calc(var(--p) * 1%), rgba(255, 255, 255, 0.08) 0);
+}
+
+.fc-score span {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #15171a;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.fc-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fc-name {
+  font-size: 16.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.fc-name b {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 13px;
+  margin-right: 6px;
+}
+
+.fc-face {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.fc-meta {
+  font-size: 12.8px;
+  color: var(--muted);
+  margin-top: 5px;
+  letter-spacing: 0.03em;
+}
+
+/* 云层结构判断 */
+.fc-prof {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: #9fd4f2;
+  letter-spacing: 0.03em;
+}
+
+.fc-faceoff {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: #e8a96b;
+  letter-spacing: 0.02em;
+}
+
+.fc-tag {  display: inline-block;
+  margin-top: 7px;
+  font-size: 12px;
+  padding: 2px 9px;
+  border-radius: 5px;
+  background: rgba(79, 179, 232, 0.14);
+  color: #9fd4f2;
+}
+
+.fc-level {
+  flex: 0 0 auto;
+  min-width: 66px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.fc-empty {
+  padding: 52px 26px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.9;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+}
+
+.fc-note {
+  margin-top: 36px;
+  padding: 30px 32px;
+}
+
+.fc-note p {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.95;
+}
+
+.fc-note p:last-child { margin-bottom: 0; }
+
+.fc-note a { color: var(--accent-a); }
+
+/* ---------- 参考文献 ---------- */
+
+.fc-refs {
+  margin-top: 18px;
+  padding: 0 30px;
+}
+
+.fc-refs summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 0;
+  cursor: pointer;
+  list-style: none;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  transition: color 0.2s ease;
+}
+
+.fc-refs summary:hover { color: var(--text); }
+.fc-refs summary::-webkit-details-marker { display: none; }
+
+.fc-refs summary::after {
+  content: "＋";
+  margin-left: auto;
+  font-size: 16px;
+  color: var(--accent-a);
+}
+
+.fc-refs[open] summary::after { content: "－"; }
+
+.fc-refs ol {
+  margin: 0 0 24px;
+  padding-left: 20px;
+  display: grid;
+  gap: 18px;
+}
+
+.fc-refs li {
+  padding-left: 4px;
+  font-size: 13.5px;
+  line-height: 1.85;
+  color: #c2c9cf;
+}
+
+.fc-refs li::marker {
+  color: var(--accent-a);
+  font-weight: 600;
+}
+
+.fc-refs a {
+  color: var(--accent-a);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.ref-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+
+.ref-disclaimer {
+  margin: 0 0 26px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 12.8px;
+  line-height: 1.9;
+  color: var(--muted);
+}
+
+.ref-disclaimer b { color: #c2c9cf; }
+
+@media (max-width: 760px) {
+  .fc-refs { padding: 0 20px; }
+  .fc-refs li { font-size: 12.8px; }
+  .ref-note { font-size: 12px; }
+}
+
+/* ---------- 海口详细面板 ---------- */
+
+.fc-detail {
+  padding: 28px 30px;
+  margin-bottom: 22px;
+}
+
+.fcd-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.fcd-title {
+  margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.fcd-sub {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.fcd-share { padding: 11px 22px; font-size: 14px; }
+
+.fcd-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fcd-row {
+  display: grid;
+  grid-template-columns: 1.1fr repeat(5, 1fr) 0.9fr;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: #c2c9cf;
+  font-variant-numeric: tabular-nums;
+}
+
+.fcd-row:nth-child(even) { background: rgba(255, 255, 255, 0.025); }
+
+.fcd-row-head {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  background: transparent !important;
+  padding-bottom: 6px;
+}
+
+.fcd-time { color: #e9ecef; font-weight: 600; }
+
+.fcd-score { font-weight: 700; }
+
+.fcd-tip {
+  margin: 20px 0 0;
+  font-size: 12.8px;
+  color: var(--muted);
+  line-height: 1.85;
+}
+
+/* ---------- 行内分享按钮 ---------- */
+
+.fc-share {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 15px;
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.2s ease;
+}
+
+.fc-share:hover {
+  background: rgba(79, 179, 232, 0.16);
+  color: #9fd4f2;
+  border-color: rgba(79, 179, 232, 0.4);
+}
+
+/* 反馈按钮 */
+.fc-fb {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.2s ease;
+}
+
+.fc-fb:hover {
+  background: rgba(53, 214, 192, 0.16);
+  color: #8ff0dc;
+  border-color: rgba(53, 214, 192, 0.45);
+}
+
+.fc-fb.is-done {
+  background: rgba(53, 214, 192, 0.18);
+  color: #8ff0dc;
+  border-color: rgba(53, 214, 192, 0.5);
+}
+
+.fc-fb-hint {
+  margin: 24px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.9;
+  text-align: center;
+}
+
+.fc-fb-hint b { color: #c2c9cf; }
+
+/* ---------- 反馈弹窗 ---------- */
+
+.fb-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(8, 9, 11, 0.86);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.fb-modal.is-open { display: flex; }
+
+.fb-panel {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  padding: 32px 30px 26px;
+  border-radius: 22px;
+}
+
+.fb-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fb-title {
+  margin: 0 0 8px;
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.fb-sub {
+  margin: 0 0 22px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.fb-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.fb-options button {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.fb-options button:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.fb-options button.is-on {
+  background: linear-gradient(100deg, var(--accent-a), var(--accent-b));
+  color: #06171d;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.fb-input {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.fb-input::placeholder { color: #6d757c; }
+
+.fb-input:focus { border-color: rgba(79, 179, 232, 0.5); }
+
+.fb-submit {
+  width: 100%;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.fb-submit[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.fb-tip {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: #6d757c;
+  text-align: center;
+  line-height: 1.7;
+}
+
+@media (max-width: 760px) {
+  .fc-fb { width: 30px; height: 30px; font-size: 13px; }
+  .fc-fb, .fc-share { order: 3; }
+  .fb-panel { padding: 26px 20px 22px; }
+  .fb-title { font-size: 18px; }
+  .fb-options button { font-size: 13px; padding: 8px 13px; }
+}
+
+.fc-row.is-hl {
+  border-color: rgba(53, 214, 192, 0.55);
+  box-shadow: 0 0 0 1px rgba(53, 214, 192, 0.25),
+              0 12px 34px rgba(53, 214, 192, 0.12);
+}
+
+/* ---------- 复制提示 ---------- */
+
+.fc-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 38px;
+  transform: translate(-50%, 14px);
+  z-index: 300;
+  padding: 13px 26px;
+  border-radius: 999px;
+  background: rgba(20, 22, 25, 0.92);
+  color: #e9ecef;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(53, 214, 192, 0.4);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.28s ease;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.fc-toast.is-show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (max-width: 760px) {
+  .fc-row { gap: 13px; padding: 14px 16px; }
+  .fc-score { width: 54px; height: 54px; }
+  .fc-score span { width: 44px; height: 44px; font-size: 14.5px; }
+  .fc-meta { font-size: 11.5px; }
+  .fc-level { min-width: auto; font-size: 13px; }
+  .fc-name { font-size: 15px; }
+  .fc-note { padding: 24px 22px; }
+
+  .fc-detail { padding: 22px 18px; }
+  .fcd-title { font-size: 20px; }
+  .fcd-row {
+    grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr;
+    gap: 6px;
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+  .fcd-row > span:nth-child(2),
+  .fcd-row > span:nth-child(3) { display: none; }
+  .fc-share { width: 30px; height: 30px; font-size: 13px; }
+  .fc-toast { font-size: 13px; padding: 11px 20px; }
+}
+

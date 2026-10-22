@@ -1,0 +1,167 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import PhotoWall from '@/components/PhotoWall.vue'
+import { HERO_IMAGE, PHOTOS } from '@/data/photos'
+
+/** 首页（对应旧版 index.html + initHomeWall） */
+
+const heroSrc = 'images/' + HERO_IMAGE
+
+/** 精选作品：有分类的前 9 张 */
+const picks = computed(() => PHOTOS.filter((p) => p.c !== '').slice(0, 9))
+
+/** 首屏大图缺失时退回径向渐变底，避免露出裂图 */
+function onHeroError(event: Event): void {
+  const img = event.target as HTMLImageElement
+  img.style.display = 'none'
+  const parent = img.parentNode as HTMLElement | null
+  if (parent) {
+    parent.style.background =
+      'radial-gradient(120% 90% at 70% 10%, #24303a 0%, #16181b 55%, #101113 100%)'
+  }
+}
+</script>
+
+<template>
+  <!-- ===== 首屏 ===== -->
+  <section class="hero">
+    <div class="hero-media">
+      <img
+        :src="heroSrc"
+        alt="海口世纪大桥火烧云"
+        fetchpriority="high"
+        decoding="async"
+        @error="onHeroError"
+      />
+    </div>
+
+    <div class="wrap hero-body">
+      <p class="eyebrow">18°N · HAINAN · SINCE 2024</p>
+      <h1 class="silver">未来，<br />我们于此刻以影像开启</h1>
+      <p class="lead">
+        海南省北纬18度椰青摄影联盟，海南最大的青年摄影师交流组织。<br />
+        从海岸线的第一缕晨光，到骑楼老街的最后一盏灯笼 —— 我们拍脚下的这座岛。
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="gallery.html">看作品</a>
+        <a class="btn btn-accent" href="forecast.html">霞光预报</a>
+        <a class="btn btn-ghost" href="join.html">加入我们</a>
+      </div>
+    </div>
+
+    <div class="hero-meta">SCROLL</div>
+  </section>
+
+  <!-- ===== 我们是谁 ===== -->
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">About Us</p>
+        <h2 class="silver">一群生活在海南的人<br />拍自己脚下的地方</h2>
+        <p>
+          北纬18度，是海南岛南端所在的纬线；18岁稍后，正是人生最好的时候。
+          青春有热爱，才更具色彩。
+        </p>
+      </div>
+
+      <div class="grid-3">
+        <article class="card glass reveal" data-delay="0">
+          <span class="idx">01</span>
+          <h3>海南最大的<br />青年摄影师交流组织</h3>
+          <p>成员以海南为主，也有散落在北京、上海、广州、深圳、香港、西安、重庆、长沙的伙伴。</p>
+        </article>
+
+        <article class="card glass reveal" data-delay="90">
+          <span class="idx">02</span>
+          <h3>从风光到人文<br />都拍</h3>
+          <p>海岸日出日落、城市夜色爬楼、公期军坡民俗、银河与流星、航拍视角 —— 什么都愿意拍。</p>
+        </article>
+
+        <article class="card glass reveal" data-delay="180">
+          <span class="idx">03</span>
+          <h3>不是比赛<br />是同行</h3>
+          <p>一起蹲机位、一起等天气、一起翻车、一起出片。这里更像一个愿意陪你熬夜的群。</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 数字 ===== -->
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
+      <div class="stats reveal">
+        <div><strong class="grad">2</strong><span>年</span></div>
+        <div><strong class="grad">5</strong><span>大作品方向</span></div>
+        <div><strong class="grad">30+</strong><span>核心成员</span></div>
+        <div><strong class="grad">∞</strong><span>次按下快门</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 引言 ===== -->
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
+      <div class="quote glass reveal">
+        <blockquote class="silver">
+          「也许有某一个时刻，为了转瞬即逝的七彩祥云，<br />
+          而不停蹄地奔向机位。」
+        </blockquote>
+        <cite>— 18N-MSPA</cite>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 精选作品 ===== -->
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">Selected Works</p>
+        <h2 class="silver">部分成员作品</h2>
+        <p>更多作品在作品集里。</p>
+      </div>
+
+      <div id="home-wall" class="wall">
+        <PhotoWall :photos="picks" variant="home" />
+      </div>
+
+      <div class="reveal" style="margin-top:38px;text-align:center">
+        <a class="btn btn-ghost" href="gallery.html">查看全部作品 →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 霞光预报 ===== -->
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
+      <div class="glass reveal" style="padding:52px 40px;display:flex;gap:40px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+        <div style="flex:1 1 340px;min-width:250px">
+          <p class="eyebrow">Sunset Forecast</p>
+          <h2 class="silver" style="margin:0 0 14px;font-size:clamp(22px,2.8vw,32px)">
+            这两天，海南哪里值得跑一趟
+          </h2>
+          <p class="muted" style="margin:0;font-size:15px">
+            根据云层高度、气溶胶与降水，估算全省主要机位的朝霞与晚霞条件。
+            东岸拍日出，西岸拍日落，一处看完。
+          </p>
+        </div>
+        <a class="btn btn-primary" href="forecast.html">查看霞光预报</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 加入 ===== -->
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
+      <div class="glass reveal" style="padding:60px 40px;text-align:center">
+        <p class="eyebrow">Join Us</p>
+        <h2 class="silver" style="margin:0 0 18px;font-size:clamp(24px,3.2vw,36px)">
+          欢迎你认识我们，加入我们
+        </h2>
+        <p class="muted" style="margin:0 0 32px">
+          今天开始，我们很渴望能同你一起，分享这份热爱。
+        </p>
+        <a class="btn btn-primary" href="join.html">了解加入方式</a>
+      </div>
+    </div>
+  </section>
+</template>

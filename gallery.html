@@ -27,76 +27,11 @@
 </head>
 <body>
 
-<header class="nav">
-  <div class="wrap">
-    <a class="brand" href="index.html">
-      <span class="logo-mark"><img src="images/mspa透明底.png" alt="" /></span>
-      <span class="mark silver">18N-MSPA</span>
-      <span class="cn">北纬18度椰青摄联</span>
-    </a>
-    <button class="nav-toggle" aria-label="打开菜单" aria-expanded="false">☰</button>
-    <nav>
-      <ul>
-        <li><a href="index.html">首页</a></li>
-        <li><a href="about.html">关于</a></li>
-        <li><a href="gallery.html">作品集</a></li>
-        <li><a href="forecast.html">霞光预报</a></li>
-        <li><a href="members.html">成员</a></li>
-        <li><a href="join.html">加入我们</a></li>
-      </ul>
-    </nav>
-  </div>
-</header>
-
-<main>
-
-  <section class="page-head">
-    <div class="wrap">
-      <p class="eyebrow">Gallery</p>
-      <h1 class="silver">作品集</h1>
-      <p>部分成员作品，点击任意一张可看大图。</p>
-    </div>
-  </section>
-
-  <section class="section" style="padding-top:56px">
-    <div class="wrap">
-      <div class="filter-bar" id="filters"></div>
-      <div class="wall" id="wall">
-        <noscript><p class="muted">作品集需要浏览器开启 JavaScript 才能显示。</p></noscript>
-      </div>
-    </div>
-  </section>
-
-</main>
-
-<div class="lightbox" id="lightbox">
-  <button class="lightbox-close" id="lightbox-close" aria-label="关闭">✕</button>
-  <img id="lightbox-img" alt="作品大图" />
-  <p class="lightbox-cap" id="lightbox-cap"></p>
+<div id="app">
+  <noscript><p class="muted" style="padding:48px 24px;text-align:center">本站需要浏览器启用 JavaScript 才能显示内容。</p></noscript>
 </div>
 
-<footer class="footer">
-  <div class="wrap">
-    <div class="row">
-      <div>
-        <img class="logo" src="images/mspa透明底.png" alt="18N-MSPA 北纬18度椰青摄联" />
-      </div>
-      <div class="links">
-        <a href="about.html">关于我们</a>
-        <a href="gallery.html">作品集</a>
-        <a href="forecast.html">霞光预报</a>
-        <a href="members.html">成员</a>
-        <a href="join.html">加入我们</a>
-      </div>
-    </div>
-    <div class="copy">
-      <span>© 2026 北纬18度椰青摄联 18N-MSPA · 作品版权归各摄影师所有</span>
-      <span>海南省 · 海口</span>
-    </div>
-  </div>
-</footer>
+<script type="module" src="/src/entries/gallery.ts"></script>
 
-<script src="assets/photos.js"></script>
-<script src="assets/main.js"></script>
 </body>
 </html>

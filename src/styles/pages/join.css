@@ -1,0 +1,78 @@
+/* ---------- 加入页 ---------- */
+
+.auditor {
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.auditor:last-of-type { border-bottom: 0; }
+
+.auditor-name {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.auditor-note {
+  margin-top: 6px;
+  font-size: 12.8px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.step {
+  padding: 30px 26px;
+}
+
+.step-num {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  color: var(--accent-a);
+}
+
+.step p {
+  margin: 0;
+  font-size: 14.5px;
+  color: #c2c9cf;
+  line-height: 1.9;
+}
+
+.rules {
+  margin: 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 16px;
+}
+
+.rules li {
+  font-size: 15px;
+  color: #c2c9cf;
+  line-height: 1.9;
+  padding-left: 6px;
+}
+
+.rules li::marker {
+  color: var(--accent-a);
+  font-weight: 600;
+}
+
+@media (max-width: 1000px) {
+  .steps { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 760px) {
+  .steps { grid-template-columns: 1fr; }
+  .step { padding: 24px 22px; }
+  .rules { padding-left: 18px; }
+  .rules li { font-size: 14px; }
+}
+

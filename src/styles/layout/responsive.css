@@ -1,0 +1,94 @@
+/* ============================================================
+   移动端修补（统一覆盖，优先级最高）
+   ============================================================ */
+
+@media (max-width: 760px) {
+  /* 首屏——原来 88vh + 底部大留白，小屏上会很挤 */
+  .hero { min-height: 80vh; }
+  /* 竖屏裁切时把地平线压到文字下方，别让亮点正好穿过正文 */
+  .hero-media img { object-position: 50% 30%; }
+  .hero-body::before {
+    width: 112vw;
+    height: 64vh;
+    background: radial-gradient(closest-side, rgba(6, 8, 10, 0.70), rgba(6, 8, 10, 0.42) 56%, transparent 86%);
+  }
+  .hero-body { padding: 44px 0 56px; }
+  .hero h1 { font-size: clamp(28px, 8.6vw, 40px); line-height: 1.24; }
+  .hero p.lead {
+    font-size: 14.5px;
+    line-height: 1.85;
+    margin-bottom: 26px;
+  }
+
+  /* 三个按钮竖排，避免 2+1 的难看换行 */
+  .hero-actions { flex-direction: column; align-items: center; gap: 10px; }
+  .hero-actions .btn {
+    width: 100%;
+    max-width: 320px;
+    justify-content: center;
+  }
+
+  /* 区块间距收紧 */
+  .section { padding: 56px 0; }
+  .section-head { margin-bottom: 32px; }
+  .section-head h2 { font-size: clamp(22px, 6.4vw, 30px); }
+
+  /* 预报列表：改成两行式，第一行分数/等级/分享，第二行名称与指标 */
+  .fc-row {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 14px 16px;
+  }
+  .fc-score { order: 1; width: 52px; height: 52px; }
+  .fc-score span { width: 42px; height: 42px; font-size: 14px; }
+  .fc-level { order: 2; margin-left: auto; min-width: auto; font-size: 13px; }
+  .fc-share { order: 3; width: 30px; height: 30px; }
+  .fc-main { order: 4; flex: 1 1 100%; min-width: 0; margin-top: 2px; }
+  .fc-name { font-size: 15px; }
+  .fc-meta { font-size: 11.5px; line-height: 1.75; margin-top: 4px; }
+  .fc-prof { font-size: 12px; }
+
+  /* 控制区竖排 */
+  .fc-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .fc-picks { justify-content: center; gap: 8px; }
+  .fc-modes { justify-content: center; }
+  .fc-mode { padding: 9px 15px; font-size: 13.5px; }
+
+  /* 海口详细表格 */
+  .fc-detail { padding: 20px 16px; }
+  .fcd-head { gap: 14px; margin-bottom: 16px; }
+  .fcd-share { width: 100%; justify-content: center; }
+  .fcd-row { font-size: 11.5px; gap: 4px; padding: 8px 6px; }
+  .fcd-title { font-size: 19px; }
+  .fcd-sub { font-size: 12.5px; line-height: 1.8; }
+
+  /* 导航 */
+  .nav .wrap { gap: 10px; }
+  .brand .mark { font-size: 16px; letter-spacing: 0.12em; }
+
+  /* 卡片内边距 */
+  .card { padding: 24px 20px; }
+  .stats > div { padding: 26px 16px; }
+
+  /* 图片墙在窄屏逐张显示时不要太高 */
+  .wall figure { border-radius: 12px; }
+}
+
+@media (max-width: 420px) {
+  /* 更窄的屏：详细表格再省一列（AOD） */
+  .fcd-row { grid-template-columns: 1.1fr 1fr 1fr 1fr; }
+  .fcd-row > span:nth-child(2),
+  .fcd-row > span:nth-child(3),
+  .fcd-row > span:nth-child(5) { display: none; }
+
+  .hero-brand { display: none; }
+  .wrap { padding: 0 16px; }
+  .section { padding: 48px 0; }
+  .btn { padding: 13px 22px; font-size: 14.5px; }
+}
+

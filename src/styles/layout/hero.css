@@ -1,0 +1,205 @@
+/* ---------- 首屏 ---------- */
+
+.hero {
+  position: relative;
+  min-height: calc(100vh - var(--nav-h));
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.hero-media {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+
+.hero-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 46%;
+  transform: scale(1.04);
+  filter: saturate(116%) contrast(1.04) brightness(1.03);
+  animation: heroDrift 26s cubic-bezier(0.22, 0.7, 0.2, 1) both;
+}
+
+/* 极慢的推近，让静态照片有一点呼吸 */
+@keyframes heroDrift {
+  from { transform: scale(1.09); }
+  to   { transform: scale(1.01); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-media img { animation: none; transform: scale(1.02); }
+}
+
+/* 遮罩：顶部压一点保证导航衔接，中间几乎放开让火烧云透出来，
+   底部再收暗接回页面背景。原来中下部 0.90 把水面的细节全压没了。 */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg,
+      rgba(16,17,19,0.74) 0%,
+      rgba(16,17,19,0.34) 14%,
+      rgba(16,17,19,0.08) 32%,
+      rgba(16,17,19,0.14) 50%,
+      rgba(16,17,19,0.46) 72%,
+      rgba(16,17,19,0.82) 89%,
+      #101113 100%),
+    radial-gradient(120% 92% at 50% 42%, transparent 46%, rgba(10, 12, 15, 0.5) 100%);
+}
+
+.hero-body {
+  position: relative;
+  z-index: 1;
+  padding: 0 0 110px;
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* 文字底下垫一层很淡的暗雾，保证压在高光云上也读得清 */
+.hero-body::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(1120px, 96vw);
+  height: min(560px, 76vh);
+  transform: translate(-50%, -52%);
+  background: radial-gradient(closest-side, rgba(6, 8, 10, 0.62), rgba(6, 8, 10, 0.34) 55%, rgba(6, 8, 10, 0.10) 74%, transparent 88%);
+  filter: blur(10px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.hero h1.silver {
+  background-image: linear-gradient(180deg, #ffffff 0%, #f4f7fa 42%, #cdd6de 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero h1 {
+  margin: 0 0 22px;
+  font-size: clamp(38px, 6.4vw, 78px);
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-shadow: 0 8px 56px rgba(0, 0, 0, 0.55);
+}
+
+.hero .eyebrow {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.hero p.lead {
+  margin: 0 auto 38px;
+  max-width: 40em;
+  font-size: clamp(15px, 1.6vw, 18px);
+  color: #d8dee4;
+  line-height: 1.9;
+  text-shadow: 0 2px 22px rgba(0, 0, 0, 0.6);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+.hero-meta {
+  position: absolute;
+  right: 28px;
+  bottom: 34px;
+  text-align: right;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.hero-meta::after {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 54px;
+  margin: 12px 0 0 auto;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+  transform-origin: top center;
+  animation: scrollCue 2.6s ease-in-out infinite;
+}
+
+@keyframes scrollCue {
+  0%, 100% { transform: scaleY(0.35); opacity: 0.35; }
+  45%      { transform: scaleY(1);    opacity: 0.9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-meta::after { animation: none; transform: scaleY(1); opacity: 0.5; }
+}
+
+/* ---------- 首屏 logo 展示 ---------- */
+
+.hero-logo-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  /* 抵消 logo 图片自身上下的大片透明留白，让内容整体上移 */
+  margin: -66px 0 -86px;
+}
+
+/* 背后的柔光，让 logo 从照片里浮起来 */
+.hero-logo-wrap::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 380px;
+  height: 240px;
+  max-width: 86vw;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, rgba(79, 179, 232, 0.18), transparent 74%);
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+.hero-logo {
+  position: relative;
+  display: block;
+  width: 300px;
+  max-width: 68vw;
+  height: auto;
+  animation: logoIn 1.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* 开场：从模糊到清晰 */
+@keyframes logoIn {
+  0% {
+    opacity: 0;
+    filter: blur(22px) brightness(1.8) drop-shadow(0 0 0 rgba(79, 179, 232, 0));
+    transform: scale(1.06);
+  }
+  55% {
+    opacity: 0.92;
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0) brightness(1) drop-shadow(0 2px 22px rgba(0, 0, 0, 0.55))
+            drop-shadow(0 0 26px rgba(79, 179, 232, 0.22));
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-logo {
+    animation: none;
+    filter: drop-shadow(0 2px 22px rgba(0, 0, 0, 0.55));
+  }
+}
+

@@ -1,0 +1,92 @@
+/* ---------- 入场动画 ---------- */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  html { scroll-behavior: auto; }
+}
+
+/* ---------- 响应式 ---------- */
+
+@media (max-width: 1000px) {
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .wall { column-count: 2; }
+  .two-col { grid-template-columns: 1fr; gap: 40px; }
+}
+
+@media (max-width: 760px) {
+  .wrap { padding: 0 20px; }
+  :root { --nav-h: 60px; }
+
+  .nav-toggle { display: block; }
+
+  .nav ul {
+    position: fixed;
+    top: var(--nav-h);
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: 8px 20px 18px;
+    background: rgba(14, 15, 17, 0.96);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    transform: translateY(-12px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+  }
+
+  .nav ul.is-open {
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .nav ul li { width: 100%; }
+
+  .nav ul a {
+    display: block;
+    padding: 14px 0;
+    font-size: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .nav ul a.is-active::after { display: none; }
+
+  .brand .cn { display: none; }
+
+  .section { padding: 72px 0; }
+
+  .hero { min-height: 88vh; }
+  .hero-body { padding-bottom: 62px; }
+  .hero-meta { display: none; }
+
+  .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .wall { column-count: 1; }
+
+  .card { padding: 26px 22px; }
+  .quote { padding: 52px 22px; }
+  .page-head { padding: 62px 0 44px; }
+  .footer .logo { height: 104px; }
+
+  .hero-brand { padding: 8px 16px; margin-bottom: 22px; border-radius: 20px; }
+  .hero-logo { width: 220px; }
+  .hero-logo-wrap { margin: -48px 0 -64px; }
+}
+

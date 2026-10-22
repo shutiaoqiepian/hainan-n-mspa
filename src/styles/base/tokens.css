@@ -1,0 +1,53 @@
+/* ============================================================
+   18N-MSPA 北纬18度椰青摄联
+   视觉体系：深炭灰 + 磨砂玻璃 + 银色渐变 + 青蓝强调色
+   ============================================================ */
+
+:root {
+  --bg:          #101113;
+  --bg-soft:     #17191c;
+  --glass:       rgba(255, 255, 255, 0.045);
+  --glass-hover: rgba(255, 255, 255, 0.075);
+  --line:        rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --text:        #e9ecef;
+  --muted:       #8f979f;
+  --accent-a:    #4fb3e8;
+  --accent-b:    #35d6c0;
+  --radius:      20px;
+  --maxw:        1180px;
+  --nav-h:       68px;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(1100px 720px at 78% -14%, rgba(79, 179, 232, 0.11), transparent 62%),
+    radial-gradient(900px 620px at 4% 6%, rgba(53, 214, 192, 0.07), transparent 64%),
+    radial-gradient(1300px 820px at 52% 110%, rgba(79, 179, 232, 0.07), transparent 62%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  font-family: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei",
+               "Hiragino Sans GB", "Source Han Sans SC", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+  letter-spacing: 0.02em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+img { display: block; max-width: 100%; }
+
+a { color: inherit; text-decoration: none; }
+

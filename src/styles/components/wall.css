@@ -1,0 +1,83 @@
+/* ---------- 作品墙 ---------- */
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 34px;
+}
+
+.chip {
+  padding: 9px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--glass);
+  color: var(--muted);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.chip:hover { color: var(--text); background: var(--glass-hover); }
+
+.chip.is-on {
+  color: #06171d;
+  background: linear-gradient(100deg, var(--accent-a), var(--accent-b));
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.wall {
+  column-count: 3;
+  column-gap: 16px;
+}
+
+.wall figure {
+  margin: 0 0 16px;
+  break-inside: avoid;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #1a1d20;
+  cursor: zoom-in;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.wall img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
+  opacity: 0;
+}
+
+.wall img.is-loaded { opacity: 1; }
+
+.wall figure:hover img { transform: scale(1.035); }
+
+.wall figcaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 34px 18px 16px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: #e6eaee;
+  background: linear-gradient(0deg, rgba(6, 8, 10, 0.82), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.wall figure:hover figcaption { opacity: 1; }
+
+/* 触屏没有 hover，标题直接显示 */
+@media (hover: none) {
+  .wall figcaption {
+    opacity: 1;
+    background: linear-gradient(0deg, rgba(6, 8, 10, 0.86), rgba(6, 8, 10, 0.10) 62%, transparent);
+  }
+}
+

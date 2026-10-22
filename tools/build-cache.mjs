@@ -17,7 +17,9 @@ import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = resolve(ROOT, "data/forecast.json");
 
-/* 与 assets/forecast.js 的 SPOTS 保持一致 */
+/* 机位表在这里另存一份：本脚本是纯 Node ESM，不能直接 import .ts。
+   真正的单一事实来源是 src/data/forecast/spots.ts，
+   下面的 assertSpotsInSync() 会在每次运行前核对两边机位名是否一致，漏改会直接报错。 */
 const SPOTS = [
   { n: "海口西海岸观海台", lat: 20.026, lon: 110.285 },
   { n: "海口假日海滩", lat: 20.033, lon: 110.245 },
@@ -47,6 +49,29 @@ const SPOTS = [
 ];
 
 const MULTI = ["ecmwf_ifs025", "icon_seamless", "gfs_seamless"];
+
+/* 防止机位表两边漂移：从 src/data/forecast/spots.ts 里抠出机位名对本脚本里的这一份 */
+async function assertSpotsInSync() {
+  const srcPath = resolve(ROOT, "src/data/forecast/spots.ts");
+  let text;
+  try {
+    text = await readFile(srcPath, "utf8");
+  } catch {
+    console.warn("⚠ 找不到 src/data/forecast/spots.ts，跳过机位表一致性检查");
+    return;
+  }
+  const fromTs = [...text.matchAll(/\bn:\s*'([^']+)'/g)].map((m) => m[1]);
+  const here = SPOTS.map((s) => s.n);
+  const missing = fromTs.filter((n) => !here.includes(n));
+  const extra = here.filter((n) => !fromTs.includes(n));
+  if (missing.length || extra.length) {
+    throw new Error(
+      "机位表不同步：src/data/forecast/spots.ts 有 " + fromTs.length + " 个，本脚本有 " + here.length + " 个。" +
+      (missing.length ? " 本脚本缺少：" + missing.join("、") + "。" : "") +
+      (extra.length ? " 本脚本多出：" + extra.join("、") + "。" : "")
+    );
+  }
+}
 
 const lat = SPOTS.map(s => s.lat).join(",");
 const lon = SPOTS.map(s => s.lon).join(",");
@@ -87,6 +112,7 @@ async function get(url, label, tries = 3) {
 }
 
 const main = async () => {
+  await assertSpotsInSync();
   console.log(`生成预报缓存 · ${SPOTS.length} 个机位 · ${new Date().toISOString()}`);
 
   const [weather, prof, air] = await Promise.all([

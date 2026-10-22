@@ -1,0 +1,51 @@
+/* ---------- 内页页头 ---------- */
+
+.page-head {
+  padding: 92px 0 62px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.page-head h1 {
+  margin: 0 0 18px;
+  font-size: clamp(30px, 4.6vw, 54px);
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.page-head p {
+  margin: 0;
+  max-width: 46em;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+/* ---------- 正文排版 ---------- */
+
+.prose p {
+  margin: 0 0 22px;
+  color: #c2c9cf;
+  font-size: 16px;
+  line-height: 1.95;
+}
+
+.prose h3 {
+  margin: 46px 0 16px;
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.prose ul {
+  margin: 0 0 24px;
+  padding-left: 20px;
+  color: #c2c9cf;
+}
+
+.prose li { margin-bottom: 10px; }
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 64px;
+  align-items: start;
+}
+

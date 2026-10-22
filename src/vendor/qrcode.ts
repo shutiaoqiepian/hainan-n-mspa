@@ -1,3 +1,4 @@
+// @ts-nocheck
 //---------------------------------------------------------------------
 //
 // QR Code Generator for JavaScript
@@ -2295,3 +2296,5 @@ var qrcode = function() {
 }(function () {
     return qrcode;
 }));
+
+export default qrcode

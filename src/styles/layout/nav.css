@@ -1,0 +1,104 @@
+/* ---------- 导航 ---------- */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  background: rgba(16, 17, 19, 0.62);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+}
+
+.nav .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.brand .mark {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.brand .cn {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+/* 导航栏图标：从整张 logo 里裁出「相机+椰树」，黑底用滤色剔除 */
+.logo-mark {
+  position: relative;
+  width: 38px;
+  height: 44px;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.logo-mark img {
+  position: absolute;
+  width: 131px;
+  max-width: none;
+  left: -46px;
+  top: -30px;
+}
+
+.nav ul {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav ul a {
+  font-size: 14.5px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  transition: color 0.2s ease;
+  position: relative;
+  padding: 4px 0;
+}
+
+.nav ul a:hover { color: var(--text); }
+
+.nav ul a.is-active { color: var(--text); }
+
+.nav ul a.is-active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+}
+
+.nav-toggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--glass);
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+}
+
