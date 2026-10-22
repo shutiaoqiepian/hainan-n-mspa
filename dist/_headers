@@ -1,0 +1,17 @@
+# Cloudflare Pages 响应头配置
+# ⚠ 这个文件必须保留：删掉后图片缓存头失效，每次打开都要重新下载全部图片。
+#   本地和线上都有效，Cloudflare Pages 在部署时读取。
+
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/images/*
+  Cache-Control: public, max-age=604800
+
+/data/*
+  Cache-Control: public, max-age=300, must-revalidate
+
+/assets/*
+  Cache-Control: public, max-age=86400
