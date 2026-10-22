@@ -70,6 +70,7 @@
   var state = {
     day: 0,          /* 0=今天 1=明天 */
     kind: "sunset",  /* sunrise / sunset */
+    model: "multi",  /* multi 或单个模式 id */
     area: "全部",
     rows: [],
     detail: null,
@@ -216,13 +217,24 @@
      再用 1.8 次方整体压缩——「条件好」不等于「一定烧」，
      误差总云量预报的 TCC 只有 0.47（1 天时效），所以必须保守。 */
   function scoreOf(m) {
-    var h = clamp(fHigh(m.high), 0, 1);
+    /* 缺数据时按“最不利”处理：宁可低估，也不虚高 */
+    var high = m.high == null ? 90 : m.high;
+    var mid = m.mid == null ? 60 : m.mid;
+    var low = m.low == null ? 70 : m.low;
+    var pop = m.pop == null ? 60 : m.pop;
+    var rh = m.rh == null ? 90 : m.rh;
+
+    var h = clamp(fHigh(high), 0, 1);
     if (h <= 0) return 0;
 
-    var lowF = 0.30 + 0.70 * fLow(m.low);
-    var midF = 0.72 + 0.28 * fMid(m.mid);
-    var aodF = 0.70 + 0.30 * fAod(m.aod);
-    var wetF = 0.80 + 0.20 * fWet(m.pop, m.rh);
+    var lowF = 0.30 + 0.70 * fLow(low);
+    var midF = 0.72 + 0.28 * fMid(mid);
+
+    /* 气溶胶对色彩饱和度影响很大，权重比原来更重 */
+    var aodF = 0.55 + 0.45 * fAod(m.aod == null ? 0.4 : m.aod);
+
+    /* 下雨/起雾基本没戏，惩罚也要更重 */
+    var wetF = 0.55 + 0.45 * fWet(pop, rh);
 
     var raw = h * lowF * midF * aodF * wetF;
     var score = 100 * Math.pow(clamp(raw, 0, 1), 1.8);
@@ -230,9 +242,107 @@
     return Math.round(Math.min(96, score));
   }
 
+  /* ---------- 1b. 模式表 ---------- */
+  var MODELS = [
+    { id: "ecmwf_ifs025",     name: "ECMWF", tag: "欧洲中心" },
+    { id: "icon_seamless",    name: "ICON",  tag: "德国气象局" },
+    { id: "gfs_seamless",     name: "GFS",   tag: "美国 NOAA" },
+    { id: "cma_grapes_global",name: "CMA",   tag: "中国气象局" },
+    { id: "jma_seamless",     name: "JMA",   tag: "日本气象厅" },
+    { id: "gem_seamless",     name: "GEM",   tag: "加拿大" },
+    { id: "metno_seamless",   name: "METNO", tag: "挪威" },
+    { id: "bom_access_global",name: "ACCESS",tag: "澳大利亚" }
+  ];
+
+  /* 多模式默认用这三家：分辨率与更新频率比较均衡，再多就会拖慢手机 */
+  var MULTI_MODELS = ["ecmwf_ifs025", "icon_seamless", "gfs_seamless"];
+
+  /* ---------- 1c. 云底高度 ----------
+     抬升凝结高度 LCL ≈ 125 × (气温 − 露点)，单位米。
+     这是气象上最常用的估算式，误差在几百米量级，但足够判断“低云会不会挡住地平线”。 */
+  function lclMeters(t, td) {
+    if (t == null || td == null) return null;
+    return Math.max(0, Math.round(125 * (t - td)));
+  }
+
+  /* ---------- 1d. 通透度 ----------
+     摄影里的“水晶天 / 玻璃天”：气溶胶低、能见度高、云量少。 */
+  function clarityOf(m) {
+    var aod = m.aod == null ? 0.25 : m.aod;
+    var aodF = aod <= 0.12 ? 1 : aod <= 0.2 ? 0.92 : aod <= 0.3 ? 0.8 :
+               aod <= 0.5 ? 0.6 : aod <= 0.8 ? 0.36 : 0.18;
+
+    var vis = m.vis;
+    var visF = vis == null ? 0.8 : vis >= 25 ? 1 : vis >= 15 ? 0.85 : vis >= 8 ? 0.65 : 0.4;
+
+    var total = clamp((m.high || 0) + (m.mid || 0) + (m.low || 0), 0, 100);
+    var cloudF = total <= 20 ? 1 : total <= 45 ? 0.88 : total <= 70 ? 0.68 : 0.45;
+
+    var lowF = 1 - clamp((m.low || 0) / 100, 0, 1) * 0.35;
+
+    return Math.round(clamp(100 * aodF * visF * cloudF * lowF, 0, 100));
+  }
+
+  /* ---------- 1e. 曙暮光条（“耶稣光” / 丁达尔）----------
+     条件：太阳贴近地平线（或刚落到地平线下），中高层云有缝隙，
+     低云不封死地平线，空气里有一点散射颗粒但别太脏。 */
+  function raysOf(m, sun) {
+    if (!sun) return 0;
+    var el = sun.el;
+    var sunF = 0;
+    if (el >= -6 && el <= 3) sunF = 1;
+    else if (el > 3 && el <= 10) sunF = 0.85;
+    else if (el > 10 && el <= 18) sunF = 0.5;
+    else if (el < -6 && el >= -10) sunF = 0.45;
+    else sunF = 0.15;
+
+    var gapSrc = Math.max(m.mid || 0, m.high || 0);
+    var gapF = gapSrc < 10 ? 0.35 : gapSrc <= 80 ? 1 : 0.4;
+
+    var lowF = 1 - clamp(((m.low || 0) - 40) / 60, 0, 1) * 0.8;
+
+    var aod = m.aod == null ? 0.25 : m.aod;
+    var aodF = aod < 0.1 ? 0.7 : aod <= 0.45 ? 1 : aod <= 0.8 ? 0.6 : 0.3;
+
+    var popF = (m.pop || 0) >= 60 ? 0.5 : 1;
+
+    return Math.round(clamp(100 * sunF * gapF * lowF * aodF * popF, 0, 100));
+  }
+
+  /* ---------- 1f. 彩虹 ----------
+     几何：太阳高度必须在 3°–42° 之间（低于 42° 才会出现）；
+     天气：附近要有阵性降水，同时太阳还得能照进来；
+     对流：CAPE 高说明有对流单体，比“大范围降水概率”更有意义。 */
+  function rainbowOf(m, sun, cape, rainNear) {
+    if (!sun) return 0;
+    var el = sun.el;
+    if (el < 3 || el > 42) return 0;
+
+    var sunF = el <= 30 ? 1 : 1 - (el - 30) / 12 * 0.8;
+
+    var rainF = rainNear ? 1 : ((m.pop || 0) >= 40 ? 0.85 : (m.pop || 0) >= 25 ? 0.55 : 0.15);
+    if (!rainNear && (m.pop || 0) < 15) return 0;
+
+    var convF = cape != null && cape >= 1200 ? 1 : cape != null && cape >= 600 ? 0.8 : 0.6;
+
+    var openF = 1 - clamp((((m.low || 0) + (m.mid || 0)) - 70) / 60, 0, 1) * 0.7;
+
+    return Math.round(clamp(100 * sunF * rainF * convF * openF, 0, 100));
+  }
+
+  function clarityLabel(v) {
+    return v >= 85 ? "水晶天" : v >= 70 ? "玻璃天" : v >= 55 ? "通透" : v >= 40 ? "一般" : "发灰";
+  }
+  function raysLabel(v) {
+    return v >= 70 ? "耶稣光预备" : v >= 45 ? "可能有光柱" : v >= 25 ? "碰运气" : "难";
+  }
+  function rainbowLabel(v) {
+    return v >= 60 ? "彩虹窗口" : v >= 35 ? "可能有虹" : v >= 15 ? "概率低" : "无";
+  }
+
   /* 彩虹：太阳高度 4–40°，且日落前两小时内有像样的降水概率
      教程要点：虹总在太阳对面，太阳低于 42° 才可能形成 */
-  function rainbowHint(spot, w, idx, prof) {
+  function rainbowHint(spot, w, idx, prof, mids) {
     /* 对流旺盛时降水概率会被低估，CAPE 作为补充判据 */
     var convective = prof && typeof prof.cape === "number" && prof.cape >= 1500;
 
@@ -240,7 +350,7 @@
       var k = idx - back;
       if (k < 0) continue;
 
-      var popK = w.hourly.precipitation_probability[k];
+      var popK = measureAt(w, null, k, mids).pop;
       if (!(popK >= 30) && !convective) continue;
 
       var ms = Date.parse(w.hourly.time[k] + ":00+08:00");
@@ -312,32 +422,20 @@
   }
 
   /* 海口详细：日落前后逐小时 */
-  function buildDetail(w, air, idx, iso, spot) {
+  function buildDetail(w, air, idx, iso, spot, mids) {
     var times = w.hourly.time;
     var hours = [];
     var start = Math.max(0, idx - 2);
     var end = Math.min(times.length - 1, idx + 2);
 
     for (var k = start; k <= end; k++) {
-      var aod = 0.2;
-      if (air && air.hourly && air.hourly.aerosol_optical_depth) {
-        var av = air.hourly.aerosol_optical_depth[k];
-        if (typeof av === "number") aod = av;
-      }
-      var m = {
-        high: w.hourly.cloud_cover_high[k],
-        mid: w.hourly.cloud_cover_mid[k],
-        low: w.hourly.cloud_cover_low[k],
-        rh: w.hourly.relative_humidity_2m[k],
-        pop: w.hourly.precipitation_probability[k],
-        aod: aod
-      };
+      var m = measureAt(w, air, k, mids);
       hours.push({
         t: times[k].slice(11, 16),
         high: m.high,
         mid: m.mid,
         low: m.low,
-        aod: aod,
+        aod: m.aod,
         pop: m.pop,
         score: scoreOf(m)
       });
@@ -354,11 +452,25 @@
   }
 
   /* ---------- 取数 ---------- */
-  function buildUrl(host, params) {
+  function buildUrl(host, params, models) {
     var lats = SPOTS.map(function (s) { return s.lat; }).join(",");
     var lons = SPOTS.map(function (s) { return s.lon; }).join(",");
-    return host + "?latitude=" + lats + "&longitude=" + lons + "&" + params +
+    var m = models && models.length ? "&models=" + models.join(",") : "";
+    return host + "?latitude=" + lats + "&longitude=" + lons + "&" + params + m +
            "&timezone=Asia%2FShanghai&forecast_days=2";
+  }
+
+  function modelsForRequest() {
+    if (!state.model || state.model === "multi") return MULTI_MODELS;
+    return [state.model];
+  }
+
+  /* 单个模式取一个变量；只有一个模式时 Open-Meteo 返回不带后缀的键 */
+  function fieldOf(hourly, base, mid, k) {
+    var a = hourly[base + "_" + mid] || hourly[base];
+    if (!a) return null;
+    var v = a[k];
+    return typeof v === "number" ? v : null;
   }
 
   /* 带超时 + 重试：手机网络下偶发挂住，不能让页面一直转圈 */
@@ -387,19 +499,35 @@
       });
   }
 
-  /* 取某一小时的观测集合 */
-  function measureAt(w, airObj, k) {
+  /* 取某一小时的观测集合（多模式时取平均） */
+  function measureAt(w, airObj, k, models) {
+    var mids = models || modelsForRequest();
+
+    function avg(base) {
+      var vals = [];
+      for (var i = 0; i < mids.length; i++) {
+        var v = fieldOf(w.hourly, base, mids[i], k);
+        if (v != null) vals.push(v);
+      }
+      if (!vals.length) return null;   /* 没数据 ≠ 0% 云 */
+      return vals.reduce(function (a, b) { return a + b; }, 0) / vals.length;
+    }
+
     var aod = 0.2;
     if (airObj && airObj.hourly && airObj.hourly.aerosol_optical_depth) {
-      var v = airObj.hourly.aerosol_optical_depth[k];
-      if (typeof v === "number") aod = v;
+      var v2 = airObj.hourly.aerosol_optical_depth[k];
+      if (typeof v2 === "number") aod = v2;
     }
+
     return {
-      high: w.hourly.cloud_cover_high[k],
-      mid: w.hourly.cloud_cover_mid[k],
-      low: w.hourly.cloud_cover_low[k],
-      rh: w.hourly.relative_humidity_2m[k],
-      pop: w.hourly.precipitation_probability[k],
+      high: avg("cloud_cover_high"),
+      mid: avg("cloud_cover_mid"),
+      low: avg("cloud_cover_low"),
+      rh: avg("relative_humidity_2m"),
+      pop: avg("precipitation_probability"),
+      t2m: avg("temperature_2m"),
+      td2m: avg("dew_point_2m"),
+      vis: avg("visibility"),
       aod: aod
     };
   }
@@ -408,33 +536,82 @@
   var CACHE = null;
   var CACHE_MS = 10 * 60 * 1000;
 
+  /* 优先读预生成的静态缓存（一天更新 6 次），读不到再现场请求 */
   function load(force) {
     if (!force && CACHE && Date.now() - CACHE.at < CACHE_MS) {
       compute(CACHE.weather, CACHE.air, CACHE.profs);
       return;
     }
 
+    if (!force && state.model === "multi") {
+      loadStatic();
+      return;
+    }
+    loadLive();
+  }
+
+  function loadStatic() {
     state.loading = true;
     state.error = null;
     render();
 
+    fetch("data/forecast.json", { cache: "no-cache" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (j) {
+        if (!j || !j.weather || !j.weather.length) throw new Error("缓存为空");
+        var at = j.generatedAt ? Date.parse(j.generatedAt) : NaN;
+        if (!isNaN(at) && Date.now() - at > 14 * 3600 * 1000) throw new Error("缓存过期");
+
+        CACHE = {
+          weather: j.weather,
+          air: j.air,
+          profs: j.prof,
+          at: isNaN(at) ? Date.now() : at,
+          fromStatic: true
+        };
+        state.fromStatic = true;
+        compute(CACHE.weather, CACHE.air, CACHE.profs);
+      })
+      .catch(function () {
+        state.fromStatic = false;
+        loadLive();
+      });
+  }
+
+  function loadLive() {
+    state.fromStatic = false;
+    state.loading = true;
+    state.error = null;
+    render();
+
+    var mids = modelsForRequest();
+
     var fUrl = buildUrl(
       "https://api.open-meteo.com/v1/forecast",
       "hourly=cloud_cover_low,cloud_cover_mid,cloud_cover_high,relative_humidity_2m," +
-      "precipitation_probability&daily=sunrise,sunset"
+      "precipitation_probability&daily=sunrise,sunset",
+      mids
     );
 
     var aUrl = buildUrl(
       "https://air-quality-api.open-meteo.com/v1/air-quality",
-      "hourly=aerosol_optical_depth"
+      "hourly=aerosol_optical_depth,pm2_5",
+      null
     );
 
-    /* 高空湿度剖面：失败也不影响主功能 */
+    /* 高空剖面只用 ECMWF：变量多，全模式取会太大 */
     var pUrl = buildUrl(
       "https://api.open-meteo.com/v1/forecast",
       "hourly=relative_humidity_850hPa,relative_humidity_700hPa," +
       "relative_humidity_500hPa,relative_humidity_400hPa," +
-      "boundary_layer_height,cape"
+      "temperature_850hPa,dew_point_850hPa,temperature_700hPa,dew_point_700hPa," +
+      "geopotential_height_850hPa,geopotential_height_700hPa," +
+      "temperature_2m,dew_point_2m,visibility," +
+      "boundary_layer_height,cape",
+      ["ecmwf_ifs025"]
     );
 
     Promise.all([
@@ -451,7 +628,7 @@
       if (air && !Array.isArray(air)) air = [air];
       if (profs && !Array.isArray(profs)) profs = [profs];
 
-      CACHE = { weather: weather, air: air, profs: profs, at: Date.now() };
+      CACHE = { weather: weather, air: air, profs: profs, at: Date.now(), fromStatic: false };
       compute(weather, air, profs);
     }).catch(function (e) {
       state.loading = false;
@@ -464,12 +641,22 @@
     state.detail = null;
     var cfg = KINDS[state.kind];
     var rows = [];
+    var mids = modelsForRequest();
 
     SPOTS.forEach(function (spot, i) {
       var w = weather[i] || weather[0];
       if (!w) return;
 
-      var dayList = w.daily && w.daily[cfg.key];
+      /* 多模式时 daily 也会带模式后缀，取第一个有的 */
+      var dayList = null;
+      if (w.daily) {
+        dayList = w.daily[cfg.key + "_" + mids[0]] || w.daily[cfg.key];
+        if (!dayList) {
+          for (var mi = 0; mi < mids.length; mi++) {
+            if (w.daily[cfg.key + "_" + mids[mi]]) { dayList = w.daily[cfg.key + "_" + mids[mi]]; break; }
+          }
+        }
+      }
       if (!dayList) return;
 
       var iso = dayList[Math.min(state.day, dayList.length - 1)];
@@ -478,20 +665,51 @@
 
       var airObj = air && air[i] ? air[i] : null;
 
-      var m = measureAt(w, airObj, idx);
+      var m = measureAt(w, airObj, idx, mids);
       m.time = iso.slice(11, 16);
 
-      /* 逐时平滑：文献指出模式对“逐时变率”预报能力差，
-         所以取前后各一小时加权，减少单点噪声 */
+      /* 温度、露点、能见度只从 ECMWF 剖面取（避免多模式请求过大） */
+      if (profs && profs[i] && profs[i].hourly) {
+        var ph0 = profs[i].hourly;
+        function one(name) {
+          var a = ph0[name] || ph0[name + "_ecmwf_ifs025"];
+          if (!a) return null;
+          var v = a[idx];
+          return typeof v === "number" ? v : null;
+        }
+        m.t2m = one("temperature_2m");
+        m.td2m = one("dew_point_2m");
+        m.vis = one("visibility");
+      }
+
+      /* 每个模式各算一遍：平均值当结果，标准差当“可信度” */
+      var perModel = [];
+      mids.forEach(function (mid) {
+        var mm = measureAt(w, airObj, idx, [mid]);
+        if (mm.high == null) return;          /* 这个模式没给数据，不参与统计 */
+        perModel.push(scoreOf(mm));
+      });
+      if (!perModel.length) perModel = [scoreOf(m)];
+
+      var mean = perModel.reduce(function (a, b) { return a + b; }, 0) / perModel.length;
+      var variance = perModel.reduce(function (a, b) { return a + (b - mean) * (b - mean); }, 0) / perModel.length;
+      var spread = Math.round(Math.sqrt(variance));
+
+      /* 逐时平滑 */
       var s1 = scoreOf(m);
-      var sPrev = idx > 0 ? scoreOf(measureAt(w, airObj, idx - 1)) : s1;
+      var sPrev = idx > 0 ? scoreOf(measureAt(w, airObj, idx - 1, mids)) : s1;
       var sNext = idx < w.hourly.time.length - 1
-        ? scoreOf(measureAt(w, airObj, idx + 1))
+        ? scoreOf(measureAt(w, airObj, idx + 1, mids))
         : s1;
 
-      var score = Math.round(0.25 * sPrev + 0.5 * s1 + 0.25 * sNext);
+      var score = 0.25 * sPrev + 0.5 * s1 + 0.25 * sNext;
 
-      /* 朝向匹配：太阳落在哪边，决定这个机位拍不拍得到 */
+      /* 模式分歧越大，分数越不可信 → 直接打折（最多扣 28%） */
+      if (mids.length > 1) {
+        score = score * (1 - Math.min(0.28, spread / 55));
+      }
+
+      /* 朝向匹配 */
       var sun = null;
       var face = 1;
       var ms = Date.parse(iso + ":00+08:00");
@@ -501,21 +719,48 @@
         score = Math.round(score * face);
       }
 
-      /* 用高空湿度剖面微调：区分「低云封挡」和「高层有云、低层干爽」 */
+      /* 高空湿度剖面 */
       var prof = profileOf(profs && profs[i], idx);
       if (prof) {
         score = clamp(Math.round(score * prof.mod), 0, 100);
       }
 
-      /* 时效折扣：明天比今天远，按文献 48–72h 有技巧上限再降一档 */
+      /* 时效折扣 */
       if (state.day === 1) {
         score = Math.round(score * 0.95);
       }
-
       score = clamp(score, 0, 96);
 
+      /* ---- 其它三种“值得跑”的条件 ---- */
+      var cape = null;
+      var z850 = null, t850 = null, td850 = null;
+      if (profs && profs[i] && profs[i].hourly) {
+        var ph = profs[i].hourly;
+        function pv(name) {
+          var a = ph[name] || ph[name + "_ecmwf_ifs025"];
+          if (!a) return null;
+          var v = a[idx];
+          return typeof v === "number" ? v : null;
+        }
+        cape = pv("cape");
+        z850 = pv("geopotential_height_850hPa");
+        t850 = pv("temperature_850hPa");
+        td850 = pv("dew_point_850hPa");
+      }
+
+      var rainNear = rainbowHint(spot, w, idx, prof, mids);
+      var clarity = clarityOf(m);
+      var rays = raysOf(m, sun);
+      var rainbow = rainbowOf(m, sun, cape, rainNear);
+
+      /* 云底：地面 LCL 当中低云底；850hPa 层推中层云底 */
+      var cbLow = lclMeters(m.t2m, m.td2m);
+      var cbMid = (z850 != null && t850 != null && td850 != null)
+        ? Math.round(z850 - lclMeters(t850, td850))
+        : null;
+
       if (spot.n === DETAIL_SPOT) {
-        state.detail = buildDetail(w, air && air[i], idx, iso, spot);
+        state.detail = buildDetail(w, air && air[i], idx, iso, spot, mids);
       }
 
       rows.push({
@@ -525,7 +770,14 @@
         level: levelOf(score),
         aodName: aodBand(m.aod).name,
         profLabel: prof ? prof.label : "",
-        rainbow: rainbowHint(spot, w, idx, prof),
+        rainbow: rainbow >= 35,
+        rainbowScore: rainbow,
+        clarity: clarity,
+        rays: rays,
+        spread: spread,
+        models: perModel.length,
+        cloudBaseLow: cbLow,
+        cloudBaseMid: cbMid,
         sunAz: sun ? Math.round(sun.az) : null,
         faceOff: face < 0.85,
         date: iso.slice(0, 10),
@@ -580,7 +832,8 @@
         ? "正在读取最新数据…"
         : state.rows.length
           ? spanTxt + "　｜　数据更新 " +
-            new Date(state.updatedAt || Date.now()).toLocaleString("zh-CN", { hour12: false })
+            new Date(state.updatedAt || Date.now()).toLocaleString("zh-CN", { hour12: false }) +
+            (state.fromStatic ? "（每 4 小时更新）" : "")
           : "";
     }
 
@@ -624,13 +877,27 @@
 
       main.appendChild(el("div", "fc-meta",
         KINDS[state.kind].word + " " + r.m.time +
-        (r.sunAz != null
-          ? " · 方位 " + r.sunAz + "°"
-          : "") +
+        (r.sunAz != null ? " · 方位 " + r.sunAz + "°" : "") +
         " · 高云 " + Math.round(r.m.high) + "%" +
+        " · 中云 " + Math.round(r.m.mid) + "%" +
         " · 低云 " + Math.round(r.m.low) + "%" +
+        (r.cloudBaseLow != null ? " · 云底≈" + r.cloudBaseLow + "m" : "") +
         " · AOD " + r.m.aod.toFixed(2) + "（" + r.aodName + "）" +
         " · 降雨 " + Math.round(r.m.pop) + "%"));
+
+      /* 四种“值得跑”的条件，用摄影圈的说法给结论 */
+      var chips = el("div", "fc-chips");
+      chips.appendChild(el("span", "fc-badge b-clear",
+        "通透 " + r.clarity + " · " + clarityLabel(r.clarity)));
+      chips.appendChild(el("span", "fc-badge b-rays",
+        "光柱 " + r.rays + " · " + raysLabel(r.rays)));
+      chips.appendChild(el("span", "fc-badge b-rainbow",
+        "彩虹 " + r.rainbowScore + " · " + rainbowLabel(r.rainbowScore)));
+      if (r.models > 1) {
+        chips.appendChild(el("span", "fc-badge b-spread" + (r.spread >= 18 ? " is-warn" : ""),
+          r.spread >= 18 ? "模式分歧 ±" + r.spread + "（分数已打折）" : "模式 ±" + r.spread));
+      }
+      main.appendChild(chips);
 
       if (r.profLabel) {
         main.appendChild(el("div", "fc-prof", "云层：" + r.profLabel));
@@ -998,6 +1265,28 @@
       });
       document.querySelectorAll("[data-kind]").forEach(function (b) {
         b.classList.toggle("is-on", b.getAttribute("data-kind") === state.kind);
+      });
+    }
+
+    /* 模式下拉：多模式 + 8 个单模式 */
+    var sel = document.getElementById("fc-model");
+    if (sel) {
+      sel.innerHTML = "";
+      var multi = document.createElement("option");
+      multi.value = "multi";
+      multi.textContent = "多模式（ECMWF+ICON+GFS）";
+      sel.appendChild(multi);
+      MODELS.forEach(function (m) {
+        var o = document.createElement("option");
+        o.value = m.id;
+        o.textContent = m.name + " · " + m.tag;
+        sel.appendChild(o);
+      });
+      sel.value = state.model;
+      sel.addEventListener("change", function () {
+        state.model = sel.value || "multi";
+        CACHE = null;
+        load(true);
       });
     }
 

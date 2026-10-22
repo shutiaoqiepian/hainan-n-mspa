@@ -1,0 +1,35 @@
+name: 更新霞光预报缓存
+
+# 一天 6 次：每 4 小时一次
+on:
+  schedule:
+    - cron: "5 1,5,9,13,17,21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 抓取并写入 data/forecast.json
+        run: node tools/build-cache.mjs
+
+      - name: 有变化才提交
+        run: |
+          git config user.name "18N-MSPA Bot"
+          git config user.email "bot@users.noreply.github.com"
+          if [ -n "$(git status --porcelain data/forecast.json)" ]; then
+            git add data/forecast.json
+            git commit -m "chore: update forecast cache"
+            git push
+          else
+            echo "no change"
+          fi

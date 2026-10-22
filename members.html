@@ -8,12 +8,12 @@
 <meta property="og:title" content="成员 · 北纬18度椰青摄联" />
 <meta property="og:description" content="北纬18度椰青摄联成员名录。" />
 <meta name="theme-color" content="#101113" />
-<link rel="canonical" href="https://hainan-n-mspa.netlify.app/members" />
+<link rel="canonical" href="https://hainan-n-mspa.pages.dev/members" />
 <meta property="og:type" content="website" />
-<meta property="og:url" content="https://hainan-n-mspa.netlify.app/members" />
+<meta property="og:url" content="https://hainan-n-mspa.pages.dev/members" />
 <meta property="og:site_name" content="北纬18度椰青摄联 18N-MSPA" />
 <meta property="og:locale" content="zh_CN" />
-<meta property="og:image" content="https://hainan-n-mspa.netlify.app/images/og-cover.jpg" />
+<meta property="og:image" content="https://hainan-n-mspa.pages.dev/images/og-cover.jpg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="海口世纪大桥火烧云 · 18N-MSPA" />
@@ -54,77 +54,75 @@
     <div class="wrap">
       <p class="eyebrow">Members</p>
       <h1 class="silver">成员</h1>
-      <p>部分成员。排名不分先后，每一位都在按下快门。</p>
+      <p>小组成员与交流群成员。排名不分先后，每一位都在按下快门。</p>
     </div>
   </section>
 
   <section class="section" style="padding-top:56px">
     <div class="wrap">
-      <div class="grid-3">
-
-        <article class="member glass reveal" data-delay="0">
-          <div class="name silver">張源湖</div>
-        </article>
-
-        <article class="member glass reveal" data-delay="40">
-          <div class="name silver">柯雷</div>
-        </article>
-
-        <article class="member glass reveal" data-delay="80">
-          <div class="name silver">是徐菜狗鸭</div>
-        </article>
-
-        <article class="member glass reveal" data-delay="0">
-          <div class="name silver">ERIC TIAN</div>
-        </article>
-
-        <article class="member glass reveal" data-delay="40">
-          <div class="name silver">森林 Cyber-traveller</div>
-        </article>
-
-        <article class="member glass reveal" data-delay="80">
-          <div class="name silver">蕭晨 WaterGhost</div>
-        </article>
-
-        <article class="member glass reveal" data-delay="0">
-          <div class="name silver">酹海</div>
-        </article>
-
-        <article class="member glass reveal" data-delay="40">
-          <div class="name silver">ECHOISM</div>
-        </article>
-
-        <article class="member glass reveal" data-delay="80">
-          <div class="name silver">mak</div>
-        </article>
-
-        <article class="member glass reveal" data-delay="0">
-          <div class="name silver">暴雪踏墨行</div>
-        </article>
-
-        <article class="member glass reveal" data-delay="40">
-          <div class="name silver">DynamicZZR</div>
-        </article>
-
-        <article class="member glass reveal" data-delay="80">
-          <div class="name silver">Raven</div>
-        </article>
-
-        <article class="member glass reveal" data-delay="0">
-          <div class="name silver">y-1</div>
-        </article>
-
-        <article class="member glass reveal" data-delay="40">
-          <div class="name silver">yms</div>
-        </article>
-
+      <div class="section-head reveal" style="margin-bottom:34px">
+        <p class="eyebrow">Core Team</p>
+        <h2 class="silver">小组成员</h2>
+        <p id="core-note">这些是日常一起蹲机位、一起维护这个站的人。</p>
       </div>
 
-      <p class="muted" style="margin-top:44px;font-size:14px;text-align:center">
-        名单持续补充中 · 如有遗漏请联系我们
-      </p>
+      <div class="member-grid" id="grid-core" data-group="core"></div>
     </div>
   </section>
+
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head reveal" style="margin-bottom:34px">
+        <p class="eyebrow">Community</p>
+        <h2 class="silver">交流群成员</h2>
+        <p id="community-note">名单持续补充中 · 想把自己加进来，见「加入我们」。</p>
+      </div>
+
+      <div class="member-grid" id="grid-community" data-group="community"></div>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
+      <div class="glass reveal" style="padding:34px 32px;text-align:center">
+        <p class="eyebrow" style="margin-bottom:12px">Name Card</p>
+        <p class="muted" style="margin:0 0 8px;font-size:14.5px;line-height:1.9">
+          每张成员卡都能生成一张<b>名片图</b>：带你的头衔、作品数，<br />
+          以及两个二维码——一个指向你的主页，一个指向公众号。
+        </p>
+        <p class="muted" style="margin:0;font-size:13px">
+          点任意成员卡上的「名片」按钮即可生成并下载，1080×1350，适合直接发朋友圈。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 名片预览 -->
+  <div class="card-modal" id="card-modal" role="dialog" aria-modal="true" aria-label="成员名片">
+    <div class="card-modal-inner">
+      <button class="card-modal-close" id="card-close" aria-label="关闭">✕</button>
+      <canvas id="card-canvas" width="1080" height="1350"></canvas>
+      <div class="card-modal-actions">
+        <button class="btn btn-primary" id="card-download" type="button">保存图片</button>
+        <button class="btn btn-ghost" id="card-share" type="button">复制主页链接</button>
+      </div>
+      <p class="card-modal-tip">手机上长按图片也能保存</p>
+    </div>
+  </div>
+
+  <!-- 申请头衔 -->
+  <div class="card-modal" id="title-modal" role="dialog" aria-modal="true" aria-label="申请头衔">
+    <div class="fb-panel glass" style="max-width:440px">
+      <button class="fb-close" id="title-close" aria-label="关闭">✕</button>
+      <p class="eyebrow">Title Request</p>
+      <h3 class="fb-title">申请头衔</h3>
+      <p class="fb-sub" id="title-sub"></p>
+      <input class="fb-input" id="title-input" maxlength="40"
+             placeholder="比如：风光 / 星野 / 航拍 / 人文" />
+      <button class="btn btn-primary fb-submit" id="title-copy" type="button">生成并复制申请</button>
+      <p class="fb-tip">头衔需要管理员审核。复制后发给管理员，通过后会加到你的卡片上。</p>
+    </div>
+  </div>
 
 </main>
 
@@ -149,6 +147,9 @@
   </div>
 </footer>
 
+<script src="assets/members.js"></script>
+<script src="assets/photos.js"></script>
+<script src="assets/qrcode.js"></script>
 <script src="assets/main.js"></script>
 </body>
 </html>

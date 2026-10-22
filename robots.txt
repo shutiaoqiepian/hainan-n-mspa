@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://hainan-n-mspa.netlify.app/sitemap.xml
+Sitemap: https://hainan-n-mspa.pages.dev/sitemap.xml
