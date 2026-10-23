@@ -1054,3 +1054,78 @@
   .fcd-row-head > span:nth-child(2),
   .fcd-row-head > span:nth-child(3) { display: none; }
 }
+
+/* ---------- 云层剖面：整行可点开判据说明（手机没有 hover）---------- */
+
+.fcp-item { display: flex; flex-direction: column; }
+
+button.fcp-row {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.18s ease;
+}
+
+button.fcp-row:hover { background: rgba(255, 255, 255, 0.045); }
+button.fcp-row.is-open { background: rgba(79, 179, 232, 0.09); }
+button.fcp-row:focus-visible { outline: 1px solid rgba(79, 179, 232, 0.6); outline-offset: 1px; }
+
+.fcp-item:last-of-type button.fcp-row { border-bottom: 0; }
+
+.fcp-caret {
+  grid-column: 4;
+  justify-self: end;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #8b949b;
+  font-style: normal;
+  font-size: 11.5px;
+  line-height: 18px;
+  text-align: center;
+  flex: 0 0 auto;
+}
+
+button.fcp-row.is-open .fcp-caret {
+  border-color: rgba(79, 179, 232, 0.6);
+  color: #9fd8f5;
+}
+
+/* 云种列现在要和问号按钮分列 */
+button.fcp-row {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1.35fr) minmax(0, 1.5fr) 20px;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 6px 6px 0;
+}
+
+.fcp-note {
+  margin: 2px 0 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(79, 179, 232, 0.07);
+  border-left: 2px solid rgba(79, 179, 232, 0.45);
+  font-size: 12.2px;
+  line-height: 1.85;
+  color: #b9c3ca;
+}
+
+.fcp-note b { color: #e3ebf0; }
+.fcp-crit { display: block; margin-top: 3px; color: #7d868d; }
+
+@media (max-width: 520px) {
+  button.fcp-row { grid-template-columns: 64px minmax(0, 1fr) 20px; }
+  .fcp-genus { grid-column: 2 / 3; }
+  .fcp-caret { grid-column: 3; grid-row: 1; }
+  .fcp-head { grid-template-columns: 64px minmax(0, 1fr) 20px; }
+  .fcp-head span:nth-child(3) { display: none; }
+  .fcp-note { font-size: 12.5px; padding: 10px 12px; }
+}
