@@ -204,7 +204,7 @@ function adviceOf(i: InterpretInput, low: number, pop: number, ell: number | nul
   if (ell != null && ell > 8) {
     return '现在太阳还高，' + kind + '还早；分数低主要是云和通透度不行，可以改天再看。'
   }
-  return '这一次不建议专程跑。如果本来就在海边，拍蓝调时刻或金星带（背对太阳那条粉蓝带）更稳。'
+  return '这一次不建议专程跑。如果本来就在海边，拍蓝调时刻或维纳斯带（背对太阳那条粉蓝带）更稳。'
 }
 
 /** 把解读压成一句给分享用的短话 */

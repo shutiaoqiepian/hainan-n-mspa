@@ -38,6 +38,12 @@ export const BRAND = {
   logoAlt: '18N-MSPA 北纬18度椰青摄联'
 } as const
 
+/**
+ * 登录页：已经建好但还没开放账号系统，所以先不放进主导航（避免点进去一头雾水）。
+ * 以后开通时，把这一项挪进 NAV_ITEMS 即可；页脚先留着入口。
+ */
+export const NAV_LOGIN: NavItem = { key: 'login', label: '登录', href: 'login.html' }
+
 export const FOOTER_LOCATION = '海南省 · 海口'
 
 /** 大多数页面用的版权行 */

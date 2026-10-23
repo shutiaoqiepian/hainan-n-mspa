@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 /** 与 vite.config.ts 里的 PAGES 一致 */
-const PAGES = ['index', 'about', 'gallery', 'forecast', 'members', 'join', '404']
+const PAGES = ['index', 'about', 'gallery', 'forecast', 'members', 'join', 'login', '404']
 /** 这些目录在仓库根目录本来就是源目录，不要被产物覆盖 */
 const SOURCE_DIRS = new Set(['src', 'tools', 'node_modules', 'data', 'images'])
 

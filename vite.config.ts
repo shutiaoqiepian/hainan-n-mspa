@@ -5,7 +5,7 @@ import { rootStatic } from './tools/plugins/root-static'
 import { publishRoot } from './tools/publish-root'
 
 /** 每个 HTML 都是独立入口：多页应用，产物文件名与线上 URL 一一对应 */
-const PAGES = ['index', 'about', 'gallery', 'forecast', 'members', 'join', '404']
+const PAGES = ['index', 'about', 'gallery', 'forecast', 'members', 'join', 'login', '404']
 
 export default defineConfig({
   base: '/',
