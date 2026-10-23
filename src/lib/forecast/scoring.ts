@@ -143,9 +143,10 @@ export function crepuscularOf(
   const low = m.low ?? 0
   const lowF = low <= 20 ? 1 : 1 - clamp((low - 20) / 75, 0, 1) * 0.82
 
-  /* 散射介质 */
+  /* 散射介质：和火烧云相反 —— 太干净反而看不见光条（pristine clear air produces
+     invisible rays），0.1–0.5 最好，>0.8 变漫射灰。见 research/rays.md B.3 */
   const aod = m.aod ?? 0.25
-  const aodF = aod < 0.08 ? 0.65 : aod <= 0.5 ? 1 : aod <= 0.8 ? 0.6 : 0.28
+  const aodF = aod < 0.05 ? 0.4 : aod < 0.1 ? 0.7 : aod <= 0.5 ? 1 : aod <= 0.8 ? 0.6 : 0.25
 
   const pop = m.pop ?? 0
   const popF = pop >= 80 ? 0.35 : pop >= 55 ? 0.6 : pop >= 30 ? 0.9 : 1
@@ -178,10 +179,12 @@ export function pillarOf(m: Measure, sun: SunPos | null, layers?: CloudLayer[]):
   if (!sun) return 0
   const el = sun.el
 
+  /* atoptics 的观测：太阳 9° 高仍有明显的下柱，日落后 30–60 分钟内光柱反而增强。
+     所以窗口比旧版宽得多：-6°~+20° 都可能，-2°~+8° 最好；见 research/rays.md A.2 */
   let sunF: number
-  if (el >= -8 && el <= 5) sunF = 1
-  else if (el > 5 && el <= 9) sunF = 0.55
-  else if (el < -8 && el >= -12) sunF = 0.3
+  if (el >= -2 && el <= 8) sunF = 1
+  else if (el > 8 && el <= 20) sunF = 1 - (el - 8) / 12 * 0.55        /* +8°→+20°：1 → 0.45 */
+  else if (el < -2 && el >= -6) sunF = 1 + (el + 2) / 4 * 0.45        /* -2°→-6°：1 → 0.55 */
   else sunF = 0
 
   /* 冰晶条件：高空温度 */
@@ -204,8 +207,9 @@ export function pillarOf(m: Measure, sun: SunPos | null, layers?: CloudLayer[]):
   const low = m.low ?? 0
   const lowF = low <= 15 ? 1 : low <= 30 ? 0.8 : low <= 55 ? 0.5 : 0.22
 
+  /* 光柱要“亮结构 + 暗背景”，空气越干净对比越强，AOD >0.5 开始明显吃亏 */
   const aod = m.aod ?? 0.25
-  const aodF = aod <= 0.5 ? 1 : aod <= 0.8 ? 0.65 : 0.35
+  const aodF = aod <= 0.3 ? 1 : aod <= 0.5 ? 0.8 : aod <= 0.8 ? 0.5 : 0.25
 
   const popF = (m.pop ?? 0) >= 70 ? 0.4 : 1
   const visF = m.vis == null ? 0.9 : m.vis >= 15 ? 1 : m.vis >= 8 ? 0.8 : 0.5
