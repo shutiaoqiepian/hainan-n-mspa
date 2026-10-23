@@ -1,0 +1,324 @@
+/* ============================================================
+   液态玻璃（Liquid Glass）
+   ------------------------------------------------------------
+   做法：不是「加更多模糊」，而是给玻璃面补上四层光学细节 ——
+     1. 底色：斜向渐变，让玻璃有厚度感（上亮下暗）；
+     2. 边缘：内侧 1px 高光 + 下沿暗边，模拟玻璃厚度折射；
+     3. 高光：跟随指针的径向柔光（--lg-x / --lg-y 由 JS 写入）；
+     4. 投影：柔和外阴影把卡片从背景里托起来。
+   全部用 CSS 变量，三套主题自动跟随；指针跟随只在「有鼠标」的设备开。
+   ============================================================ */
+
+:root {
+  --lg-blur: 26px;
+  --lg-sat: 185%;
+  --lg-x: 50%;
+  --lg-y: 0%;
+}
+
+/* ---------- 玻璃面 ---------- */
+
+.glass,
+.fc-row,
+.fc-timebar,
+.fcd,
+.fc-pheno,
+.fc-note,
+.fc-refs,
+.member,
+.login-card,
+.login-side,
+.fb-panel,
+.card,
+.step {
+  position: relative;
+  isolation: isolate;
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat));
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat));
+}
+
+.glass,
+.fc-timebar,
+.fcd,
+.fc-pheno,
+.fc-note,
+.fc-refs,
+.login-side,
+.fb-panel {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(
+      158deg,
+      color-mix(in srgb, var(--glass) 55%, var(--glass-hi)) 0%,
+      var(--glass) 44%,
+      color-mix(in srgb, var(--glass) 82%, var(--glass-lo)) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 var(--rim-top),
+    inset 0 -1px 0 var(--rim-bot),
+    inset 0 0 0 1px color-mix(in srgb, var(--line) 82%, transparent),
+    var(--shadow-soft);
+}
+
+/* 指针跟随的高光 */
+.glass::before,
+.fc-timebar::before,
+.fcd::before,
+.fc-pheno::before,
+.fc-note::before,
+.fc-refs::before,
+.login-side::before,
+.card::before,
+.step::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 95% at var(--lg-x) var(--lg-y),
+    var(--sheen) 0%,
+    transparent 58%
+  );
+  opacity: 0.45;
+  transition: opacity 0.4s ease;
+}
+
+.glass:hover::before,
+.fc-timebar:hover::before,
+.fc-note:hover::before,
+.card:hover::before,
+.step:hover::before { opacity: 0.8; }
+
+/* 顶沿的一线反光，玻璃的“厚度”主要靠它 */
+.glass::after,
+.fc-timebar::after,
+.fcd::after,
+.fc-pheno::after,
+.login-card::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 0;
+  height: 1px;
+  border-radius: 2px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--rim-top), transparent);
+  opacity: 0.8;
+}
+
+/* 悬停的轻微浮动：只给可点的卡片，纯文字面板不动，避免阅读时晃动 */
+.card,
+.step,
+.member {
+  transition: transform 0.35s cubic-bezier(0.22, 0.7, 0.2, 1),
+              box-shadow 0.35s ease, background-color 0.3s ease;
+}
+
+.card:hover,
+.step:hover,
+.member:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 0 var(--rim-top),
+    inset 0 0 0 1px color-mix(in srgb, var(--line) 82%, transparent),
+    var(--shadow-card);
+}
+
+/* ---------- 导航 ---------- */
+
+.nav {
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--line);
+  box-shadow:
+    inset 0 1px 0 var(--rim-top),
+    0 18px 40px -34px rgba(0, 0, 0, 0.7);
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
+  backdrop-filter: blur(26px) saturate(190%);
+}
+
+.nav ul a.is-active::after {
+  height: 2px;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-a) 70%, transparent);
+}
+
+/* ---------- 按钮 ---------- */
+
+.btn {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.22s cubic-bezier(0.22, 0.7, 0.2, 1),
+              box-shadow 0.28s ease, background 0.28s ease, border-color 0.28s ease;
+}
+
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: -40% -10%;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 34%,
+    color-mix(in srgb, #ffffff 34%, transparent) 48%,
+    transparent 62%
+  );
+  opacity: 0;
+  transform: translateX(-55%);
+  transition: opacity 0.3s ease, transform 0.65s cubic-bezier(0.22, 0.7, 0.2, 1);
+}
+
+.btn:hover::after { opacity: 0.75; transform: translateX(55%); }
+.btn:active { transform: translateY(0) scale(0.985); }
+
+.btn-primary {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 14px 34px color-mix(in srgb, var(--accent-a) 30%, transparent);
+}
+
+.btn-primary:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 20px 46px color-mix(in srgb, var(--accent-a) 38%, transparent);
+}
+
+.btn-ghost {
+  box-shadow: inset 0 1px 0 var(--rim-top), var(--shadow-soft);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  backdrop-filter: blur(20px) saturate(170%);
+}
+
+.btn-accent {
+  background: color-mix(in srgb, var(--accent-a) 15%, transparent);
+  border-color: color-mix(in srgb, var(--accent-a) 52%, transparent);
+  color: var(--link);
+  box-shadow: inset 0 1px 0 var(--rim-top);
+}
+
+.btn-accent:hover {
+  background: color-mix(in srgb, var(--accent-a) 24%, transparent);
+  border-color: color-mix(in srgb, var(--accent-a) 78%, transparent);
+}
+
+/* ---------- 胶囊 / 分段控件 ---------- */
+
+.chip,
+.fc-mode,
+.fc-badge,
+.fc-detail-btn,
+.fc-fb,
+.fc-share,
+.nav-toggle,
+.login-eye {
+  transition: color 0.22s ease, background 0.22s ease, border-color 0.22s ease,
+              box-shadow 0.22s ease, transform 0.22s ease;
+}
+
+.chip { box-shadow: inset 0 1px 0 var(--rim-top); }
+
+.chip.is-on {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 10px 24px color-mix(in srgb, var(--accent-a) 28%, transparent);
+}
+
+.fc-modes {
+  box-shadow: inset 0 1px 0 var(--rim-top), 0 8px 22px -18px rgba(0, 0, 0, 0.6);
+}
+
+.fc-mode.is-on {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 8px 20px color-mix(in srgb, var(--accent-a) 26%, transparent);
+}
+
+.nav-toggle:hover { transform: translateY(-1px); }
+
+/* ---------- 焦点、滚动条、图片 ---------- */
+
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent-a) 72%, transparent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--accent-a) 55%, var(--line-strong));
+  background-clip: content-box;
+}
+
+/* ---------- 主题切换按钮 ---------- */
+
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--fill-1);
+  box-shadow: inset 0 1px 0 var(--rim-top);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+}
+
+.theme-switch button {
+  width: 30px;
+  height: 26px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: background 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.theme-switch button:hover { color: var(--text); }
+
+.theme-switch button.is-on {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent-a) 18%, var(--glass-hover));
+  box-shadow:
+    inset 0 1px 0 var(--rim-top),
+    0 4px 12px -6px rgba(0, 0, 0, 0.5);
+}
+
+.theme-switch .ts-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.theme-switch .ts-dot[data-swatch="dark"]  { background: #101113; border: 1px solid rgba(255, 255, 255, 0.35); }
+.theme-switch .ts-dot[data-swatch="gray"]  { background: #3a3f45; border: 1px solid rgba(255, 255, 255, 0.3); }
+.theme-switch .ts-dot[data-swatch="light"] { background: #f4f5f7; border: 1px solid rgba(0, 0, 0, 0.25); }
+
+/* 手机：导航里只留图标，不放文字 */
+@media (max-width: 760px) {
+  .theme-switch { padding: 3px; }
+  .theme-switch button { width: 27px; height: 24px; }
+  .theme-switch .ts-label { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .step, .member, .btn, .btn::after { transition: none; }
+  .card:hover, .step:hover, .member:hover { transform: none; }
+}

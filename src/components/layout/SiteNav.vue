@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import ThemeSwitch from './ThemeSwitch.vue'
 import { BRAND, NAV_ITEMS, currentNavKey } from '@/data/site'
 
 /**
@@ -27,12 +28,6 @@ function onListClick(): void {
         <span class="mark silver">{{ BRAND.latin }}</span>
         <span class="cn">{{ BRAND.cn }}</span>
       </a>
-      <button
-        class="nav-toggle"
-        aria-label="打开菜单"
-        :aria-expanded="open ? 'true' : 'false'"
-        @click="toggle"
-      >{{ open ? '✕' : '☰' }}</button>
       <nav>
         <ul :class="{ 'is-open': open }" @click="onListClick">
           <li v-for="item in NAV_ITEMS" :key="item.key">
@@ -44,6 +39,15 @@ function onListClick(): void {
           </li>
         </ul>
       </nav>
+      <div class="nav-right">
+        <ThemeSwitch />
+        <button
+          class="nav-toggle"
+          aria-label="打开菜单"
+          :aria-expanded="open ? 'true' : 'false'"
+          @click="toggle"
+        >{{ open ? '✕' : '☰' }}</button>
+      </div>
     </div>
   </header>
 </template>

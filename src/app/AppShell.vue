@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
+import { onBeforeUnmount, onMounted, type Component } from 'vue'
 import SiteNav from '@/components/layout/SiteNav.vue'
 import SiteFooter from '@/components/layout/SiteFooter.vue'
 import Toast from '@/components/layout/Toast.vue'
 import { useReveal } from '@/composables/useReveal'
 import { COPYRIGHT } from '@/data/site'
+import { initTheme, useLiquidGlass } from '@/lib/theme'
 
 /**
  * 全站外壳：导航 + 主内容 + 页脚 + 轻提示。
@@ -19,6 +20,14 @@ const props = withDefaults(
 )
 
 useReveal()
+
+/* 主题在 HTML 内联脚本里已经设好，这里只补 meta 与指针高光 */
+let stopGlass: () => void = () => {}
+onMounted(() => {
+  initTheme()
+  stopGlass = useLiquidGlass()
+})
+onBeforeUnmount(() => stopGlass())
 
 const { copyright, afterMain, overlay } = props
 </script>

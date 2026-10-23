@@ -2,7 +2,7 @@
 
 .page-head {
   padding: 92px 0 62px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--fill-2);
 }
 
 .page-head h1 {
@@ -23,7 +23,7 @@
 
 .prose p {
   margin: 0 0 22px;
-  color: #c2c9cf;
+  color: var(--text-2);
   font-size: 16px;
   line-height: 1.95;
 }
@@ -37,7 +37,7 @@
 .prose ul {
   margin: 0 0 24px;
   padding-left: 20px;
-  color: #c2c9cf;
+  color: var(--text-2);
 }
 
 .prose li { margin-bottom: 10px; }

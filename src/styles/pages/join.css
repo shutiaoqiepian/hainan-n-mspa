@@ -2,7 +2,7 @@
 
 .auditor {
   padding: 14px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid var(--fill-2);
 }
 
 .auditor:last-of-type { border-bottom: 0; }
@@ -42,7 +42,7 @@
 .step p {
   margin: 0;
   font-size: 14.5px;
-  color: #c2c9cf;
+  color: var(--text-2);
   line-height: 1.9;
 }
 
@@ -55,7 +55,7 @@
 
 .rules li {
   font-size: 15px;
-  color: #c2c9cf;
+  color: var(--text-2);
   line-height: 1.9;
   padding-left: 6px;
 }

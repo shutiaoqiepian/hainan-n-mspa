@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -38,11 +38,27 @@
   "sameAs": []
 }
 </script>
-  <script type="module" crossorigin src="/assets/index-Dst1GBdb.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/createPage-3SaDWg2Z.js">
-  <link rel="modulepreload" crossorigin href="/assets/Lightbox.vue_vue_type_script_setup_true_lang-DrJ_8T4M.js">
+<script>
+  /* 首帧前定主题，避免刷新白闪。逻辑与 src/lib/theme.ts 保持一致；
+     ?theme=dark|gray|light 可临时预览（不写回 localStorage）。 */
+  (function () {
+    var t = 'dark';
+    try {
+      var q = new URLSearchParams(location.search).get('theme');
+      if (q === 'dark' || q === 'gray' || q === 'light') t = q;
+      else {
+        var s = localStorage.getItem('mspa:theme');
+        if (s === 'dark' || s === 'gray' || s === 'light') t = s;
+      }
+    } catch (e) { /* 隐私模式等，退回默认黑 */ }
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+  <script type="module" crossorigin src="/assets/index-CUMhbPlP.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/createPage-_wpCPlKY.js">
+  <link rel="modulepreload" crossorigin href="/assets/Lightbox.vue_vue_type_script_setup_true_lang-Dk1sNZGJ.js">
   <link rel="modulepreload" crossorigin href="/assets/photos-DEpcQi-P.js">
-  <link rel="stylesheet" crossorigin href="/assets/createPage-Bc2hAXP4.css">
+  <link rel="stylesheet" crossorigin href="/assets/createPage-EK_vfX2Y.css">
 </head>
 <body>
 

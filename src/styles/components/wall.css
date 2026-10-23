@@ -23,7 +23,7 @@
 .chip:hover { color: var(--text); background: var(--glass-hover); }
 
 .chip.is-on {
-  color: #06171d;
+  color: var(--accent-ink);
   background: linear-gradient(100deg, var(--accent-a), var(--accent-b));
   border-color: transparent;
   font-weight: 600;
@@ -40,7 +40,7 @@
   position: relative;
   border-radius: 16px;
   overflow: hidden;
-  background: #1a1d20;
+  background: var(--surface-solid);
   cursor: zoom-in;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }

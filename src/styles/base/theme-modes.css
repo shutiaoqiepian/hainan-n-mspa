@@ -1,0 +1,153 @@
+/* ============================================================
+   主题细节修正
+   ------------------------------------------------------------
+   tokens.css 已经把「颜色」抽象成变量，但有几处必须按主题微调：
+     · 白主题：白底白 logo 会看不见 → 反相；浅色数据条要加深；等级色要压暗
+     · 灰主题：整个站点走单色 → 给彩色元素加灰度滤镜
+   这些规则必须排在 liquid.css 之后（见 index.css 的 import 顺序）。
+   ============================================================ */
+
+/* ---------- 通用：logo 与图片 ---------- */
+
+/* logo 是白/浅色为主，白主题下反相成深色（hue-rotate 捞回原本的青色） */
+[data-theme="light"] .logo-mark img,
+[data-theme="light"] .footer .logo,
+[data-theme="light"] .about-logo {
+  filter: invert(1) hue-rotate(180deg) brightness(0.42) saturate(0.9);
+}
+
+/* 照片外面那层暗角/渐变在白主题里要更轻，否则照片发脏 */
+[data-theme="light"] .hero-media img {
+  filter: saturate(108%) contrast(1.02) brightness(1.05);
+}
+
+[data-theme="light"] .hero::after {
+  background:
+    linear-gradient(180deg,
+      rgba(12, 14, 17, 0.62) 0%,
+      rgba(12, 14, 17, 0.28) 16%,
+      rgba(12, 14, 17, 0.05) 34%,
+      rgba(12, 14, 17, 0.12) 52%,
+      rgba(12, 14, 17, 0.4) 74%,
+      rgba(18, 22, 27, 0.7) 90%,
+      var(--bg) 100%),
+    radial-gradient(120% 92% at 50% 42%, transparent 46%, rgba(12, 14, 17, 0.42) 100%);
+}
+
+/* ---------- 数据可视化：分数环与云量条 ---------- */
+
+.fc-score span { background: var(--surface-solid); }
+
+[data-theme="light"] .fc-score,
+[data-theme="light"] .fc-level {
+  filter: brightness(0.78) saturate(1.35);
+}
+
+[data-theme="light"] .fc-score span { filter: brightness(1.28); }
+
+[data-theme="light"] .fcp-row.is-high .fcp-bar > i { background: linear-gradient(90deg, #3f5f9c, #6b8cc4); }
+[data-theme="light"] .fcp-row.is-mid .fcp-bar > i { background: linear-gradient(90deg, #a5712a, #c99a52); }
+[data-theme="light"] .fcp-row.is-low .fcp-bar > i { background: linear-gradient(90deg, #5d666e, #8b949b); }
+
+[data-theme="light"] .fcp-bar > i { background: rgba(70, 80, 90, 0.55); }
+[data-theme="light"] .fcp-bar em { text-shadow: none; }
+
+[data-theme="light"] .fcp-genus small.fcp-lit { color: var(--warn); }
+[data-theme="light"] .b-pillar { color: #5b47a8; border-color: rgba(91, 71, 168, 0.32); }
+
+/* 徽章底色在白主题里往往太淡，统一加一点暗度 */
+[data-theme="light"] .b-clear { background: color-mix(in srgb, var(--accent-a) 14%, transparent); }
+[data-theme="light"] .b-rays { background: color-mix(in srgb, #d8a13a 18%, transparent); }
+[data-theme="light"] .b-rainbow { background: color-mix(in srgb, var(--accent-b) 16%, transparent); }
+[data-theme="light"] .b-spread.is-warn { background: color-mix(in srgb, var(--bad) 14%, transparent); }
+
+[data-theme="light"] .fc-fb,
+[data-theme="light"] .fc-share,
+[data-theme="light"] .fc-detail-btn {
+  background: var(--fill-1);
+  border-color: var(--line);
+}
+
+/* 白主题的 toast 用浅底深字 */
+[data-theme="light"] .fc-toast {
+  background: color-mix(in srgb, #ffffff 88%, transparent);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+[data-theme="light"] .site-toast {
+  background: color-mix(in srgb, #ffffff 90%, transparent);
+  color: var(--text);
+}
+
+/* ---------- 灰主题：整体单色 ---------- */
+
+[data-theme="gray"] .fc-score,
+[data-theme="gray"] .fc-level,
+[data-theme="gray"] .fc-badge,
+[data-theme="gray"] .fc-tag,
+[data-theme="gray"] .fc-legend i,
+[data-theme="gray"] .fcp-bar > i,
+[data-theme="gray"] .grad,
+[data-theme="gray"] .btn-primary,
+[data-theme="gray"] .chip.is-on,
+[data-theme="gray"] .fc-mode.is-on {
+  filter: grayscale(1);
+}
+
+/* 灰色主题下按钮的文字要够深，才能压在浅银渐变上 */
+[data-theme="gray"] .btn-primary,
+[data-theme="gray"] .chip.is-on,
+[data-theme="gray"] .fc-mode.is-on {
+  color: var(--accent-ink);
+}
+
+/* ---------- 白主题：滚动条与选中 ---------- */
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(16, 22, 28, 0.22);
+  background-clip: content-box;
+}
+
+/* ---------- 减少动效 ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme] .glass::before,
+  [data-theme] .card::before { transition: none; }
+}
+
+/* ---------- 灰主题：等级/分数在深灰底上要提亮 ---------- */
+
+[data-theme="gray"] .fc-level { filter: grayscale(1) brightness(1.5); }
+[data-theme="gray"] .fc-legend { color: var(--muted); }
+
+/* ---------- 主题切换时的过渡（只给大面，避免卡片 hover 动画被覆盖）---------- */
+
+.glass,
+.nav,
+.card,
+.step,
+.member,
+.login-card,
+.login-side,
+.fc-row,
+.fc-timebar,
+.fcd,
+.fc-pheno {
+  transition:
+    background-color 0.4s ease,
+    border-color 0.4s ease,
+    color 0.3s ease,
+    box-shadow 0.4s ease,
+    transform 0.35s cubic-bezier(0.22, 0.7, 0.2, 1);
+}
+
+/* 锚点跳转时给吸顶导航留出空间 */
+:target { scroll-margin-top: calc(var(--nav-h) + 16px); }
+
+/* 图片占位：加载前不要闪出一块突兀的纯白/纯黑 */
+.wall figure,
+.member-card,
+.photo {
+  background-color: var(--fill-1);
+}

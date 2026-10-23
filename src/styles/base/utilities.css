@@ -8,7 +8,7 @@
 }
 
 .silver {
-  background: linear-gradient(180deg, #ffffff 0%, #d7dde3 44%, #8b939b 100%);
+  background: var(--silver-image);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

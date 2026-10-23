@@ -63,7 +63,7 @@
     display: block;
     padding: 14px 0;
     font-size: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--fill-1);
   }
 
   .nav ul a.is-active::after { display: none; }
