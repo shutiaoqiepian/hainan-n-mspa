@@ -4,7 +4,7 @@
 
 <template>
       <details class="fc-refs glass">
-        <summary>参考文献与方法来源（10 条）</summary>
+        <summary>参考文献与方法来源（13 条）</summary>
         <ol>
 
           <li>
@@ -76,6 +76,32 @@
             <span class="ref-note">
               用于：太阳高度角与方位角计算（本站用同一套低精度解析式），
               进而决定机位朝向匹配与彩虹判据。
+            </span>
+          </li>
+
+          <li>
+            Wikipedia. «晕 (光学现象)».
+            <a href="https://zh.wikipedia.org/wiki/%E6%9A%88" target="_blank" rel="noopener">条目</a>
+            <span class="ref-note">
+              用于：22° 晕、幻日、环天顶弧、太阳光柱同属冰晶光学现象（片状冰晶水平取向 → 光柱；
+              随机取向 → 晕/幻日）。本站「太阳光柱」指数按这一机制单独建模，见 <code>research/rays.md</code>。
+            </span>
+          </li>
+
+          <li>
+            RMetS. <i>Crepuscular rays formed by the Western Ghats</i>. Weather, 1986.
+            <a href="https://rmets.onlinelibrary.wiley.com/doi/pdf/10.1002/j.1477-8696.1986.tb03862.x" target="_blank" rel="noopener">原文</a>
+            <span class="ref-note">
+              用于：云隙光（曙暮光条）的观测个例与形成条件——太阳贴近地平线、云的缝隙、
+              空气中要有散射介质；本站「云隙光」指数的太阳高度窗口与 AOD 窗口据此设定。
+            </span>
+          </li>
+
+          <li>
+            WMO. <i>International Cloud Atlas</i> 中的云种命名（含 Fluctus 迭浪云，2017 年新增）。
+            <a href="https://cloudatlas.wmo.int/" target="_blank" rel="noopener">cloudatlas.wmo.int</a>
+            <span class="ref-note">
+              用于：云种识别结果的中文命名与俗称对照（透光高积云＝鱼鳞云、波状层积云＝排骨云）。
             </span>
           </li>
 

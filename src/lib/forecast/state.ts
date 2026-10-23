@@ -3,6 +3,7 @@ import { copyText } from '@/composables/useCopyText'
 import { toast } from '@/composables/useToast'
 import { KINDS } from '@/data/forecast/levels'
 import { AREAS } from '@/data/forecast/spots'
+import { dateText, distanceText } from './time'
 import type { ForecastState, KindKey, Row } from './types'
 
 /* 整个页面共用一份状态：旧版也是模块级的 state 对象 */
@@ -14,24 +15,38 @@ export const state = reactive<ForecastState>({
   rows: [],
   detail: null,
   shareSpot: '',
+  openSpot: '',
   error: null,
   loading: false,
   updatedAt: 0,
-  fromStatic: false
+  fromStatic: false,
+  targetDate: '',
+  targetTime: '',
+  nextUpdateAt: 0
 })
 
 export function dayWord(d: number): string {
   return d === 1 ? '明天' : '今天'
 }
 
-/* 距离这个时刻还有多久 / 过去多久 */
-export function leadText(ms: number): string {
-  const h = (ms - Date.now()) / 3600000
-  const wd = dayWord(state.day) + KINDS[state.kind].word
-  if (h < -0.5) return wd + ' · 已过去 ' + Math.round(-h) + ' 小时 · 仅作回顾'
-  if (h < 1) return wd + ' · 就在 ' + Math.round(h * 60) + ' 分钟内'
-  if (h <= 24) return wd + ' · 约 ' + Math.round(h) + ' 小时 · 可信度较高'
-  return wd + ' · 约 ' + Math.round(h) + ' 小时 · 时效参考'
+/* 预报对象：'2026年10月23日 周五 · 今天日落 18:14' */
+export function targetText(): string {
+  if (!state.targetDate || !state.targetTime) return dayWord(state.day) + KINDS[state.kind].word
+  return dateText(state.targetDate) + ' · ' + dayWord(state.day) + KINDS[state.kind].word + ' ' + state.targetTime
+}
+
+/* 距离目标时刻还有多久：'还有 1 小时 42 分钟' */
+export function leadText(ms?: number): string {
+  const t = ms ?? (state.targetDate && state.targetTime
+    ? Date.parse(state.targetDate + 'T' + state.targetTime + ':00+08:00')
+    : NaN)
+  if (isNaN(t)) return ''
+  return distanceText(t)
+}
+
+/* 展开 / 收起某个机位的详情 */
+export function toggleSpot(name: string): void {
+  state.openSpot = state.openSpot === name ? '' : name
 }
 
 export function nextUpcoming(): { day: number; kind: KindKey } {
@@ -56,8 +71,9 @@ export function initStateFromUrl(): void {
     if (d === '0' || d === '1') { state.day = Number(d); picked = true }
     const a = q.get('a')
     if (a && AREAS.indexOf(a) >= 0) state.area = a
+    /* 分享链接直接展开那个机位的详情 */
     const s = q.get('s')
-    if (s) state.shareSpot = s
+    if (s) { state.shareSpot = s; state.openSpot = s }
   } catch {
     /* 忽略 */
   }

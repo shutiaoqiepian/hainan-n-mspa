@@ -1,13 +1,17 @@
 import { KINDS, aodBand, levelOf } from '@/data/forecast/levels'
+import { matchPhenomena } from '@/data/forecast/phenomena'
 import { MULTI_MODELS } from '@/data/forecast/models'
 import { DETAIL_SPOT, SPOTS } from '@/data/forecast/spots'
+import { cloudProfile, syntheticProfile } from './clouds'
+import { interpret } from './interpret'
 import {
-  clarityOf, clamp, lclMeters, profileOf, rainbowHint, rainbowOf, raysOf, scoreOf
+  clarityOf, clamp, crepuscularOf, lclMeters, pillarOf, profileOf, rainbowHint, rainbowOf, scoreOf
 } from './scoring'
 import { state } from './state'
 import { faceMatch, sunPosition } from './sun'
+import { nextUpdateMs, parseIso } from './time'
 import type {
-  CacheData, Detail, Measure, RawData, RawPoint, RawSeries, Row, Spot, SunPos
+  CacheData, CloudLayer, Detail, DetailHour, Measure, RawData, RawPoint, RawSeries, Row, Spot, SpotDetail, StaticFile, SunPos
 } from './types'
 
 /* ---------- 工具 ---------- */
@@ -206,15 +210,12 @@ function loadLive(): void {
     null
   )
 
-  /* 高空剖面只用 ECMWF：变量多，全模式取会太大 */
+  /* 高空剖面只用 ECMWF：变量多，全模式取会太大。
+     气压层变量是「云种识别」的原料（SunsetBot 大气截面图的同款思路）：
+     925/850/700/600/500/300/200 hPa 的云量、湿度、温度、露点、位势高度。 */
   const pUrl = buildUrl(
     'https://api.open-meteo.com/v1/forecast',
-    'hourly=relative_humidity_850hPa,relative_humidity_700hPa,' +
-    'relative_humidity_500hPa,relative_humidity_400hPa,' +
-    'temperature_850hPa,dew_point_850hPa,temperature_700hPa,dew_point_700hPa,' +
-    'geopotential_height_850hPa,geopotential_height_700hPa,' +
-    'temperature_2m,dew_point_2m,visibility,' +
-    'boundary_layer_height,cape',
+    'hourly=' + PROFILE_VARS,
     ['ecmwf_ifs025']
   )
 
@@ -241,13 +242,19 @@ function loadLive(): void {
   })
 }
 
-/* 静态缓存文件的字段（旧版 tools/build-cache.mjs 生成） */
-interface StaticFile {
-  generatedAt?: string
-  weather?: RawData
-  air?: RawData | null
-  prof?: RawData | null
-}
+/* 气压层变量清单：多层 × 多要素，全部来自 ECMWF IFS。
+   与 tools/build-cache.mjs 里的 PROFILE_VARS 必须一致。 */
+export const PROFILE_VARS = [
+  ...[1000, 925, 850, 700, 600, 500, 300, 200].flatMap((lv) => [
+    'cloud_cover_' + lv + 'hPa',
+    'relative_humidity_' + lv + 'hPa',
+    'temperature_' + lv + 'hPa',
+    'geopotential_height_' + lv + 'hPa'
+  ]),
+  ...[1000, 925, 850, 700].flatMap((lv) => ['dew_point_' + lv + 'hPa']),
+  'temperature_2m', 'dew_point_2m', 'visibility',
+  'boundary_layer_height', 'cape', 'precipitation', 'wind_speed_10m'
+].join(',')
 
 /* 剖面里的单点值：多模式时键名带后缀，优先取不带后缀的 */
 function profField(pr: RawPoint, name: string, idx: number): number | null {
@@ -259,40 +266,110 @@ function profField(pr: RawPoint, name: string, idx: number): number | null {
   return typeof v === 'number' ? v : null
 }
 
-/* 海口详细：日落前后逐小时 */
-function buildDetail(
-  w: RawPoint,
-  air: RawPoint | null | undefined,
-  idx: number,
-  iso: string,
-  spot: Spot,
-  mids: string[]
-): Detail {
+/* 逐小时：目标时刻前后各 2 小时（趋势图 / 详情表用） */
+function buildHours(w: RawPoint, air: RawPoint | null | undefined, idx: number, mids: string[]): DetailHour[] {
   const times = hourTimes(w)
-  const hours: Detail['hours'] = []
+  const hours: DetailHour[] = []
   const start = Math.max(0, idx - 2)
   const end = Math.min(times.length - 1, idx + 2)
 
   for (let k = start; k <= end; k++) {
-    const m = measureAt(w, air, k, mids)
+    const mm = measureAt(w, air, k, mids)
     hours.push({
       t: times[k].slice(11, 16),
-      high: m.high,
-      mid: m.mid,
-      low: m.low,
-      aod: m.aod,
-      pop: m.pop,
-      score: scoreOf(m)
+      high: mm.high,
+      mid: mm.mid,
+      low: mm.low,
+      aod: mm.aod,
+      pop: mm.pop,
+      score: scoreOf(mm)
     })
   }
+  return hours
+}
 
-  const t = iso.slice(11, 16)
+/* 一个机位的完整详情：云种剖面 + 自动解读 + 拍摄题材 + 逐小时 */
+function buildSpotDetail(o: {
+  spot: Spot
+  w: RawPoint
+  air: RawPoint | null | undefined
+  idx: number
+  iso: string
+  mids: string[]
+  m: Measure
+  sun: SunPos | null
+  score: number
+  spread: number
+  faceOff: boolean
+  cape: number | null
+  crep: number
+  pillar: number
+  clarity: number
+  rainbow: number
+  cbLow: number | null
+  layers: CloudLayer[]
+  sheets: ReturnType<typeof cloudProfile>['sheets']
+  genusText: string
+  profLabel: string
+  profMod: number
+}): SpotDetail {
+  const p = parseIso(o.iso)
+  const it = interpret({
+    kind: state.kind,
+    score: o.score,
+    levelName: levelOf(o.score).name,
+    m: o.m,
+    sun: o.sun,
+    spread: o.spread,
+    faceOff: o.faceOff,
+    face: o.spot.face,
+    cloudBaseLow: o.cbLow,
+    layers: o.layers,
+    cape: o.cape,
+    day: state.day,
+    profileLabel: o.profLabel,
+    profileMod: o.profMod
+  })
+
+  const tips = matchPhenomena({
+    kind: state.kind,
+    score: o.score,
+    high: o.m.high ?? 0,
+    mid: o.m.mid ?? 0,
+    low: o.m.low ?? 0,
+    aod: o.m.aod,
+    pop: o.m.pop ?? 0,
+    rh: o.m.rh,
+    vis: o.m.vis,
+    cape: o.cape,
+    sunEl: o.sun ? o.sun.el : null,
+    crep: o.crep,
+    pillar: o.pillar,
+    clarity: o.clarity,
+    rainbow: o.rainbow,
+    cloudBaseLow: o.cbLow,
+    spread: o.spread,
+    faceOff: o.faceOff,
+    layers: o.layers,
+    t2m: o.m.t2m
+  })
+
+  const t = p.time
   return {
-    spot: spot,
+    spot: o.spot,
+    date: p.date,
+    weekday: p.weekday,
     time: t,
+    sunEl: o.sun ? Math.round(o.sun.el * 10) / 10 : null,
+    sunAz: o.sun ? Math.round(o.sun.az) : null,
     golden: addMin(t, -30) + ' – ' + t,
     blue: addMin(t, 14) + ' – ' + addMin(t, 34),
-    hours: hours
+    layers: o.layers,
+    sheets: o.sheets,
+    genusText: o.genusText,
+    interpret: it,
+    tips: tips,
+    hourly: buildHours(o.w, o.air, o.idx, o.mids)
   }
 }
 
@@ -336,6 +413,18 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null): 
       m.vis = profField(pr, 'visibility', idx)
     }
 
+    /* 太阳位置与机位朝向。
+       评分用整点（和逐时数据同口径），详情面板用精确日出/日落时刻。 */
+    let sun: SunPos | null = null
+    let face = 1
+    const ms = Date.parse(iso + ':00+08:00')
+    if (!isNaN(ms)) sun = sunPosition(ms, spot.lat, spot.lon)
+    if (sun) face = faceMatch(spot, sun.az)
+
+    let sunExact: SunPos | null = sun
+    const msExact = Date.parse(iso + (iso.length === 16 ? ':00' : '') + '+08:00')
+    if (!isNaN(msExact)) sunExact = sunPosition(msExact, spot.lat, spot.lon)
+
     /* 每个模式各算一遍：平均值当结果，标准差当“可信度” */
     let perModel: number[] = []
     mids.forEach((mid) => {
@@ -364,28 +453,17 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null): 
     }
 
     /* 朝向匹配 */
-    let sun: SunPos | null = null
-    let face = 1
-    const ms = Date.parse(iso + ':00+08:00')
-    if (!isNaN(ms)) sun = sunPosition(ms, spot.lat, spot.lon)
-    if (sun) {
-      face = faceMatch(spot, sun.az)
-      score = Math.round(score * face)
-    }
+    if (sun) score = Math.round(score * face)
 
-    /* 高空湿度剖面 */
+    /* 高空湿度剖面（旧口径，保留以便和历史分数对比） */
     const prof = profileOf(pr, idx)
-    if (prof) {
-      score = clamp(Math.round(score * prof.mod), 0, 100)
-    }
+    if (prof) score = clamp(Math.round(score * prof.mod), 0, 100)
 
     /* 时效折扣 */
-    if (state.day === 1) {
-      score = Math.round(score * 0.95)
-    }
+    if (state.day === 1) score = Math.round(score * 0.95)
     score = clamp(score, 0, 96)
 
-    /* ---- 其它三种“值得跑”的条件 ---- */
+    /* ---- 其它几种“值得跑”的条件 ---- */
     let cape: number | null = null
     let z850: number | null = null
     let t850: number | null = null
@@ -397,9 +475,9 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null): 
       td850 = profField(pr, 'dew_point_850hPa', idx)
     }
 
+    const pop = m.pop ?? 0
     const rainNear = rainbowHint(spot, times, idx, prof, (k) => measureAt(w, null, k, mids).pop)
     const clarity = clarityOf(m)
-    const rays = raysOf(m, sun)
     const rainbow = rainbowOf(m, sun, cape, rainNear)
 
     /* 云底：地面 LCL 当中低云底；850hPa 层推中层云底 */
@@ -410,9 +488,30 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null): 
       cbMid = lcl850 != null ? Math.round(z850 - lcl850) : null
     }
 
-    if (spot.n === DETAIL_SPOT) {
-      state.detail = buildDetail(w, air && air[i], idx, iso, spot, mids)
+    /* 云层剖面与云种（SunsetBot 大气截面图的同款思路） */
+    const prof2 = cloudProfile(pr, idx, { pop, cape, sunEl: sun ? sun.el : null })
+    let layers = prof2.layers
+    let sheets = prof2.sheets
+    let genusText = prof2.genusText
+    if (!layers.length) {
+      const syn = syntheticProfile(m, pr, idx, cape, pop)
+      layers = syn.layers
+      sheets = syn.sheets
+      genusText = syn.genusText
     }
+
+    /* 光柱与云隙光分开算（用精确时刻的太阳高度） */
+    const crep = crepuscularOf(m, sunExact, { face, cloudBase: cbLow })
+    const pillar = pillarOf(m, sunExact, layers)
+    const faceOff = face < 0.85
+
+    const detail = buildSpotDetail({
+      spot, w, air: airObj, idx, iso, mids, m, sun: sunExact, score, spread, faceOff,
+      cape, crep, pillar, clarity, rainbow, cbLow, layers, sheets, genusText,
+      profLabel: prof ? prof.label : '', profMod: prof ? prof.mod : 1
+    })
+
+    if (spot.n === DETAIL_SPOT) state.detail = detail
 
     rows.push({
       spot: spot,
@@ -424,15 +523,17 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null): 
       rainbow: rainbow >= 35,
       rainbowScore: rainbow,
       clarity: clarity,
-      rays: rays,
+      rays: crep,
+      pillar: pillar,
       spread: spread,
       models: perModel.length,
       cloudBaseLow: cbLow,
       cloudBaseMid: cbMid,
       sunAz: sun ? Math.round(sun.az) : null,
-      faceOff: face < 0.85,
+      faceOff: faceOff,
       date: iso.slice(0, 10),
-      ms: ms
+      ms: ms,
+      detail: detail
     })
   })
 
@@ -447,4 +548,12 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null): 
   state.loading = false
   state.error = null
   state.updatedAt = CACHE ? CACHE.at : Date.now()
+  state.nextUpdateAt = nextUpdateMs()
+
+  /* 预报目标：所有机位同一天，取第一行的日期与时刻 */
+  const first = rows[0]
+  if (first && first.detail) {
+    state.targetDate = first.detail.date
+    state.targetTime = first.detail.time
+  }
 }

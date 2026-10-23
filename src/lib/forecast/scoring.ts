@@ -1,5 +1,5 @@
 import { aodBand } from '@/data/forecast/levels'
-import type { Measure, Profile, RawPoint, Spot, SunPos } from '@/lib/forecast/types'
+import type { CloudLayer, Measure, Profile, RawPoint, Spot, SunPos } from '@/lib/forecast/types'
 import { sunElevation } from './sun'
 
 export function clamp(v: number, a: number, b: number): number {
@@ -95,30 +95,125 @@ export function clarityOf(m: Measure): number {
   return Math.round(clamp(100 * aodF * visF * cloudF * lowF, 0, 100))
 }
 
-/* ---------- 曙暮光条（“耶稣光” / 丁达尔）----------
-   条件：太阳贴近地平线（或刚落到地平线下），中高层云有缝隙，
-   低云不封死地平线，空气里有一点散射颗粒但别太脏。 */
-export function raysOf(m: Measure, sun: SunPos | null): number {
+/* ---------- 云隙光（丁达尔 / 曙暮光条 / 耶稣光）----------
+   和「太阳光柱」是两回事。旧版把两者混在一个“光柱”指数里，
+   所以数值总是不对味。分开算：
+
+   云隙光 = 太阳低 + 云有缝隙 + 低云不封地平线 + 空气里有散射介质
+     · 太阳高度：-6°~+4° 最出戏（光条最长、明暗对比最强）；
+       高于 18° 基本只剩普通斜射光。
+     · 缝隙：一片云的“边缘密度”在云量 50% 附近最大（4c(1-c)），
+       全晴没云没光条、全阴没有缝。中/高/低云各算一次取最大。
+     · 低云：挡地平线就看不到光条落点。
+     · 介质：AOD 太低（<0.08）空气太干净，光路看不见；
+       0.15–0.5 最好；>0.8 变成漫射灰。
+     · 降水：小雨柱反而能出“耶稣光打雨幕”，暴雨则全糊。 */
+function edgeDensity(cover: number | null): number {
+  if (cover == null) return 0
+  const c = clamp(cover, 0, 100) / 100
+  return c < 0.08 ? 0 : 4 * c * (1 - c)
+}
+
+export function crepuscularOf(
+  m: Measure,
+  sun: SunPos | null,
+  opts?: { face?: number; cloudBase?: number | null }
+): number {
   if (!sun) return 0
   const el = sun.el
-  let sunF = 0
-  if (el >= -6 && el <= 3) sunF = 1
-  else if (el > 3 && el <= 10) sunF = 0.85
-  else if (el > 10 && el <= 18) sunF = 0.5
-  else if (el < -6 && el >= -10) sunF = 0.45
-  else sunF = 0.15
 
-  const gapSrc = Math.max(m.mid || 0, m.high || 0)
-  const gapF = gapSrc < 10 ? 0.35 : gapSrc <= 80 ? 1 : 0.4
+  let sunF: number
+  if (el >= -6 && el <= 4) sunF = 1
+  else if (el > 4 && el <= 10) sunF = 0.8
+  else if (el > 10 && el <= 18) sunF = 0.42
+  else if (el < -6 && el >= -10) sunF = 0.55
+  else sunF = 0.08
 
-  const lowF = 1 - clamp(((m.low || 0) - 40) / 60, 0, 1) * 0.8
+  /* 缝隙：中云、高云、低云各算一次，取最大（光条可以从任何一层漏下来）。
+     另外要有“云”这件事本身：全晴 5% 云量谈不上云缝，最多算孤立积云的偶然光柱。 */
+  const gapMid = edgeDensity(m.mid)
+  const gapHigh = edgeDensity(m.high)
+  const gapLow = edgeDensity(m.low) * 0.75
+  const gap = Math.max(gapMid, gapHigh, gapLow)
+  const mostCover = Math.max(m.high ?? 0, m.mid ?? 0, m.low ?? 0)
+  const presence = clamp(mostCover / 30, 0, 1)
+  const gapF = presence * (0.15 + 0.85 * gap)
+
+  /* 低云压住地平线：光条落点被吃掉 */
+  const low = m.low ?? 0
+  const lowF = low <= 20 ? 1 : 1 - clamp((low - 20) / 75, 0, 1) * 0.82
+
+  /* 散射介质 */
+  const aod = m.aod ?? 0.25
+  const aodF = aod < 0.08 ? 0.65 : aod <= 0.5 ? 1 : aod <= 0.8 ? 0.6 : 0.28
+
+  const pop = m.pop ?? 0
+  const popF = pop >= 80 ? 0.35 : pop >= 55 ? 0.6 : pop >= 30 ? 0.9 : 1
+
+  const vis = m.vis
+  const visF = vis == null ? 0.9 : vis >= 20 ? 1 : vis >= 10 ? 0.85 : vis >= 5 ? 0.6 : 0.35
+
+  /* 低云云底太低时，云自己也成了“墙”，光条落不下来 */
+  const cb = opts?.cloudBase ?? null
+  const baseF = cb == null ? 1 : cb < 250 ? 0.55 : cb < 500 ? 0.75 : cb < 900 ? 0.9 : 1
+
+  /* 朝向：面向太阳才看得到顺光光条；背对只剩反云隙光 */
+  const faceF = opts?.face != null ? 0.55 + 0.45 * clamp(opts.face, 0, 1) : 1
+
+  /* 0.85 的保守系数：几何上的“有缝”只是必要条件，不等于一定出片。
+     没有历史回测，所以宁可低估；上限压到 95，避免出现“满分光柱”。 */
+  const v = 100 * sunF * gapF * lowF * aodF * popF * visF * baseF * faceF
+  return Math.round(clamp(v * 0.85, 0, 95))
+}
+
+/* ---------- 太阳光柱（日柱 / sun pillar）----------
+   冰晶云里的片状冰晶把太阳光镜面反射成一根竖直光柱。
+   判据（和云隙光完全不同，旧版没算这一块）：
+     · 太阳高度 -8°~+5°：光柱高度随太阳高度变化，最低时最长
+     · 必须是真的冰晶云：500 hPa ≤ -18℃、300 hPa ≤ -35℃
+     · 高空云要薄：云量 10–60% 最好（太厚挡光，太薄不够亮）
+     · 低云要少：< 25%，否则把太阳和光柱一起挡掉
+     · 空气别太脏：AOD < 0.5，否则对比度被糊掉 */
+export function pillarOf(m: Measure, sun: SunPos | null, layers?: CloudLayer[]): number {
+  if (!sun) return 0
+  const el = sun.el
+
+  let sunF: number
+  if (el >= -8 && el <= 5) sunF = 1
+  else if (el > 5 && el <= 9) sunF = 0.55
+  else if (el < -8 && el >= -12) sunF = 0.3
+  else sunF = 0
+
+  /* 冰晶条件：高空温度 */
+  let iceF = 0.75
+  if (layers && layers.length) {
+    const t500 = layers.find((l) => l.level === 500)?.t ?? null
+    const t300 = layers.find((l) => l.level === 300)?.t ?? null
+    if (t500 != null && t500 <= -18) iceF = 1
+    else if (t500 != null && t500 > -10) iceF = 0.45
+    if (t300 != null && t300 > -30) iceF = Math.min(iceF, 0.5)
+  }
+
+  const highCover = m.high ?? 0
+  const highF = highCover < 8 ? 0.15
+    : highCover <= 30 ? 0.75
+      : highCover <= 60 ? 1
+        : highCover <= 80 ? 0.6
+          : 0.3
+
+  const low = m.low ?? 0
+  const lowF = low <= 15 ? 1 : low <= 30 ? 0.8 : low <= 55 ? 0.5 : 0.22
 
   const aod = m.aod ?? 0.25
-  const aodF = aod < 0.1 ? 0.7 : aod <= 0.45 ? 1 : aod <= 0.8 ? 0.6 : 0.3
+  const aodF = aod <= 0.5 ? 1 : aod <= 0.8 ? 0.65 : 0.35
 
-  const popF = (m.pop || 0) >= 60 ? 0.5 : 1
+  const popF = (m.pop ?? 0) >= 70 ? 0.4 : 1
+  const visF = m.vis == null ? 0.9 : m.vis >= 15 ? 1 : m.vis >= 8 ? 0.8 : 0.5
 
-  return Math.round(clamp(100 * sunF * gapF * lowF * aodF * popF, 0, 100))
+  /* 光柱是罕见现象：几何条件齐了也只给“有机会”级别，
+     再乘 0.6 压一档，上限 88（不出现满分）。 */
+  const v = 100 * sunF * iceF * highF * lowF * aodF * popF * visF
+  return Math.round(clamp(v * 0.6, 0, 88))
 }
 
 /* ---------- 彩虹 ----------
@@ -146,7 +241,10 @@ export function clarityLabel(v: number): string {
   return v >= 85 ? '水晶天' : v >= 70 ? '玻璃天' : v >= 55 ? '通透' : v >= 40 ? '一般' : '发灰'
 }
 export function raysLabel(v: number): string {
-  return v >= 70 ? '耶稣光预备' : v >= 45 ? '可能有光柱' : v >= 25 ? '碰运气' : '难'
+  return v >= 70 ? '很可能出现' : v >= 45 ? '有机会' : v >= 25 ? '可以蹲一蹲' : '基本没有'
+}
+export function pillarLabel(v: number): string {
+  return v >= 55 ? '光柱很可能' : v >= 35 ? '有机会' : v >= 20 ? '看运气' : '基本没有'
 }
 export function rainbowLabel(v: number): string {
   return v >= 60 ? '彩虹窗口' : v >= 35 ? '可能有虹' : v >= 15 ? '概率低' : '无'

@@ -78,6 +78,26 @@ const lon = SPOTS.map(s => s.lon).join(",");
 const LL = `latitude=${lat}&longitude=${lon}`;
 const TZ = "timezone=Asia%2FShanghai&forecast_days=2";
 
+/* 气压层变量：云种识别与「大气截面图」的原料。
+   必须与 src/lib/forecast/api.ts 的 PROFILE_VARS 保持一致（顺序无所谓，集合要一样）。 */
+const PROFILE_LEVELS = [1000, 925, 850, 700, 600, 500, 300, 200];
+const PROFILE_VARS = [
+  ...PROFILE_LEVELS.flatMap((lv) => [
+    `cloud_cover_${lv}hPa`,
+    `relative_humidity_${lv}hPa`,
+    `temperature_${lv}hPa`,
+    `geopotential_height_${lv}hPa`
+  ]),
+  ...[1000, 925, 850, 700].map((lv) => `dew_point_${lv}hPa`),
+  "temperature_2m",
+  "dew_point_2m",
+  "visibility",
+  "boundary_layer_height",
+  "cape",
+  "precipitation",
+  "wind_speed_10m"
+].join(",");
+
 const URLS = {
   weather:
     `https://api.open-meteo.com/v1/forecast?${LL}` +
@@ -85,10 +105,7 @@ const URLS = {
     `&daily=sunrise,sunset&models=${MULTI.join(",")}&${TZ}`,
   prof:
     `https://api.open-meteo.com/v1/forecast?${LL}` +
-    `&hourly=relative_humidity_850hPa,relative_humidity_700hPa,relative_humidity_500hPa,relative_humidity_400hPa,` +
-    `temperature_850hPa,dew_point_850hPa,temperature_700hPa,dew_point_700hPa,` +
-    `geopotential_height_850hPa,geopotential_height_700hPa,` +
-    `temperature_2m,dew_point_2m,visibility,boundary_layer_height,cape` +
+    `&hourly=${PROFILE_VARS}` +
     `&models=ecmwf_ifs025&${TZ}`,
   air:
     `https://air-quality-api.open-meteo.com/v1/air-quality?${LL}` +
