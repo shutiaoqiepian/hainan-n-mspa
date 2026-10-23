@@ -174,7 +174,7 @@
   border-radius: 50%;
   border: 1px solid var(--line-strong);
   background: var(--fill-2);
-  color: #fff;
+  color: var(--text);
   font-size: 20px;
   line-height: 1;
   cursor: pointer;

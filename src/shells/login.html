@@ -38,6 +38,8 @@
       }
     } catch (e) { /* 隐私模式等，退回默认黑 */ }
     document.documentElement.setAttribute('data-theme', t);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', t === 'light' ? '#f1f2f4' : (t === 'gray' ? '#26292d' : '#0c0d0f'));
   })();
 </script>
 </head>
