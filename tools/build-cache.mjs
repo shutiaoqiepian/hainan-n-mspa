@@ -73,9 +73,41 @@ async function assertSpotsInSync() {
   }
 }
 
-const lat = SPOTS.map(s => s.lat).join(",");
-const lon = SPOTS.map(s => s.lon).join(",");
+/* Open-Meteo 会把坐标吸附到各自模式的网格上——ECMWF 0.25°、ICON 0.125° 等，
+   不同模式的格点不同，所以同一个机位在三张底图里落点也不一样。
+   我们不去猜网格，而是「每个机位认领离它最近、且没被认领过的响应点」。 */
+const lat = SPOTS.map((s) => s.lat).join(",");
+const lon = SPOTS.map((s) => s.lon).join(",");
 const LL = `latitude=${lat}&longitude=${lon}`;
+
+/* 响应 → 按机位顺序。响应不足 25 条时只能按顺序摊，并给出警告。 */
+function remapByNearest(list) {
+  if (!Array.isArray(list) || !list.length) return list;
+  if (list.length !== SPOTS.length) {
+    console.warn(`  ⚠ 返回 ${list.length} 条 / ${SPOTS.length} 个机位，按顺序对齐`);
+    return SPOTS.map((_, i) => list[i] || list[0]);
+  }
+  const hasCoords = list.every((p) => typeof p.latitude === "number");
+  if (!hasCoords) return list;
+
+  /* 先看响应是否已经与机位一一对应（同一位置可能被不同模式吸附到同一点，
+     这时不用动，直接按顺序就是对的） */
+  const used = new Set();
+  const mapped = SPOTS.map((s) => {
+    let best = 0;
+    let bestD = Infinity;
+    list.forEach((p, i) => {
+      if (used.has(i)) return;
+      const d = Math.abs(p.latitude - s.lat) + Math.abs(p.longitude - s.lon);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    used.add(best);
+    return list[best];
+  });
+
+  /* 自检：仍按机位顺序排好返回；如果最近邻配对和顺序完全一致，就没问题 */
+  return mapped;
+}
 const TZ = "timezone=Asia%2FShanghai&forecast_days=2";
 
 /* 气压层变量：云种识别与「大气截面图」的原料。
@@ -142,9 +174,9 @@ const main = async () => {
     generatedAt: new Date().toISOString(),
     models: MULTI,
     spots: SPOTS.length,
-    weather,
-    prof,
-    air
+    weather: remapByNearest(weather),
+    prof: remapByNearest(prof),
+    air: remapByNearest(air)
   };
 
   await mkdir(dirname(OUT), { recursive: true });

@@ -46,10 +46,91 @@ function addMin(t: string, delta: number): string {
   return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2)
 }
 
+/* ---------- 坐标去重 ----------
+   大坑：Open-Meteo 会先把坐标吸附到自己网格的中心点，**然后再去重**。
+   海口市区那几个机位（观海台/假日海滩/西秀海滩/云洞/世纪大桥/白沙门）
+   原始经纬度各不相同，但吸附后全落在 (20.00, 110.25) 同一格，
+   于是接口只回一条、后面几位的数组里是空对象 —— 表现为「机位并行错位、
+   有的机位永远没数据、有的机位显示的其实是别的机位的气象」。
+   解决：请求只发**吸附后的唯一坐标**，响应再按坐标映射回机位。 */
+let snapGrid = 0.03
+
+export function snapKey(lat: number, lon: number): string {
+  const g = snapGrid
+  return (Math.round(lat / g) * g).toFixed(3) + ',' + (Math.round(lon / g) * g).toFixed(3)
+}
+
+/** 从实际返回值里学出吸附网格（0.05 / 0.0625 / 0.1 / 0.125 度），下次请求就按它去重 */
+function learnGrid(points: RawPoint[]): void {
+  const p0 = points[0]
+  if (!p0 || typeof p0.latitude !== 'number') return
+  for (const g of [0.05, 0.0625, 0.1, 0.125]) {
+    const r = (p0.latitude as number) / g
+    if (Math.abs(Math.abs(r) - Math.round(r)) < 1e-6) {
+      snapGrid = g
+      return
+    }
+  }
+}
+
+/** 建立「机位序号 → 响应数组下标」的映射 */
+function bindGrid(points: RawPoint[]): number[] {
+  learnGrid(points)
+
+  const byKey = new Map<string, number>()
+  points.forEach((p, i) => {
+    if (typeof p.latitude !== 'number' || typeof p.longitude !== 'number') return
+    const k = p.latitude.toFixed(3) + ',' + p.longitude.toFixed(3)
+    if (!byKey.has(k)) byKey.set(k, i)
+  })
+
+  const exact = SPOTS.map((s) => {
+    const hit = byKey.get(snapKey(s.lat, s.lon))
+    return hit == null ? -1 : hit
+  })
+
+  /* 全部对上：直接用 */
+  if (exact.every((i) => i >= 0) && new Set(exact).size === points.length) return exact
+
+  /* 网格估错：按「离哪个响应中心最近」重新配对（稳妥的兜底） */
+  const withCoords = points.filter((p) => typeof p.latitude === 'number')
+  if (withCoords.length === points.length) {
+    const used = new Set<number>()
+    return SPOTS.map((s) => {
+      let best = 0
+      let bestD = Infinity
+      points.forEach((p, i) => {
+        if (used.has(i)) return
+        const d = Math.abs((p.latitude as number) - s.lat) + Math.abs((p.longitude as number) - s.lon)
+        if (d < bestD) { bestD = d; best = i }
+      })
+      used.add(best)
+      return best
+    })
+  }
+
+  /* 老缓存没有坐标：按顺序（旧数据里前 25 条就是按机位顺序） */
+  return SPOTS.map((_, i) => (i < points.length ? i : 0))
+}
+
+/* 请求里要带的唯一坐标（按第一次出现的顺序） */
+function uniqueCoords(): Array<{ lat: number; lon: number }> {
+  const seen = new Set<string>()
+  const out: Array<{ lat: number; lon: number }> = []
+  for (const s of SPOTS) {
+    const k = snapKey(s.lat, s.lon)
+    if (seen.has(k)) continue
+    seen.add(k)
+    out.push({ lat: s.lat, lon: s.lon })
+  }
+  return out
+}
+
 /* ---------- 取数 ---------- */
 export function buildUrl(host: string, params: string, models: string[] | null): string {
-  const lats = SPOTS.map((s) => s.lat).join(',')
-  const lons = SPOTS.map((s) => s.lon).join(',')
+  const coords = uniqueCoords()
+  const lats = coords.map((c) => c.lat).join(',')
+  const lons = coords.map((c) => c.lon).join(',')
   const m = models && models.length ? '&models=' + models.join(',') : ''
   return host + '?latitude=' + lats + '&longitude=' + lons + '&' + params + m +
          '&timezone=Asia%2FShanghai&forecast_days=2'
@@ -136,6 +217,25 @@ export function measureAt(
   }
 }
 
+
+/* 把「唯一坐标响应」摊回 25 个机位；映射失败就退回按顺序 */
+function remapBySpots(points: RawData | null): RawData | null {
+  if (!points || !points.length) return null
+  const map = bindGrid(points)
+  return SPOTS.map((_, i) => points[map[i]] || points[0])
+}
+
+/** 动态测到吸附网格后，给界面一句说明 */
+function noteGrid(points: RawPoint[]): void {
+  if (!points.length || typeof points[0].latitude !== 'number') return
+  const lats = points.map((p) => p.latitude as number)
+  const lons = points.map((p) => p.longitude as number)
+  const dLat = Math.abs((lats[1] ?? lats[0]) - lats[0])
+  const dLon = Math.abs((lons[1] ?? lons[0]) - lons[0])
+  const g = Math.round(Math.max(dLat, dLon) * 100) / 100
+  state.gridNote = g > 0 ? '约 ' + g + ' 度（≈' + Math.round(g * 111) + ' km）' : ''
+}
+
 /* ---------- 一次取数的缓存 ---------- */
 let CACHE: CacheData | null = null
 const CACHE_MS = 10 * 60 * 1000
@@ -174,10 +274,11 @@ function loadStatic(): void {
       const at = j.generatedAt ? Date.parse(j.generatedAt) : NaN
       if (!isNaN(at) && Date.now() - at > 14 * 3600 * 1000) throw new Error('缓存过期')
 
+      noteGrid(j.weather)
       CACHE = {
-        weather: j.weather,
-        air: j.air ?? null,
-        profs: j.prof ?? null,
+        weather: remapBySpots(j.weather) ?? [],
+        air: remapBySpots(j.air ?? null),
+        profs: remapBySpots(j.prof ?? null),
         at: isNaN(at) ? Date.now() : at,
         fromStatic: true
       }
@@ -234,8 +335,15 @@ function loadLive(): void {
     const air = airRaw ? (Array.isArray(airRaw) ? airRaw : [airRaw]) : null
     const profs = profRaw ? (Array.isArray(profRaw) ? profRaw : [profRaw]) : null
 
-    CACHE = { weather: weather, air: air, profs: profs, at: Date.now(), fromStatic: false }
-    compute(weather, air, profs)
+    noteGrid(weather)
+    CACHE = {
+      weather: remapBySpots(weather) ?? [],
+      air: remapBySpots(air),
+      profs: remapBySpots(profs),
+      at: Date.now(),
+      fromStatic: false
+    }
+    compute(CACHE.weather, CACHE.air, CACHE.profs)
   }).catch((e: unknown) => {
     state.loading = false
     state.error = '取不到数据：' + (e instanceof Error && e.message ? e.message : '网络错误')

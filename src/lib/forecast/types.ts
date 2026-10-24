@@ -44,6 +44,10 @@ export interface ModelInfo {
 export type RawSeries = Array<number | string | null>
 
 export interface RawPoint {
+  /** 响应里回传的（已吸附到格点的）中心坐标 */
+  latitude?: number
+  longitude?: number
+  elevation?: number
   hourly?: Record<string, RawSeries>
   daily?: Record<string, RawSeries>
 }
@@ -240,6 +244,8 @@ export interface ForecastState {
   targetTime: string
   /** 下一次数据更新的大致时间（ms） */
   nextUpdateAt: number
+  /** 动态测到的模式格点，如「约 0.05 度（≈6 km）」 */
+  gridNote: string
 }
 
 /* ---------- 静态缓存文件 schema ---------- */

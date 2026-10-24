@@ -22,7 +22,8 @@ export const state = reactive<ForecastState>({
   fromStatic: false,
   targetDate: '',
   targetTime: '',
-  nextUpdateAt: 0
+  nextUpdateAt: 0,
+  gridNote: ''
 })
 
 export function dayWord(d: number): string {

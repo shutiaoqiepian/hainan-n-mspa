@@ -83,7 +83,10 @@ const headWord = computed(() => kindWord.value + (state.kind === 'sunrise' ? '�
       <div class="fct-cell">
         <span class="fct-label">数据来源</span>
         <b class="fct-value">{{ source }}</b>
-        <span class="fct-note">格点约 11 km，相邻机位可能取到同一个值</span>
+        <span class="fct-note">
+          <template v-if="state.gridNote">格点约 {{ state.gridNote }}；同一格内的机位共享一份气象数据</template>
+          <template v-else>不同机位的数值本身就不同：气象模式按格点计算，同一格内的机位共享同一份数据</template>
+        </span>
       </div>
     </div>
     <details class="fct-help">
@@ -91,7 +94,8 @@ const headWord = computed(() => kindWord.value + (state.kind === 'sunrise' ? '�
       <ul>
         <li><b>预报对象</b>：这一页所有分数，说的都是「{{ headWord }}那一刻」（{{ target }}）的情况，不是现在。</li>
         <li><b>数据更新</b>：气象模式什么时候算出来的这份预报。越新越准；超过 12 小时就参考价值下降。</li>
-        <li><b>数据来源</b>：模式名与格点大小。格点 11 km 意味着两个挨得很近的机位可能拿到同一份数据，这时分数一样不代表实况一样。</li>
+        <li><b>数据来源</b>：模式名与格点大小。格点是把地球切成方格来算天气的，同一格里的机位只能共享一份数据——所以挨得近的机位数值相同是正常的，不代表算错了。</li>
+        <li><b>为什么各机位数值不同</b>：每个机位所在格子不同，云量也就不同；分数还额外乘了「太阳方位与机位朝向是否对得上」的系数。</li>
       </ul>
     </details>
   </div>
