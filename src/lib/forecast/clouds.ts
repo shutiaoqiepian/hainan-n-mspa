@@ -196,19 +196,20 @@ export function cloudProfile(
   if (raw.length < 3) return { layers: [], sheets: [], genusText: '' }
 
   /* 有云的层：云量 ≥ 30% 或 湿度 ≥ 80%。
-     湿度到饱和（≥92%）但 ECMWF 报的云量很低，属于「模式漏报薄云」，
-     按弱云处理，并在说明里标出来 —— 不然会出现「高云 49% / 云种：无」这种自相矛盾。 */
+     湿度到饱和（RH ≥ 92%）但 ECMWF 云量很低 → 「弱云」：按有云处理，
+     云量用湿度反推一个不小于 25% 的值，并在说明里标出来。
+     这样既不会出现「平均 46% / 云种：无」的矛盾，也不会冒出 0% 这种怪数字。 */
   const cloudy = raw.map((r) => {
-    const cover = r.cover ?? 0
+    const cover0 = r.cover ?? 0
     const rh = r.rh ?? 0
-    const byCloud = cover >= 30
+    const byCloud = cover0 >= 30
     const byHumid = rh >= 80
-    return {
-      ...r,
-      isCloud: byCloud || byHumid,
-      faint: !byCloud && byHumid,
-      coverEff: byCloud ? cover : Math.min(cover, Math.round((rh - 60) * 0.6))
+    let coverEff = Math.max(0, cover0)
+    if (!byCloud && byHumid) {
+      const inferred = Math.round(Math.min(85, Math.max(15, (rh - 60) * 1.2)))
+      coverEff = Math.max(coverEff, inferred)
     }
+    return { ...r, isCloud: byCloud || byHumid, faint: !byCloud && byHumid, coverEff }
   })
 
   /* 云顶：最高的有云层 */
@@ -219,7 +220,7 @@ export function cloudProfile(
 
   for (let i = 0; i < cloudy.length; i++) {
     const r = cloudy[i]
-    const cover = Math.round((r as { coverEff?: number }).coverEff ?? r.cover ?? 0)
+    const cover = Math.max(0, Math.round((r as { coverEff?: number }).coverEff ?? r.cover ?? 0))
     const rh = Math.round(r.rh ?? 0)
     const faint = (r as { faint?: boolean }).faint === true
     if (!r.isCloud) {
@@ -252,11 +253,14 @@ export function cloudProfile(
     else if (r.height >= 2000) g = midGenus(ctx)
     else g = lowGenus(ctx, topMost)
 
-    /* 云底：这一层的温露差推 LCL，从层底往上抬；
-       温露差大到“不可能饱和”时，就用层底高度 */
+    /* 云底：这一层的温露差推 LCL，从层底往上抬；温露差大到“不可能饱和”时就用层底。
+       必须夹在「本层高度」与「上一层高度」之间、且不低于 0 —— 否则会算出
+       “云底 -1200 m”这种负值（高空层温度低，LCL 公式会把云底往下推）。 */
     const lcl = lclMeters(r.t, r.td)
-    const base = lcl != null && lcl < 2500 ? Math.round(r.height + lcl * 0.25) : Math.round(r.height)
-    const top = Math.round(r.height + (r.height >= 6000 ? 900 : r.height >= 2000 ? 600 : 400))
+    const nextUp = raw[i + 1] ? raw[i + 1].height : r.height + 2500
+    const rawBase = lcl != null && lcl < 2500 ? r.height + lcl * 0.25 : r.height
+    const base = Math.round(Math.max(0, Math.min(rawBase, nextUp - 50)))
+    const top = Math.round(Math.min(nextUp, r.height + (r.height >= 6000 ? 900 : r.height >= 2000 ? 600 : 400)))
 
     layers.push({
       level: r.level, height: Math.round(r.height), cover, rh,
@@ -276,8 +280,8 @@ export function cloudProfile(
     const genera = cur.map((x) => x.genus).filter((v, k, arr) => arr.indexOf(v) === k)
     const cover = Math.round(cur.reduce((a, b) => a + b.cover, 0) / cur.length)
     const lit = cur.some((x) => x.lit)
-    const base = low.base ?? low.height
-    const top = high.top ?? high.height
+    const base = Math.max(0, low.base ?? low.height)
+    const top = Math.max(base, high.top ?? high.height)
     const genTxt = genera.join('、')
     sheets.push({
       base, top, cover, genera, lit,

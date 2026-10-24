@@ -54,7 +54,7 @@ function toggle(level: number): void {
           <template v-if="l.code === '--'">—</template>
           <template v-else>
             <b>{{ l.genus }}</b>
-            <small v-if="l.species">· {{ l.species }}</small>
+            <small v-if="l.species && l.species !== l.genus">· {{ l.species }}</small>
             <small v-if="l.lit" class="fcp-lit">· 能被夕阳照亮</small>
           </template>
         </span>
@@ -62,7 +62,7 @@ function toggle(level: number): void {
       </button>
 
       <p v-if="openKey === l.level" class="fcp-note">
-        <b>{{ l.genus === '无云' ? '这一层没有云' : l.genus + (l.species ? '（' + l.species + '）' : '') }}</b>
+        <b>{{ l.genus === '无云' ? '这一层没有云' : l.genus + (l.species && l.species !== l.genus ? '（' + l.species + '）' : '') }}</b>
         ——{{ l.note }}。
         <span class="fcp-crit">
           判据：{{ l.level }} hPa 附近高度约 {{ heightText(l.height) }}，云量 {{ l.cover }}%、相对湿度 {{ l.rh }}%<template
