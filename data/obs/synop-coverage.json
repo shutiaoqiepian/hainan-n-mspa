@@ -1,0 +1,635 @@
+{
+ "checkedAt": "2026-10-24T20:48:57.991Z",
+ "source": "Ogimet SYNOP (meteo.ogimet.com)",
+ "stations": 40,
+ "slots": 2,
+ "reports": 66,
+ "withCloud": 2,
+ "withGenus": 2,
+ "coveragePercent": 3,
+ "conclusion": "中国地面站 SYNOP 基本不报云组（8NhCLCMCH），无法作为云况实况基准",
+ "perStation": [
+  {
+   "id": "54511",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "54527",
+   "reports": 1,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "status": 200,
+     "note": "空"
+    }
+   ]
+  },
+  {
+   "id": "54342",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "53614",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "53772",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "53845",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "54857",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "54423",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "58362",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "58238",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "58457",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "58606",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "58562",
+   "reports": 0,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "status": 200,
+     "note": "空"
+    },
+    {
+     "time": "202610241500",
+     "status": 200,
+     "note": "空"
+    }
+   ]
+  },
+  {
+   "id": "58847",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "59316",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "59134",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "59287",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "59493",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "59211",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "57957",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "59023",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "59280",
+   "reports": 0,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "status": 200,
+     "note": "空"
+    },
+    {
+     "time": "202610241500",
+     "status": 200,
+     "note": "空"
+    }
+   ]
+  },
+  {
+   "id": "59647",
+   "reports": 0,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "status": 200,
+     "note": "空"
+    },
+    {
+     "time": "202610241500",
+     "status": 200,
+     "note": "空"
+    }
+   ]
+  },
+  {
+   "id": "59758",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "59981",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "59792",
+   "reports": 2,
+   "withCloud": 2,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": "82100",
+     "nh": 25,
+     "cl": 1,
+     "cm": 0,
+     "ch": 0
+    },
+    {
+     "time": "202610241500",
+     "cloud": "82100",
+     "nh": 25,
+     "cl": 1,
+     "cm": 0,
+     "ch": 0
+    }
+   ]
+  },
+  {
+   "id": "59838",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "57494",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "57131",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "57516",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "56294",
+   "reports": 0,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "status": 200,
+     "note": "空"
+    },
+    {
+     "time": "202610241500",
+     "status": 200,
+     "note": "空"
+    }
+   ]
+  },
+  {
+   "id": "56778",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "54161",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "54157",
+   "reports": 1,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "status": 200,
+     "note": "空"
+    }
+   ]
+  },
+  {
+   "id": "50953",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "51463",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "52889",
+   "reports": 0,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "status": 200,
+     "note": "空"
+    },
+    {
+     "time": "202610241500",
+     "status": 200,
+     "note": "空"
+    }
+   ]
+  },
+  {
+   "id": "52818",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "57083",
+   "reports": 2,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "cloud": null
+    },
+    {
+     "time": "202610241500",
+     "cloud": null
+    }
+   ]
+  },
+  {
+   "id": "57036",
+   "reports": 0,
+   "withCloud": 0,
+   "samples": [
+    {
+     "time": "202610241800",
+     "status": 200,
+     "note": "空"
+    },
+    {
+     "time": "202610241500",
+     "status": 200,
+     "note": "空"
+    }
+   ]
+  }
+ ]
+}
