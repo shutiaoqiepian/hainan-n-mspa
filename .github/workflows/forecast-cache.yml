@@ -26,8 +26,8 @@ jobs:
         run: |
           git config user.name "18N-MSPA Bot"
           git config user.email "bot@users.noreply.github.com"
-          if [ -n "$(git status --porcelain data/forecast.json)" ]; then
-            git add data/forecast.json
+          if [ -n "$(git status --porcelain data/)" ]; then
+            git add data/
             git commit -m "chore: update forecast cache"
             git push
           else

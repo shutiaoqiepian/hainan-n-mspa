@@ -25,13 +25,19 @@ export interface AodBand {
   v: number
 }
 
+/** 省份 key：hn=海南，gd=广东（以后加省份就在这里扩展） */
+export type ProvKey = 'hn' | 'gd'
+
 /** 机位 */
 export interface Spot {
   n: string
   lat: number
   lon: number
   face: string
+  /** 省内分区，用于筛选（如「广州」「粤东」） */
   area: string
+  /** 所属省份 */
+  prov: ProvKey
 }
 
 export interface ModelInfo {
@@ -243,6 +249,8 @@ export interface CacheData {
 }
 
 export interface ForecastState {
+  /** 当前省份：hn=海南 / gd=广东 */
+  prov: ProvKey
   day: number
   kind: KindKey
   model: string

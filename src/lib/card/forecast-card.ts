@@ -47,6 +47,10 @@ export interface ForecastCardInput {
   sourceText: string
   /** 完整预报页地址（含参数），用于二维码 */
   url: string
+  /** 省份名（排行版标题用） */
+  provName?: string
+  /** 省份英文名（页头小标题用） */
+  provEn?: string
   spot?: Row
   top?: Row[]
 }
@@ -223,7 +227,7 @@ function drawSpot(ctx: TextCtx, cv: HTMLCanvasElement, d: ForecastCardInput): vo
   ctx.fillText('18N-MSPA', pad, 118)
   setFont(ctx, '400', 21)
   ctx.fillStyle = p.muted
-  ctx.fillText('北纬18度椰青摄联 · 海南', pad, 156)
+  ctx.fillText('北纬18度椰青摄联 · ' + (d.provName ?? '海南'), pad, 156)
 
   /* 右上：预报类型 */
   ctx.textAlign = 'right'
@@ -235,7 +239,7 @@ function drawSpot(ctx: TextCtx, cv: HTMLCanvasElement, d: ForecastCardInput): vo
   /* 日期行 */
   setFont(ctx, '400', 23, '8px')
   ctx.fillStyle = p.muted
-  ctx.fillText('SUNSET FORECAST · HAINAN', pad, 246)
+  ctx.fillText('SUNSET FORECAST · ' + (d.provEn ?? 'HAINAN').toUpperCase(), pad, 246)
 
   setFont(ctx, '600', 33)
   ctx.fillStyle = p.text2
@@ -393,15 +397,15 @@ function drawList(ctx: TextCtx, cv: HTMLCanvasElement, d: ForecastCardInput): vo
   setFont(ctx, '600', 26, '10px')
   ctx.fillText('18N-MSPA', pad, 118)
   setFont(ctx, '400', 21)
-  ctx.fillText('北纬18度椰青摄联 · 海南', pad, 156)
+  ctx.fillText('北纬18度椰青摄联 · ' + (d.provName ?? '海南'), pad, 156)
 
   setFont(ctx, '400', 23, '8px')
   ctx.fillStyle = p.muted
-  ctx.fillText('SUNSET FORECAST · HAINAN', pad, 246)
+  ctx.fillText('SUNSET FORECAST · ' + (d.provEn ?? 'HAINAN').toUpperCase(), pad, 246)
 
   setFont(ctx, '700', 60)
   ctx.fillStyle = p.text
-  ctx.fillText(d.dayWord + '，海南哪里值得跑', pad, 330)
+  ctx.fillText(d.dayWord + '，' + (d.provName ?? '海南') + '哪里值得跑', pad, 330)
 
   setFont(ctx, '600', 30)
   ctx.fillStyle = p.text2

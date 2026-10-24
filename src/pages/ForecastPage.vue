@@ -13,8 +13,12 @@ import ForecastCardModal from '@/components/forecast/ForecastCardModal.vue'
 import { load } from '@/lib/forecast/api'
 import { openListCard, openSpotCard } from '@/lib/forecast/card-ui'
 import { initStateFromUrl, state } from '@/lib/forecast/state'
+import { provEn, provName } from '@/data/forecast/spots'
 
 /** 霞光预报（旧版 forecast.html 的 <main> + assets/forecast.js） */
+
+const prov = computed(() => provName(state.prov))
+const provLatin = computed(() => provEn(state.prov))
 
 const rows = computed(() =>
   state.rows.filter((r) => state.area === '全部' || r.spot.area === state.area)
@@ -68,10 +72,10 @@ onMounted(() => {
 <template>
   <section class="page-head">
     <div class="wrap">
-      <p class="eyebrow">Sunset Forecast · Hainan</p>
-      <h1 class="silver">这两天，海南哪里值得跑一趟</h1>
+      <p class="eyebrow">Sunset Forecast · {{ provLatin }}</p>
+      <h1 class="silver">这两天，{{ prov }}哪里值得跑一趟</h1>
       <p>
-        根据云层高度、云种、气溶胶与降水，估算海南各机位今天、明天的朝霞与晚霞条件。
+        根据云层高度、云种、气溶胶与降水，估算{{ prov }}各机位今天、明天的朝霞与晚霞条件。
         数值越高，越有可能出现火烧云。点每行的「详情」可以看到逐高度云种、气象解读和拍摄题材。
       </p>
     </div>

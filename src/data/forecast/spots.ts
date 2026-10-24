@@ -1,46 +1,64 @@
-import type { Spot } from '@/lib/forecast/types'
+import raw from './spots.json'
+import type { ProvKey, Spot } from '@/lib/forecast/types'
 
-/* ---------- 机位库 ---------- */
-export const SPOTS: Spot[] = [
-  /* ---- 海口：西向日落 ---- */
-  { n: '海口西海岸观海台', lat: 20.026, lon: 110.285, face: '西', area: '海口' },
-  { n: '海口假日海滩', lat: 20.033, lon: 110.245, face: '西', area: '海口' },
-  { n: '海口西秀海滩', lat: 20.018, lon: 110.262, face: '西', area: '海口' },
-  { n: '海口湾·云洞图书馆', lat: 20.03, lon: 110.316, face: '西北', area: '海口' },
-  { n: '世纪大桥西岸', lat: 20.037, lon: 110.31, face: '西北', area: '海口' },
-  { n: '海甸岛白沙门', lat: 20.07, lon: 110.345, face: '西北', area: '海口' },
-  /* ---- 海口：东向日出 ---- */
-  { n: '桂林洋海滩', lat: 19.995, lon: 110.5, face: '东', area: '海口' },
-  { n: '东寨港红树林', lat: 19.96, lon: 110.59, face: '东', area: '海口' },
-  /* ---- 海口：全景 / 制高点 ---- */
-  { n: '海口火山口', lat: 19.93, lon: 110.25, face: '山顶', area: '海口' },
-  { n: '澄迈盈滨半岛', lat: 19.95, lon: 110.13, face: '西', area: '海口' },
+/* ============================================================
+   机位库（唯一事实来源）
+   ------------------------------------------------------------
+   数据写在 spots.json 里，因为 tools/build-cache.mjs 也直接读这份 JSON
+   —— 原来是 TS 和脚本各存一份，靠「名字对得上」互相校验，加省份后
+   两份必然漂移，所以合并成一份。
 
-  /* ---- 西岸 ---- */
-  { n: '临高角', lat: 19.92, lon: 109.68, face: '西', area: '西岸' },
-  { n: '儋州峨蔓海岸', lat: 19.78, lon: 109.35, face: '西', area: '西岸' },
-  { n: '昌江棋子湾', lat: 19.36, lon: 108.68, face: '西', area: '西岸' },
-  { n: '东方鱼鳞洲', lat: 19.1, lon: 108.62, face: '西', area: '西岸' },
+   字段：
+     n    机位名（也用作分享链接里的 s 参数）
+     lat  纬度      lon 经度（近似到公里级即可，气象格点本身 6–28 km）
+     face 主要朝向   area 省内分区    prov 省份（hn=海南 / gd=广东）
+   ============================================================ */
 
-  /* ---- 南部 ---- */
-  { n: '乐东龙沐湾', lat: 18.55, lon: 108.72, face: '西', area: '南部' },
-  { n: '三亚天涯海角', lat: 18.3, lon: 109.35, face: '西南', area: '南部' },
-  { n: '三亚鹿回头', lat: 18.22, lon: 109.51, face: '南', area: '南部' },
-  { n: '三亚亚龙湾', lat: 18.225, lon: 109.635, face: '东南', area: '南部' },
+export const SPOTS: Spot[] = raw as Spot[]
 
-  /* ---- 东岸（日出）---- */
-  { n: '陵水清水湾', lat: 18.42, lon: 109.92, face: '东南', area: '东岸' },
-  { n: '万宁日月湾', lat: 18.6, lon: 110.15, face: '东', area: '东岸' },
-  { n: '万宁大花角', lat: 18.72, lon: 110.55, face: '东', area: '东岸' },
-  { n: '琼海博鳌', lat: 19.15, lon: 110.58, face: '东', area: '东岸' },
-  { n: '文昌东郊椰林', lat: 19.55, lon: 110.85, face: '东', area: '东岸' },
-  { n: '文昌铜鼓岭', lat: 19.6, lon: 111.02, face: '东', area: '东岸' },
+export interface Province {
+  key: ProvKey
+  name: string
+  /** 英文名：页头小标题用（Sunset Forecast · Hainan） */
+  en: string
+  /** 数据文件（相对站点根） */
+  data: string
+}
 
-  /* ---- 中部 ---- */
-  { n: '五指山主峰', lat: 18.9, lon: 109.68, face: '山顶', area: '中部' }
+/** 省份列表：加省份时这里加一项，同时补 spots.json 与 build-cache.mjs */
+export const PROVINCES: readonly Province[] = [
+  { key: 'hn', name: '海南', en: 'Hainan', data: 'data/forecast.json' },
+  { key: 'gd', name: '广东', en: 'Guangdong', data: 'data/forecast-gd.json' }
 ]
 
-export const AREAS = ['全部', '东岸', '西岸', '南部', '中部', '海口']
+/** 省内分区（顺序即界面上筛选按钮的顺序） */
+export const AREAS_BY_PROV: Record<ProvKey, readonly string[]> = {
+  hn: ['全部', '东岸', '西岸', '南部', '中部', '海口'],
+  gd: ['全部', '广州', '深圳', '珠海', '惠州', '珠三角', '粤东', '粤西', '粤北']
+}
 
-/* 逐小时详情面板固定展示这个机位 */
+/** 兼容旧导入：海南的分区 */
+export const AREAS = AREAS_BY_PROV.hn
+
+export function areasFor(prov: ProvKey | string): readonly string[] {
+  return AREAS_BY_PROV[prov as ProvKey] ?? AREAS_BY_PROV.hn
+}
+
+export function spotsFor(prov: ProvKey | string): Spot[] {
+  return SPOTS.filter((s) => s.prov === prov)
+}
+
+export function provName(prov: ProvKey | string): string {
+  return PROVINCES.find((p) => p.key === prov)?.name ?? '海南'
+}
+
+export function provEn(prov: ProvKey | string): string {
+  return PROVINCES.find((p) => p.key === prov)?.en ?? 'Hainan'
+}
+
+export function dataFileFor(prov: ProvKey | string): string {
+  return PROVINCES.find((p) => p.key === prov)?.data ?? PROVINCES[0].data
+}
+
+/** 逐小时详情面板固定展示这个机位（现在详情已按行展开，仅保留兼容） */
 export const DETAIL_SPOT = '海口西海岸观海台'

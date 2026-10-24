@@ -137,11 +137,11 @@ function onHeroError(event: Event): void {
         <div style="flex:1 1 340px;min-width:250px">
           <p class="eyebrow">Sunset Forecast</p>
           <h2 class="silver" style="margin:0 0 14px;font-size:clamp(22px,2.8vw,32px)">
-            这两天，海南哪里值得跑一趟
+            这两天，哪里值得跑一趟
           </h2>
           <p class="muted" style="margin:0;font-size:15px">
-            根据云层高度、气溶胶与降水，估算全省主要机位的朝霞与晚霞条件。
-            东岸拍日出，西岸拍日落，一处看完。
+            根据云层高度、气溶胶与降水，估算各机位的朝霞与晚霞条件 ——
+            目前覆盖海南 25 个机位、广东 40 个机位，东岸拍日出、西岸拍日落，一处看完。
           </p>
         </div>
         <a class="btn btn-primary" href="forecast.html">查看霞光预报</a>

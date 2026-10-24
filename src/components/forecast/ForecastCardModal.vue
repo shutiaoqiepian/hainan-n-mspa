@@ -7,6 +7,7 @@ import { toast } from '@/composables/useToast'
 import { drawForecastCard, loadForecastCardImages, type ForecastCardInput } from '@/lib/card/forecast-card'
 import { closeCard, cardUi } from '@/lib/forecast/card-ui'
 import { dayWord, state } from '@/lib/forecast/state'
+import { provEn, provName } from '@/data/forecast/spots'
 import { dateText, clockText } from '@/lib/forecast/time'
 import { currentTheme } from '@/lib/theme'
 import type { Row } from '@/lib/forecast/types'
@@ -29,7 +30,7 @@ const spotUrl = computed(() => {
   /* 刻意用短域名 + 少参数：二维码越小越容易扫；a 参数可省（不传就是全部区域） */
   const base = 'https://hainan-n-mspa.pages.dev/forecast'
   const r = firstRow()
-  const q = new URLSearchParams({ d: String(state.day), k: state.kind })
+  const q = new URLSearchParams({ p: state.prov, d: String(state.day), k: state.kind })
   if (cardUi.mode === 'spot' && r) q.set('s', r.spot.n)
   return base + '?' + q.toString()
 })
@@ -62,6 +63,8 @@ const input = computed<ForecastCardInput | null>(() => {
     updatedText: updateLine.value,
     sourceText: sourceText.value,
     url: spotUrl.value,
+    provName: provName(state.prov),
+    provEn: provEn(state.prov),
     spot: cardUi.mode === 'spot' ? (cardUi.row ?? undefined) : undefined,
     top: cardUi.mode === 'list' ? cardUi.top : undefined
   }
@@ -83,7 +86,7 @@ watch(
 
 function fileName(): string {
   const r = firstRow()
-  const base = cardUi.mode === 'spot' && r ? r.spot.n : '海南' + dayText.value + kindWord.value
+  const base = cardUi.mode === 'spot' && r ? r.spot.n : provName(state.prov) + dayText.value + kindWord.value
   return base + '-霞光预报名片.png'
 }
 

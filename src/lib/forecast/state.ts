@@ -2,12 +2,13 @@ import { reactive } from 'vue'
 import { copyText } from '@/composables/useCopyText'
 import { toast } from '@/composables/useToast'
 import { KINDS } from '@/data/forecast/levels'
-import { AREAS } from '@/data/forecast/spots'
+import { areasFor } from '@/data/forecast/spots'
 import { dateText, distanceText } from './time'
 import type { ForecastState, KindKey, Row } from './types'
 
 /* 整个页面共用一份状态：旧版也是模块级的 state 对象 */
 export const state = reactive<ForecastState>({
+  prov: 'hn',
   day: 0,          /* 0=今天 1=明天 */
   kind: 'sunset',  /* sunrise / sunset */
   model: 'multi',  /* multi 或单个模式 id */
@@ -68,16 +69,29 @@ export function initStateFromUrl(): void {
     const q = new URLSearchParams(location.search)
     const k = q.get('k') || q.get('m')
     if (k === 'sunset' || k === 'sunrise') { state.kind = k; picked = true }
+    const p = q.get('p')
+    if (p === 'hn' || p === 'gd') state.prov = p
+    else {
+      /* 没带参数就沿用上次看的省份（默认海南） */
+      try {
+        const saved = localStorage.getItem('mspa:forecast:prov')
+        if (saved === 'hn' || saved === 'gd') state.prov = saved
+      } catch { /* 隐私模式忽略 */ }
+    }
     const d = q.get('d')
     if (d === '0' || d === '1') { state.day = Number(d); picked = true }
     const a = q.get('a')
-    if (a && AREAS.indexOf(a) >= 0) state.area = a
+    if (a && areasFor(state.prov).indexOf(a) >= 0) state.area = a
     /* 分享链接直接展开那个机位的详情 */
     const s = q.get('s')
     if (s) { state.shareSpot = s; state.openSpot = s }
   } catch {
     /* 忽略 */
   }
+
+  try {
+    localStorage.setItem('mspa:forecast:prov', state.prov)
+  } catch { /* 忽略 */ }
 
   if (!picked) {
     const up = nextUpcoming()
@@ -94,7 +108,7 @@ export function shareSpot(name: string): void {
 
 export function shareRow(r: Row): void {
   const base = location.href.split('?')[0].split('#')[0]
-  const url = base + '?d=' + state.day + '&k=' + state.kind +
+  const url = base + '?p=' + state.prov + '&d=' + state.day + '&k=' + state.kind +
               '&a=' + encodeURIComponent(r.spot.area) +
               '&s=' + encodeURIComponent(r.spot.n)
   const word = dayWord(state.day) + KINDS[state.kind].word

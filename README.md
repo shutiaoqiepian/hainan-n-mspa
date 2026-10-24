@@ -132,17 +132,21 @@ LEGACY_REF=<commit> node tools/compare-legacy.mjs      # 换一个基线提交
 
 ## 添加预报机位
 
-改 `src/data/forecast/spots.ts` 的 `SPOTS`：
+机位表是 `src/data/forecast/spots.json`（页面和 `tools/build-cache.mjs` 共用这一份，
+不再有两份副本对账的麻烦）。加一行：
 
-```ts
-{ n: '机位名', lat: 20.026, lon: 110.285, face: '西', area: '海口' },
+```json
+{ "n": "机位名", "lat": 20.026, "lon": 110.285, "face": "西", "area": "海口", "prov": "hn" }
 ```
 
-`face` 取值：`东` / `东南` / `南` / `西南` / `西` / `西北` / `北` / `山顶`。
-`area` 取值：`海口` / `东岸` / `西岸` / `南部` / `中部`。
+- `face`：`东` / `东南` / `南` / `西南` / `西` / `西北` / `北` / `山顶`
+- `area`：省内的分区（海南：`海口/东岸/西岸/南部/中部`；广东：`广州/深圳/珠海/惠州/珠三角/粤东/粤西/粤北`）
+- `prov`：`hn`（海南）或 `gd`（广东）
 
-> 机位表在 `tools/build-cache.mjs` 里另有一份副本（那个脚本是纯 Node ESM，import 不了 `.ts`）。
-> 两边不同步时 `node tools/build-cache.mjs` 会直接报错并列出差异，不会悄悄生成缺机位的缓存。
+加完跑一次 `node tools/build-cache.mjs` 重新生成数据；加**新省份**还要改
+`src/data/forecast/spots.ts` 的 `PROVINCES`、`AREAS_BY_PROV` 和 `tools/build-cache.mjs` 的 `PROVINCES`。
+
+> 经纬度精确到公里级就够：气象格点本身 6–28 km，再精细也不会改变数值。
 
 ## 关于授权 / License
 

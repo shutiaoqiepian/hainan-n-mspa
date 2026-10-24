@@ -1,7 +1,7 @@
 import { KINDS, aodBand, levelOf } from '@/data/forecast/levels'
 import { matchPhenomena } from '@/data/forecast/phenomena'
 import { MULTI_MODELS } from '@/data/forecast/models'
-import { DETAIL_SPOT, SPOTS } from '@/data/forecast/spots'
+import { DETAIL_SPOT, dataFileFor, spotsFor } from '@/data/forecast/spots'
 import { cloudProfile, syntheticProfile } from './clouds'
 import { conflictsOf, interpret } from './interpret'
 import {
@@ -73,51 +73,31 @@ function learnGrid(points: RawPoint[]): void {
   }
 }
 
-/** 建立「机位序号 → 响应数组下标」的映射 */
-function bindGrid(points: RawPoint[]): number[] {
+/** 建立「机位序号 → 响应数组下标」的映射。
+    Open-Meteo 按各自模式的格点吸附后**去重**，回来的点数通常少于机位数，
+    所以不能用「一一对应」，只能每个机位认领**离它最近**的那一条（允许多个机位共用）。 */
+function bindGrid(points: RawPoint[], spots: Spot[]): number[] {
   learnGrid(points)
 
-  const byKey = new Map<string, number>()
-  points.forEach((p, i) => {
-    if (typeof p.latitude !== 'number' || typeof p.longitude !== 'number') return
-    const k = p.latitude.toFixed(3) + ',' + p.longitude.toFixed(3)
-    if (!byKey.has(k)) byKey.set(k, i)
-  })
+  const hasCoords = points.length > 0 && points.every((p) => typeof p.latitude === 'number')
+  if (!hasCoords) return spots.map((_, i) => Math.min(i, points.length - 1))
 
-  const exact = SPOTS.map((s) => {
-    const hit = byKey.get(snapKey(s.lat, s.lon))
-    return hit == null ? -1 : hit
-  })
-
-  /* 全部对上：直接用 */
-  if (exact.every((i) => i >= 0) && new Set(exact).size === points.length) return exact
-
-  /* 网格估错：按「离哪个响应中心最近」重新配对（稳妥的兜底） */
-  const withCoords = points.filter((p) => typeof p.latitude === 'number')
-  if (withCoords.length === points.length) {
-    const used = new Set<number>()
-    return SPOTS.map((s) => {
-      let best = 0
-      let bestD = Infinity
-      points.forEach((p, i) => {
-        if (used.has(i)) return
-        const d = Math.abs((p.latitude as number) - s.lat) + Math.abs((p.longitude as number) - s.lon)
-        if (d < bestD) { bestD = d; best = i }
-      })
-      used.add(best)
-      return best
+  return spots.map((s) => {
+    let best = 0
+    let bestD = Infinity
+    points.forEach((p, i) => {
+      const d = Math.abs((p.latitude as number) - s.lat) + Math.abs((p.longitude as number) - s.lon)
+      if (d < bestD) { bestD = d; best = i }
     })
-  }
-
-  /* 老缓存没有坐标：按顺序（旧数据里前 25 条就是按机位顺序） */
-  return SPOTS.map((_, i) => (i < points.length ? i : 0))
+    return best
+  })
 }
 
 /* 请求里要带的唯一坐标（按第一次出现的顺序） */
-function uniqueCoords(): Array<{ lat: number; lon: number }> {
+function uniqueCoords(spots: Spot[]): Array<{ lat: number; lon: number }> {
   const seen = new Set<string>()
   const out: Array<{ lat: number; lon: number }> = []
-  for (const s of SPOTS) {
+  for (const s of spots) {
     const k = snapKey(s.lat, s.lon)
     if (seen.has(k)) continue
     seen.add(k)
@@ -128,7 +108,7 @@ function uniqueCoords(): Array<{ lat: number; lon: number }> {
 
 /* ---------- 取数 ---------- */
 export function buildUrl(host: string, params: string, models: string[] | null): string {
-  const coords = uniqueCoords()
+  const coords = uniqueCoords(spotsFor(state.prov))
   const lats = coords.map((c) => c.lat).join(',')
   const lons = coords.map((c) => c.lon).join(',')
   const m = models && models.length ? '&models=' + models.join(',') : ''
@@ -219,21 +199,26 @@ export function measureAt(
 
 
 /* 把「唯一坐标响应」摊回 25 个机位；映射失败就退回按顺序 */
-function remapBySpots(points: RawData | null): RawData | null {
+function remapBySpots(points: RawData | null, prov: string = state.prov): RawData | null {
   if (!points || !points.length) return null
-  const map = bindGrid(points)
-  return SPOTS.map((_, i) => points[map[i]] || points[0])
+  const spots = spotsFor(prov)
+  const map = bindGrid(points, spots)
+  return spots.map((_, i) => points[map[i]] || points[0])
 }
 
 /** 动态测到吸附网格后，给界面一句说明 */
 function noteGrid(points: RawPoint[]): void {
-  if (!points.length || typeof points[0].latitude !== 'number') return
-  const lats = points.map((p) => p.latitude as number)
-  const lons = points.map((p) => p.longitude as number)
-  const dLat = Math.abs((lats[1] ?? lats[0]) - lats[0])
-  const dLon = Math.abs((lons[1] ?? lons[0]) - lons[0])
-  const g = Math.round(Math.max(dLat, dLon) * 100) / 100
-  state.gridNote = g > 0 ? '约 ' + g + ' 度（≈' + Math.round(g * 111) + ' km）' : ''
+  if (points.length < 2 || typeof points[0].latitude !== 'number') return
+  let g = 0
+  for (let i = 1; i < points.length; i++) {
+    const dLat = Math.abs((points[i].latitude as number) - (points[0].latitude as number))
+    const dLon = Math.abs((points[i].longitude as number) - (points[0].longitude as number))
+    const d = Math.max(dLat, dLon)
+    if (d > 0.001 && (g === 0 || d < g)) g = d
+  }
+  state.gridNote = g > 0
+    ? '约 ' + (Math.round(g * 100) / 100) + ' 度（≈' + Math.round(g * 111) + ' km）'
+    : ''
 }
 
 /* ---------- 一次取数的缓存 ---------- */
@@ -247,6 +232,9 @@ export function clearCache(): void {
 
 /* 一次取数，缓存起来：切换今天/明天/日出/日落不再重新请求 */
 export function load(force = false): void {
+  /* 缓存按省份分开：切到广东时必须重新取，不能拿海南的数据去算 */
+  if (CACHE && (CACHE as CacheData & { prov?: string }).prov !== state.prov) CACHE = null
+
   if (!force && CACHE && Date.now() - CACHE.at < CACHE_MS) {
     compute(CACHE.weather, CACHE.air, CACHE.profs)
     return
@@ -264,7 +252,8 @@ function loadStatic(): void {
   state.loading = true
   state.error = null
 
-  fetch('data/forecast.json', { cache: 'no-cache' })
+  const file = dataFileFor(state.prov)
+  fetch(file, { cache: 'no-cache' })
     .then((r) => {
       if (!r.ok) throw new Error('HTTP ' + r.status)
       return r.json()
@@ -276,12 +265,13 @@ function loadStatic(): void {
 
       noteGrid(j.weather)
       CACHE = {
-        weather: remapBySpots(j.weather) ?? [],
-        air: remapBySpots(j.air ?? null),
-        profs: remapBySpots(j.prof ?? null),
+        weather: remapBySpots(j.weather, state.prov) ?? [],
+        air: remapBySpots(j.air ?? null, state.prov),
+        profs: remapBySpots(j.prof ?? null, state.prov),
         at: isNaN(at) ? Date.now() : at,
-        fromStatic: true
-      }
+        fromStatic: true,
+        prov: state.prov
+      } as CacheData
       state.fromStatic = true
       compute(CACHE.weather, CACHE.air, CACHE.profs)
     })
@@ -337,12 +327,13 @@ function loadLive(): void {
 
     noteGrid(weather)
     CACHE = {
-      weather: remapBySpots(weather) ?? [],
-      air: remapBySpots(air),
-      profs: remapBySpots(profs),
+      weather: remapBySpots(weather, state.prov) ?? [],
+      air: remapBySpots(air, state.prov),
+      profs: remapBySpots(profs, state.prov),
       at: Date.now(),
-      fromStatic: false
-    }
+      fromStatic: false,
+      prov: state.prov
+    } as CacheData
     compute(CACHE.weather, CACHE.air, CACHE.profs)
   }).catch((e: unknown) => {
     state.loading = false
@@ -491,7 +482,7 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null): 
   const rows: Row[] = []
   const mids = modelsForRequest()
 
-  SPOTS.forEach((spot, i) => {
+  spotsFor(state.prov).forEach((spot, i) => {
     const w = weather[i] || weather[0]
     if (!w) return
 
