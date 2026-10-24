@@ -48,3 +48,6 @@ desktop.ini
 # 临时文件
 *.tmp
 *.log
+
+# 由 tools/bundle-for-review.mjs 生成（源码副本，会随源码漂移，不入库）
+docs/给GPT-源码包-可粘贴.md
