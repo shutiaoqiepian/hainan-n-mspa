@@ -37,8 +37,12 @@ jobs:
       - name: 抓 METAR 实况（最近 24 小时）
         run: node tools/fetch-metar.mjs --days 24
 
-      - name: 存当天预报快照（海南）
-        run: node tools/snapshot-forecast.mjs hn
+      - name: 存当天预报快照（所有有缓存的省份，约 34 份）
+        run: node tools/snapshot-forecast.mjs
+        continue-on-error: true
+
+      - name: 顺便算一次误报率（写进日志，方便在 Actions 页面直接看）
+        run: node tools/check-accuracy.mjs --top 10
         continue-on-error: true
 
       - name: 有变化才提交
