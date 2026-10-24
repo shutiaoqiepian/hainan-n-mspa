@@ -23,7 +23,21 @@
 <link rel="icon" type="image/png" sizes="96x96" href="images/favicon.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png" />
 <noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
-<link rel="preload" as="image" href="images/10.4世纪大烧重制.jpg" fetchpriority="high" />
+<!-- 首屏大图预加载：按屏幕宽度挑一档（和 HomePage.vue 里的 srcset 保持一致）。
+     写成内联脚本而不是 <link imagesrcset>，是因为 Vite 会把 HTML 里的 srcset 当成
+     模块资源去打包，多生成一份带哈希的副本（多下 200 KB，见交接文档 3.3）。 -->
+<script>
+(function () {
+  var need = (window.innerWidth || 1280) * (window.devicePixelRatio || 1)
+  var file = need <= 1000 ? 'hero-1000.jpg' : need <= 1600 ? 'hero-1400.jpg' : '10.4世纪大烧重制.jpg'
+  var l = document.createElement('link')
+  l.rel = 'preload'
+  l.as = 'image'
+  l.href = 'images/' + file
+  l.setAttribute('fetchpriority', 'high')
+  document.head.appendChild(l)
+})()
+</script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",

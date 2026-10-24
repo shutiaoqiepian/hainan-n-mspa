@@ -7,12 +7,26 @@ import { HERO_IMAGE, PHOTOS } from '@/data/photos'
 
 const heroSrc = 'images/' + HERO_IMAGE
 
+/* 首屏大图三档尺寸，浏览器按屏幕宽度自己挑：
+   手机拿 1000w（119 KB）、平板/小笔记本拿 1400w（194 KB）、大屏仍用原图（459 KB）。
+   两档小图由 tools/make-hero-sizes.ps1 生成，换首屏照片后要重跑一次。 */
+const heroSrcset =
+  'images/hero-1000.jpg 1000w, images/hero-1400.jpg 1400w, ' + heroSrc + ' 2200w'
+
 /** 精选作品：有分类的前 9 张 */
 const picks = computed(() => PHOTOS.filter((p) => p.c !== '').slice(0, 9))
 
 /** 首屏大图缺失时退回径向渐变底，避免露出裂图 */
 function onHeroError(event: Event): void {
   const img = event.target as HTMLImageElement
+  /* 小尺寸备份图可能没生成（换了首屏照片但忘了跑脚本）：
+     先退回原图，原图也失败才隐藏。 */
+  if (img.getAttribute('srcset')) {
+    img.removeAttribute('srcset')
+    img.removeAttribute('sizes')
+    img.src = heroSrc
+    return
+  }
   img.style.display = 'none'
   const parent = img.parentNode as HTMLElement | null
   if (parent) {
@@ -29,6 +43,8 @@ function onHeroError(event: Event): void {
     <div class="hero-media">
       <img
         :src="heroSrc"
+        :srcset="heroSrcset"
+        sizes="100vw"
         alt="海口世纪大桥火烧云"
         fetchpriority="high"
         decoding="async"

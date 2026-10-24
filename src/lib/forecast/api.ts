@@ -11,7 +11,7 @@ import { state } from './state'
 import { faceMatch, sunPosition } from './sun'
 import { nextUpdateMs, parseIso } from './time'
 import type {
-  CacheData, CloudLayer, Detail, DetailHour, Measure, RawData, RawPoint, RawSeries, Row, Spot, SpotDetail, StaticFile, SunPos
+  CacheData, CloudLayer, Detail, DetailHour, Interpretation, Measure, Phototip, RawData, RawPoint, RawSeries, Row, Spot, SpotDetail, StaticFile, SunPos
 } from './types'
 
 /* ---------- 工具 ---------- */
@@ -240,6 +240,10 @@ function noteGrid(points: RawPoint[]): void {
 let CACHE: CacheData | null = null
 const CACHE_MS = 10 * 60 * 1000
 
+/* 请求令牌：每次 load() 自增。快速连点省份/日期时，先发出去的那次
+   可能在后面返回，把新省份的数据覆盖掉 —— 用令牌把过期响应丢掉。 */
+let loadToken = 0
+
 /** 切换模式时丢弃缓存（旧版直接 CACHE = null） */
 export function clearCache(): void {
   CACHE = null
@@ -255,52 +259,60 @@ export function load(force = false): void {
     return
   }
 
+  const token = ++loadToken
+
   if (!force && state.model === 'multi') {
-    loadStatic()
+    loadStatic(token)
     return
   }
-  loadLive()
+  loadLive(token)
 }
 
 /* 优先读预生成的静态缓存（一天更新 6 次），读不到再现场请求 */
-function loadStatic(): void {
+function loadStatic(token: number): void {
   state.loading = true
   state.error = null
 
-  const file = dataFileFor(state.prov)
-  fetch(file, { cache: 'no-cache' })
+  const prov = state.prov
+  const file = dataFileFor(prov)
+  /* 用浏览器 HTTP 缓存（_headers 里 /data/* 是 max-age=300）：
+     5 分钟内重复打开不再发请求，超过 5 分钟浏览器自己带 If-None-Match 换 304。 */
+  fetch(file)
     .then((r) => {
       if (!r.ok) throw new Error('HTTP ' + r.status)
       return r.json()
     })
     .then((j: StaticFile) => {
+      if (token !== loadToken) return          /* 已经有更新的一次请求了 */
       if (!j || !j.weather || !j.weather.length) throw new Error('缓存为空')
       const at = j.generatedAt ? Date.parse(j.generatedAt) : NaN
       if (!isNaN(at) && Date.now() - at > 14 * 3600 * 1000) throw new Error('缓存过期')
 
       noteGrid(j.weather)
       CACHE = {
-        weather: remapBySpots(j.weather, state.prov) ?? [],
-        air: remapBySpots(j.air ?? null, state.prov),
-        profs: remapBySpots(j.prof ?? null, state.prov),
+        weather: remapBySpots(j.weather, prov) ?? [],
+        air: remapBySpots(j.air ?? null, prov),
+        profs: remapBySpots(j.prof ?? null, prov),
         at: isNaN(at) ? Date.now() : at,
         fromStatic: true,
-        prov: state.prov
+        prov: prov
       } as CacheData
       state.fromStatic = true
       compute(CACHE.weather, CACHE.air, CACHE.profs)
     })
     .catch(() => {
+      if (token !== loadToken) return
       state.fromStatic = false
-      loadLive()
+      loadLive(token)
     })
 }
 
-function loadLive(): void {
+function loadLive(token: number): void {
   state.fromStatic = false
   state.loading = true
   state.error = null
 
+  const prov = state.prov
   const mids = modelsForRequest()
 
   const fUrl = buildUrl(
@@ -330,6 +342,7 @@ function loadLive(): void {
     fetchJson(aUrl).catch(() => null),
     fetchJson(pUrl).catch(() => null)
   ]).then((res) => {
+    if (token !== loadToken) return          /* 已经有更新的一次请求了 */
     let weather = res[0] as RawData | RawPoint
     const airRaw = res[1] as RawData | RawPoint | null
     const profRaw = res[2] as RawData | RawPoint | null
@@ -342,15 +355,16 @@ function loadLive(): void {
 
     noteGrid(weather)
     CACHE = {
-      weather: remapBySpots(weather, state.prov) ?? [],
-      air: remapBySpots(air, state.prov),
-      profs: remapBySpots(profs, state.prov),
+      weather: remapBySpots(weather, prov) ?? [],
+      air: remapBySpots(air, prov),
+      profs: remapBySpots(profs, prov),
       at: Date.now(),
       fromStatic: false,
-      prov: state.prov
+      prov: prov
     } as CacheData
     compute(CACHE.weather, CACHE.air, CACHE.profs)
   }).catch((e: unknown) => {
+    if (token !== loadToken) return
     state.loading = false
     state.error = '取不到数据：' + (e instanceof Error && e.message ? e.message : '网络错误')
   })
@@ -430,48 +444,17 @@ function buildSpotDetail(o: {
   grid?: string
 }): SpotDetail {
   const p = parseIso(o.iso)
-  const it = interpret({
-    kind: state.kind,
-    score: o.score,
-    levelName: levelOf(o.score).name,
-    m: o.m,
-    sun: o.sun,
-    spread: o.spread,
-    faceOff: o.faceOff,
-    face: o.spot.face,
-    cloudBaseLow: o.cbLow,
-    layers: o.layers,
-    cape: o.cape,
-    day: state.day,
-    profileLabel: o.profLabel,
-    profileMod: o.profMod
-  })
-
-  const tips = matchPhenomena({
-    kind: state.kind,
-    score: o.score,
-    high: o.m.high ?? 0,
-    mid: o.m.mid ?? 0,
-    low: o.m.low ?? 0,
-    aod: o.m.aod,
-    pop: o.m.pop ?? 0,
-    rh: o.m.rh,
-    vis: o.m.vis,
-    cape: o.cape,
-    sunEl: o.sun ? o.sun.el : null,
-    crep: o.crep,
-    pillar: o.pillar,
-    clarity: o.clarity,
-    rainbow: o.rainbow,
-    cloudBaseLow: o.cbLow,
-    spread: o.spread,
-    faceOff: o.faceOff,
-    layers: o.layers,
-    t2m: o.m.t2m
-  })
-
   const t = p.time
-  return {
+
+  /* 性能：interpret / tips / hourly 这三样只有「展开详情」和「生成名片」才用得到，
+     列表里 169 个机位一个都用不上。以前每个机位都算一遍，
+     等于每次刷新都白算 169 次 58 条天象匹配 + 169 张逐小时表。
+     现在改成惰性求值 + 各自缓存，取值时机变了，算出来的结果完全一样。 */
+  let itCache: Interpretation | null = null
+  let tipsCache: Phototip[] | null = null
+  let hoursCache: DetailHour[] | null = null
+
+  const detail: SpotDetail = {
     spot: o.spot,
     date: p.date,
     weekday: p.weekday,
@@ -483,12 +466,63 @@ function buildSpotDetail(o: {
     layers: o.layers,
     sheets: o.sheets,
     genusText: o.genusText,
-    interpret: it,
     conflicts: o.ecmwf ? conflictsOf(o.m, o.ecmwf) : [],
     grid: o.grid ?? '',
-    tips: tips,
-    hourly: buildHours(o.w, o.air, o.idx, o.mids)
+    get interpret(): Interpretation {
+      if (!itCache) {
+        itCache = interpret({
+          kind: state.kind,
+          score: o.score,
+          levelName: levelOf(o.score).name,
+          m: o.m,
+          sun: o.sun,
+          spread: o.spread,
+          faceOff: o.faceOff,
+          face: o.spot.face,
+          cloudBaseLow: o.cbLow,
+          layers: o.layers,
+          cape: o.cape,
+          day: state.day,
+          profileLabel: o.profLabel,
+          profileMod: o.profMod
+        })
+      }
+      return itCache
+    },
+    get tips(): Phototip[] {
+      if (!tipsCache) {
+        tipsCache = matchPhenomena({
+          kind: state.kind,
+          score: o.score,
+          high: o.m.high ?? 0,
+          mid: o.m.mid ?? 0,
+          low: o.m.low ?? 0,
+          aod: o.m.aod,
+          pop: o.m.pop ?? 0,
+          rh: o.m.rh,
+          vis: o.m.vis,
+          cape: o.cape,
+          sunEl: o.sun ? o.sun.el : null,
+          crep: o.crep,
+          pillar: o.pillar,
+          clarity: o.clarity,
+          rainbow: o.rainbow,
+          cloudBaseLow: o.cbLow,
+          spread: o.spread,
+          faceOff: o.faceOff,
+          layers: o.layers,
+          t2m: o.m.t2m
+        })
+      }
+      return tipsCache
+    },
+    get hourly(): DetailHour[] {
+      if (!hoursCache) hoursCache = buildHours(o.w, o.air, o.idx, o.mids)
+      return hoursCache
+    }
   }
+
+  return detail
 }
 
 function compute(weather: RawData, air: RawData | null, profs: RawData | null): void {

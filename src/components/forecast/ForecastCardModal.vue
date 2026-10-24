@@ -4,7 +4,16 @@ import { KINDS } from '@/data/forecast/levels'
 import { MODELS } from '@/data/forecast/models'
 import { copyText } from '@/composables/useCopyText'
 import { toast } from '@/composables/useToast'
-import { drawForecastCard, loadForecastCardImages, type ForecastCardInput } from '@/lib/card/forecast-card'
+import type { ForecastCardInput } from '@/lib/card/forecast-card'
+
+/* 名片绘制 + 二维码库一共约 74 KB 源码，只有真正点「名片」时才用得到。
+   改成动态 import：首屏不再下载它们，点开名片时再取（通常已经缓存）。 */
+type CardModule = typeof import('@/lib/card/forecast-card')
+let cardModule: Promise<CardModule> | null = null
+function loadCardModule(): Promise<CardModule> {
+  if (!cardModule) cardModule = import('@/lib/card/forecast-card')
+  return cardModule
+}
 import { closeCard, cardUi } from '@/lib/forecast/card-ui'
 import { dayWord, state } from '@/lib/forecast/state'
 import { provEn, provName } from '@/data/forecast/spots'
@@ -74,12 +83,16 @@ const input = computed<ForecastCardInput | null>(() => {
 
 function render(): void {
   if (!canvas.value || !input.value) return
-  drawForecastCard(canvas.value, input.value)
-  try {
-    preview.value = canvas.value.toDataURL('image/png')
-  } catch {
-    preview.value = ''
-  }
+  const cv = canvas.value
+  const inp = input.value
+  loadCardModule().then(({ drawForecastCard }) => {
+    drawForecastCard(cv, inp)
+    try {
+      preview.value = cv.toDataURL('image/png')
+    } catch {
+      preview.value = ''
+    }
+  })
 }
 
 /** 微信内置浏览器：下载按钮无效，只能长按图片保存 */
@@ -89,7 +102,7 @@ watch(
   () => [cardUi.open, cardUi.row, cardUi.top, state.kind, state.day, state.model],
   () => {
     if (!cardUi.open) return
-    loadForecastCardImages(render)
+    void loadCardModule().then((m) => m.loadForecastCardImages(render))
   },
   { flush: 'post' }
 )
