@@ -143,10 +143,10 @@ onMounted(() => {
 
       <template v-else>
         <!-- ① 决策区 -->
-        <DecisionHero v-if="selected" :row="selected" :rank="rank" :total="rows.length" />
+        <DecisionHero v-if="selected" class="fc-reveal" :row="selected" :rank="rank" :total="rows.length" />
 
         <!-- ② 当次题材 -->
-        <div v-if="selected" class="fc-block">
+        <div v-if="selected" class="fc-block fc-reveal">
           <div class="fc-block-head">
             <h2>当次能拍的题材</h2>
             <span class="sub">
@@ -157,7 +157,7 @@ onMounted(() => {
         </div>
 
         <!-- ② 机位排行 -->
-        <div class="fc-block">
+        <div class="fc-block fc-reveal">
           <div class="fc-block-head">
             <h2>全部 {{ rows.length }} 个机位</h2>
             <span class="sub">按分数排序 · 点任意一行看它的完整分析</span>
@@ -173,15 +173,15 @@ onMounted(() => {
         </div>
 
         <!-- ② 各模式怎么看 -->
-        <div v-if="selected" class="fc-block">
+        <div v-if="selected" class="fc-block fc-reveal">
           <ModelTable :row="selected" />
         </div>
 
         <!-- ③ 气象条件分析 -->
-        <SpotPanel v-if="selected" :row="selected" class="fc-block" />
+        <SpotPanel v-if="selected" :row="selected" class="fc-block fc-reveal" />
 
         <!-- ④ 专业判定与参考 -->
-        <div class="fc-block">
+        <div class="fc-block fc-reveal">
           <div class="fc-block-head">
             <h2>专业判定与参考</h2>
             <span class="sub">可同时展开多个 · 原有内容一条未删</span>

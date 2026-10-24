@@ -63,6 +63,7 @@ const kindWord = computed(() => KINDS[state.kind].word)
       v-for="(r, i) in visible"
       :key="r.spot.n"
       class="fr-row fr-line"
+      :style="{ '--fc-i': i }"
       :class="{ sel: selected && selected.spot.n === r.spot.n, hl: state.shareSpot === r.spot.n }"
       @click="emit('select', r.spot.n)"
     >

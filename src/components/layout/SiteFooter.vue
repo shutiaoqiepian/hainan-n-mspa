@@ -26,7 +26,14 @@ function onLogoError(event: Event): void {
     <div class="wrap">
       <div class="row">
         <div>
-          <img class="logo" :src="BRAND.logo" :alt="BRAND.logoAlt" @error="onLogoError" />
+          <img
+            class="logo"
+            :src="BRAND.logo"
+            :alt="BRAND.logoAlt"
+            width="1402"
+            height="1402"
+            @error="onLogoError"
+          />
         </div>
         <div class="links">
           <a v-for="link in FOOTER_LINKS" :key="link.href" :href="link.href">{{ link.label }}</a>

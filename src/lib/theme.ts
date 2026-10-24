@@ -68,7 +68,8 @@ export function nextTheme(key: ThemeKey): ThemeKey {
 /* ---------- 液态玻璃：让高光跟着指针走 ---------- */
 
 const GLASS_SELECTOR =
-  '.glass,.card,.step,.member,.fc-row,.fc-timebar,.fcd,.fc-pheno,.fc-note,.fc-refs,.login-card,.login-side,.fc-modes,.theme-switch'
+  '.glass,.card,.step,.member,.fc-row,.fc-timebar,.fcd,.fc-pheno,.fc-note,.fc-refs,.login-card,.login-side,.fc-modes,.theme-switch,' +
+  '.dh,.fcd2-card,.fc-hours2,.fc-fold,.fc-tipcard,.fcm-table,.fc-rank'
 
 /**
  * 给玻璃面写入 --lg-x / --lg-y（高光位置）。

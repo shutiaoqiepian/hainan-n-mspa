@@ -679,3 +679,20 @@ button.fcl-row.open { background: var(--fill-2); }
   .fc-block-head { flex-wrap: wrap; }
   .fc-block-head .fc-btn { margin-left: 0; }
 }
+
+
+/* ---------- 加载占位高度 ----------
+   分数是接口算出来的，内容要等 1–2 秒才渲染；这期间页面高度只有 948px，
+   数据一到内容全插进来，页脚会从 624px 一下跳到 4647px，
+   Chromium 会把这一跳记成 CLS（实测 0.307，来源就是 footer）。
+   给占位容器一个接近成稿的高度，让这一跳发生在它内部、不影响页脚位置。 */
+.fc-section .fc-empty {
+  min-height: 1800px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 64px;
+}
+@media (max-width: 1000px) {
+  .fc-section .fc-empty { min-height: 1200px; }
+}

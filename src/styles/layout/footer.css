@@ -16,7 +16,11 @@
 
 .footer .logo {
   height: 132px;
-  width: auto;
+  /* 图片没下载完之前宽度是按比例算出来的，这里把比例写死，
+     否则加载完成那一刻宽度变大，会把整行链接推向右边（CLS） */
+  aspect-ratio: 1 / 1;
+  width: 132px;
+  object-fit: contain;
   opacity: 1;
 }
 
