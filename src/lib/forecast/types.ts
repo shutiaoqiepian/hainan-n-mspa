@@ -71,6 +71,8 @@ export interface Measure {
   td2m: number | null
   vis: number | null
   aod: number
+  /** AOD 缺测时填的是默认值，不是真实观测 */
+  aodMissing?: boolean
   /** 该小时的 HH:MM，compute 里补上 */
   time?: string
 }
@@ -212,6 +214,20 @@ export interface SpotDetail {
 /** 兼容旧引用：Detail 就是 SpotDetail */
 export type Detail = SpotDetail
 
+/** 数据质量：把「天气不好」和「没有数据」分开 */
+export interface DataQuality {
+  /** 关键字段完整度 0–100 */
+  completeness: number
+  /** 缺了哪些字段的中文名 */
+  missing: string[]
+  /**
+   * ok        = 关键字段齐
+   * partial   = 缺 1–2 项，分数仅供参考
+   * poor      = 缺 3 项以上，分数基本不可信
+   */
+  status: 'ok' | 'partial' | 'poor'
+}
+
 /** 列表里的一行 = 一个机位的一次预报 */
 export interface Row {
   spot: Spot
@@ -235,6 +251,10 @@ export interface Row {
   faceOff: boolean
   date: string
   ms: number
+  /** 流水线第一层的原始分（未平滑、未打折），详情里和最终分并列显示 */
+  rawScore: number
+  /** 数据质量：0–100 的完整度 + 缺了哪几项 */
+  quality: DataQuality
   /** 这个机位目标时刻的完整详情 */
   detail: SpotDetail
 }

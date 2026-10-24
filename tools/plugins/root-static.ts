@@ -1,12 +1,19 @@
 import type { Plugin } from 'vite'
 import { createReadStream, existsSync, statSync } from 'node:fs'
-import { cp } from 'node:fs/promises'
-import { extname, join, resolve, sep } from 'node:path'
+import { cp, rm } from 'node:fs/promises'
+import { extname, join, relative, resolve, sep } from 'node:path'
 
 /** 仓库根目录下的大体积静态资源：图片、预报缓存 */
 const DIRS = ['images', 'data']
 /** 仓库根目录下的单文件静态资源：Cloudflare Pages 头配置、爬虫文件 */
 const FILES = ['_headers', 'robots.txt', 'sitemap.xml']
+
+/**
+ * 不发布到线上的子目录。
+ * data/obs/ 是「实况存档 + 分数快照」（每天十几 KB 地长），
+ * 只有审计脚本会用，访客不需要，也不该占部署体积。
+ */
+const EXCLUDE_DIRS = ['data/obs']
 
 const MIME: Record<string, string> = {
   '.jpg': 'image/jpeg',
@@ -114,8 +121,17 @@ function passthroughPlugin(): Plugin {
       for (const dir of DIRS) {
         const from = join(root, dir)
         if (!existsSync(from)) continue
-        await cp(from, join(outDir, dir), { recursive: true })
+        await cp(from, join(outDir, dir), {
+          recursive: true,
+          /* data/obs 只在本地/仓库里，不进部署产物 */
+          filter: (src) => {
+            const rel = relative(root, src).split(sep).join('/')
+            return !EXCLUDE_DIRS.some((d) => rel === d || rel.startsWith(d + '/'))
+          }
+        })
       }
+      /* 有些 Node 版本即使 filter 返回 false 也会把目录建出来，这里兜底删掉 */
+      for (const d of EXCLUDE_DIRS) await rm(join(outDir, d), { recursive: true, force: true })
       for (const file of FILES) {
         const from = join(root, file)
         if (!existsSync(from)) continue

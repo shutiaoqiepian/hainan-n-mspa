@@ -11,7 +11,7 @@ import { state } from './state'
 import { faceMatch, sunPosition } from './sun'
 import { nextUpdateMs, parseIso } from './time'
 import type {
-  CacheData, CloudLayer, Detail, DetailHour, Interpretation, Measure, Phototip, RawData, RawPoint, RawSeries, Row, Spot, SpotDetail, StaticFile, SunPos
+  CacheData, CloudLayer, DataQuality, Detail, DetailHour, Interpretation, Measure, Phototip, RawData, RawPoint, RawSeries, Row, Spot, SpotDetail, StaticFile, SunPos
 } from './types'
 
 /* ---------- 工具 ---------- */
@@ -178,10 +178,13 @@ export function measureAt(
     return vals.reduce((a, b) => a + b, 0) / vals.length
   }
 
+  /* AOD 缺测时填 0.2（气溶胶不清澈也不脏），但要记下来 ——
+     否则「没数据」和「空气一般」在界面上长得一模一样。 */
   let aod = 0.2
+  let aodMissing = true
   if (airObj && airObj.hourly && airObj.hourly.aerosol_optical_depth) {
     const v2 = airObj.hourly.aerosol_optical_depth[k]
-    if (typeof v2 === 'number') aod = v2
+    if (typeof v2 === 'number') { aod = v2; aodMissing = false }
   }
 
   return {
@@ -193,8 +196,28 @@ export function measureAt(
     t2m: avg('temperature_2m'),
     td2m: avg('dew_point_2m'),
     vis: avg('visibility'),
-    aod: aod
+    aod: aod,
+    aodMissing: aodMissing
   }
+}
+
+/** 关键字段完整度：把「天气不好」和「没有数据」分开。
+    这几个字段任一缺测，scoreOf 都会用固定不利值兜底，
+    所以缺得越多，分数越不可信，而不是「天气越差」。 */
+export function qualityOf(m: Measure): DataQuality {
+  const missing: string[] = []
+  if (m.high == null) missing.push('高云量')
+  if (m.mid == null) missing.push('中云量')
+  if (m.low == null) missing.push('低云量')
+  if (m.rh == null) missing.push('相对湿度')
+  if (m.pop == null) missing.push('降水概率')
+  if (m.aodMissing) missing.push('气溶胶(AOD)')
+
+  const total = 6
+  const completeness = Math.round(100 * (total - missing.length) / total)
+  const status: DataQuality['status'] =
+    missing.length === 0 ? 'ok' : missing.length <= 2 ? 'partial' : 'poor'
+  return { completeness, missing, status }
 }
 
 
@@ -566,16 +589,15 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null): 
     }
 
     /* 太阳位置与机位朝向。
-       评分用整点（和逐时数据同口径），详情面板用精确日出/日落时刻。 */
+       以前评分用整点、详情用精确日落时刻，两处方位最多差 30 分钟，
+       行内「太阳方位」和详情面板会打架。现在统一用精确时刻。 */
     let sun: SunPos | null = null
     let face = 1
-    const ms = Date.parse(iso + ':00+08:00')
+    const ms = Date.parse(iso + (iso.length === 16 ? ':00' : '') + '+08:00')
     if (!isNaN(ms)) sun = sunPosition(ms, spot.lat, spot.lon)
     if (sun) face = faceMatch(spot, sun.az)
 
-    let sunExact: SunPos | null = sun
-    const msExact = Date.parse(iso + (iso.length === 16 ? ':00' : '') + '+08:00')
-    if (!isNaN(msExact)) sunExact = sunPosition(msExact, spot.lat, spot.lon)
+    const sunExact: SunPos | null = sun
 
     /* 每个模式各算一遍：平均值当结果，标准差当“可信度” */
     let perModel: number[] = []
@@ -677,6 +699,8 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null): 
       spot: spot,
       m: m,
       score: score,
+      rawScore: s1,
+      quality: qualityOf(m),
       level: levelOf(score),
       aodName: aodBand(m.aod).name,
       profLabel: prof ? prof.label : '',

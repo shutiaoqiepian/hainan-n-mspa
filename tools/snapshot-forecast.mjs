@@ -58,15 +58,25 @@ export async function computeFor(prov: string, fixture: string) {
       lat: r.spot.lat,
       lon: r.spot.lon,
       score: r.score,
+      rawScore: r.rawScore,
       level: r.level.name,
-      high: r.m.high == null ? null : Math.round(r.m.high),
-      mid: r.m.mid == null ? null : Math.round(r.m.mid),
-      low: r.m.low == null ? null : Math.round(r.m.low),
-      aod: Math.round((r.m.aod ?? 0) * 100) / 100,
-      pop: r.m.pop == null ? null : Math.round(r.m.pop),
-      rh: r.m.rh == null ? null : Math.round(r.m.rh),
+      /* 原始输入（缺测保留 null，不要填默认值）——
+         存下来才能「用新公式重算历史」，否则只能比总分 */
+      high: r.m.high == null ? null : Math.round(r.m.high * 10) / 10,
+      mid: r.m.mid == null ? null : Math.round(r.m.mid * 10) / 10,
+      low: r.m.low == null ? null : Math.round(r.m.low * 10) / 10,
+      rh: r.m.rh == null ? null : Math.round(r.m.rh * 10) / 10,
+      pop: r.m.pop == null ? null : Math.round(r.m.pop * 10) / 10,
+      aod: r.m.aodMissing ? null : Math.round(r.m.aod * 100) / 100,
+      t2m: r.m.t2m == null ? null : Math.round(r.m.t2m * 10) / 10,
+      td2m: r.m.td2m == null ? null : Math.round(r.m.td2m * 10) / 10,
+      vis: r.m.vis == null ? null : Math.round(r.m.vis),
+      sunAz: r.sunAz,
+      sunEl: r.detail.sunEl,
       spread: r.spread,
-      faceOff: r.faceOff
+      models: r.models,
+      faceOff: r.faceOff,
+      quality: r.quality
     }))
   }
 }

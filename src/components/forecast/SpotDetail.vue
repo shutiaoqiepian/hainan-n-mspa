@@ -37,10 +37,26 @@ const sunText = computed(() => {
         <span><b>蓝调时刻</b>{{ d.blue }}</span>
         <span v-if="d.sunAz != null"><b>太阳方位</b>{{ d.sunAz }}°</span>
         <span v-if="d.grid"><b>气象格点</b>{{ d.grid }}</span>
+        <span v-if="row.quality.status !== 'ok'" class="fcd-quality">
+          <b>数据完整度</b>{{ row.quality.completeness }}%（缺{{ row.quality.missing.join('、') }}）
+        </span>
       </div>
     </div>
 
     <p class="fcd-headline">{{ d.interpret.headline }}</p>
+
+    <p v-if="row.rawScore !== row.score" class="fcd-note">
+      这个分数怎么来的：那一刻的天气单独算 <b>{{ row.rawScore }}</b> 分 →
+      叠加逐时平滑{{ row.models > 1 ? '、模式分歧折扣（±' + row.spread + '）' : '' }}、机位朝向、高空湿度剖面后
+      变成 <b>{{ row.score }}</b> 分。
+      <template v-if="row.rawScore > row.score + 10">
+        差得较多，说明天气本身不错，但<template v-if="row.spread >= 18">几个模式分歧很大，</template>可信度有限。
+      </template>
+    </p>
+    <p v-if="row.quality.status !== 'ok'" class="fcd-note">
+      ⚠ 这次预报缺了 {{ row.quality.missing.join('、') }}，缺的项按保守值估算，
+      分数会偏低且不可信——这不代表天气真的差。
+    </p>
 
     <div class="fcd-cols">
       <div class="fcd-col">
