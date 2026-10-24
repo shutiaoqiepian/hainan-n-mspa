@@ -461,8 +461,16 @@
 .fcd2-head { display: flex; align-items: baseline; gap: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--fc-line); margin-bottom: var(--fc-gap-card); }
 .fcd2-head h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: 0.05em; }
 .fcd2-head .sub { font-size: 12px; color: var(--muted-2); }
-.fcd2-cols { display: grid; grid-template-columns: 1.15fr 1fr; gap: var(--fc-gap-card); }
+.fcd2-cols {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: var(--fc-gap-card);
+  align-items: start;
+}
 .fcd2-col { display: flex; flex-direction: column; gap: var(--fc-gap-card); min-width: 0; }
+/* 云层卡比右三张矮很多，靠它自己撑满左栏剩下的高度：
+   把「逐层判据」做成左栏底部的补充块，而不是让网格留下空白 */
+.fcd2-col-l { min-height: 100%; }
 .fcd2-card {
   border: 1px solid var(--fc-line);
   border-radius: 12px;

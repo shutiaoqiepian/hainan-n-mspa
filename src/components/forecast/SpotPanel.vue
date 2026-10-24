@@ -83,8 +83,8 @@ const consistency = computed(() => Math.min(100, Math.max(0, 100 - props.row.spr
     </div>
 
     <div class="fcd2-cols">
-      <!-- 左：云层结构（最详细） -->
-      <div class="fcd2-col">
+      <!-- 云层结构：全页最高的一张，独占左半 -->
+      <div class="fcd2-col fcd2-col-l">
         <div class="fcd2-card">
           <div class="fcd2-ch">
             <h3>云层结构</h3>
@@ -143,33 +143,9 @@ const consistency = computed(() => Math.min(100, Math.max(0, 100 - props.row.spr
           </div>
         </div>
 
-        <CloudProfile v-if="false" :layers="d.layers" />
-      </div>
-
-      <!-- 右：大气 / 天文 / 模型 -->
-      <div class="fcd2-col">
+        <!-- 模型与可信度：分数是怎么从原始分变成最终分的（放在左栏底部，补满云层卡下方的空档） -->
         <div class="fcd2-card">
-          <div class="fcd2-ch"><h3>大气与降水</h3></div>
-          <div class="fcmg">
-            <div v-for="c in airCells" :key="c.k" class="fcmc" :class="{ miss: c.v === '—' }">
-              <span class="k">{{ c.k }}</span>
-              <span class="v">{{ c.v }}<em v-if="c.v !== '—'">{{ c.u }}</em></span>
-            </div>
-          </div>
-        </div>
-
-        <div class="fcd2-card">
-          <div class="fcd2-ch"><h3>天文与拍摄</h3></div>
-          <div class="fckv">
-            <div v-for="x in sunRows" :key="x.k" class="fckv-r">
-              <span class="k">{{ x.k }}</span><span class="v">{{ x.v }}</span>
-              <span v-if="x.n" class="n">{{ x.n }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="fcd2-card">
-          <div class="fcd2-ch"><h3>模型与可信度</h3></div>
+          <div class="fcd2-ch"><h3>模型与可信度</h3><s>原始分 → 最终分</s></div>
           <div class="fcchain">
             <span class="st">原始分</span><b>{{ row.rawScore }}</b>
             <span class="arw">→</span><span class="st">逐时平滑</span><span class="arw">→</span>
@@ -196,6 +172,29 @@ const consistency = computed(() => Math.min(100, Math.max(0, 100 - props.row.spr
             <span class="sg">{{ row.quality.completeness }}%</span>
           </div>
           <p class="fcd2-note">光柱这一路：{{ pillarNote }}</p>
+        </div>
+      </div>
+
+      <!-- 右：大气 / 天文 / 模型，三张叠起来刚好和左边云层卡差不多高 -->
+      <div class="fcd2-col fcd2-col-r">
+        <div class="fcd2-card">
+          <div class="fcd2-ch"><h3>大气与降水</h3></div>
+          <div class="fcmg">
+            <div v-for="c in airCells" :key="c.k" class="fcmc" :class="{ miss: c.v === '—' }">
+              <span class="k">{{ c.k }}</span>
+              <span class="v">{{ c.v }}<em v-if="c.v !== '—'">{{ c.u }}</em></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="fcd2-card">
+          <div class="fcd2-ch"><h3>天文与拍摄</h3></div>
+          <div class="fckv">
+            <div v-for="x in sunRows" :key="x.k" class="fckv-r">
+              <span class="k">{{ x.k }}</span><span class="v">{{ x.v }}</span>
+              <span v-if="x.n" class="n">{{ x.n }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
