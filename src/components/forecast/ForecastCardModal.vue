@@ -19,6 +19,9 @@ import { dayWord, state } from '@/lib/forecast/state'
 import { provEn, provName } from '@/data/forecast/spots'
 import { dateText, clockText } from '@/lib/forecast/time'
 import { currentTheme } from '@/lib/theme'
+import {
+  detectUA, downloadLikelyBlocked, openLongPressViewer, saveCardImage
+} from '@/lib/card/save-image'
 import type { Row } from '@/lib/forecast/types'
 
 /**
@@ -95,8 +98,9 @@ function render(): void {
   })
 }
 
-/** 微信内置浏览器：下载按钮无效，只能长按图片保存 */
-const inWeChat = /MicroMessenger/i.test(navigator.userAgent)
+/** 当前环境能不能直接下载？不能就在界面上说清楚该怎么存 */
+const env = detectUA()
+const blocked = downloadLikelyBlocked()
 
 watch(
   () => [cardUi.open, cardUi.row, cardUi.top, state.kind, state.day, state.model],
@@ -113,21 +117,28 @@ function fileName(): string {
   return base + '-霞光预报名片.png'
 }
 
-function onDownload(): void {
+/** 保存图片：桌面直接下载；微信 / iOS 走系统分享或长按，见 lib/card/save-image.ts */
+async function onDownload(): Promise<void> {
   const cv = canvas.value
   if (!cv) return
-  cv.toBlob((blob) => {
-    if (!blob) return
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = fileName()
-    document.body.appendChild(a)
-    a.click()
-    window.setTimeout(() => {
-      URL.revokeObjectURL(a.href)
-      a.remove()
-    }, 1500)
-  }, 'image/png')
+
+  const out = await saveCardImage(cv, fileName(), preview.value || undefined)
+
+  if (out.kind === 'downloaded') {
+    toast('已保存到下载文件夹', { variant: 'forecast' })
+    return
+  }
+  if (out.kind === 'shared') {
+    toast('已打开分享面板，选「存储图像」即可', { variant: 'forecast' })
+    return
+  }
+  if (out.kind === 'long-press') {
+    /* 把图铺满屏幕，提示长按；微信里这是唯一能存进相册的路 */
+    openLongPressViewer(preview.value)
+    toast(out.reason, { variant: 'forecast' })
+    return
+  }
+  toast(out.reason, { variant: 'forecast' })
 }
 
 function onCopyText(): void {
@@ -138,13 +149,16 @@ function onCopyText(): void {
     cardUi.mode === 'spot'
       ? [
           '【霞光预报】' + dateText(d.date, d.weekday) + ' ' + dayText.value + kindWord.value + ' ' + d.time,
-          r.spot.n + '：' + r.score + ' 分（' + r.level.name + '）',
+          r.spot.n + '：' + r.score + ' 分（' + r.level.name + '）· 朝' + r.spot.face,
           '高云 ' + Math.round(r.m.high ?? 0) + '% · 中云 ' + Math.round(r.m.mid ?? 0) + '% · 低云 ' +
-            Math.round(r.m.low ?? 0) + '% · AOD ' + r.m.aod.toFixed(2),
-          '云隙光 ' + r.rays + ' · 光柱 ' + r.pillar + ' · 彩虹 ' + r.rainbowScore,
+            Math.round(r.m.low ?? 0) + '% · AOD ' + r.m.aod.toFixed(2) + ' · 降雨 ' + Math.round(r.m.pop ?? 0) + '%',
+          '最佳时刻 ' + r.peakTime + '（' + r.peakScore + ' 分）· 鲜艳度峰值 ' + r.vividPeakTime +
+            '（' + r.vividPeakLabel + ' ' + r.vividPeak + '）',
+          '通透 ' + r.clarity + ' · 云隙光 ' + r.rays + ' · 光柱 ' + r.pillar + ' · 彩虹 ' + r.rainbowScore,
           d.interpret.headline,
+          d.tips.length ? '可能拍到：' + d.tips.slice(0, 3).map((t) => t.name).join(' / ') : '',
           '完整预报 → ' + spotUrl.value
-        ]
+        ].filter(Boolean)
       : [
           '【霞光预报】' + dateText(d.date, d.weekday) + ' ' + dayText.value + kindWord.value + ' ' + d.time,
           cardUi.top
@@ -187,13 +201,25 @@ if (typeof document !== 'undefined') document.addEventListener('keydown', onKey)
       <canvas ref="canvas" width="1080" height="1350" class="card-canvas-hidden"></canvas>
       <img v-if="preview" :src="preview" class="card-preview" alt="预报名片" />
       <div class="card-modal-actions">
-        <button class="btn btn-primary" type="button" @click="onDownload">保存图片</button>
+        <button class="btn btn-primary" type="button" @click="onDownload">
+          {{ blocked ? '存到相册' : '保存图片' }}
+        </button>
         <button class="btn btn-ghost" type="button" @click="onCopyText">复制文案</button>
         <button class="btn btn-ghost" type="button" @click="onCopyUrl">复制链接</button>
       </div>
       <p class="card-modal-tip">
-        <template v-if="inWeChat">微信里请<b>长按图片 → 保存图片</b>；文字用下面的「复制文案」</template>
-        <template v-else>手机上长按图片也能保存；发群里建议配「复制文案」的文字</template>
+        <template v-if="env.wechat">
+          微信里点「<b>存到相册</b>」会打开大图，<b>长按图片 → 保存图片</b>即可；文字用「复制文案」
+        </template>
+        <template v-else-if="env.ios">
+          点「<b>存到相册</b>」后在系统面板里选「存储图像」；也可以直接长按上面的图片
+        </template>
+        <template v-else-if="env.android">
+          点「保存图片」直接存进相册 / 下载文件夹；发群里建议再点一次「复制文案」
+        </template>
+        <template v-else>
+          点「保存图片」下载到电脑；手机上长按图片也能保存。发群里建议配「复制文案」的文字
+        </template>
       </p>
     </div>
   </div>

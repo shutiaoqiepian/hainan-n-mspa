@@ -805,3 +805,73 @@ button.fcl-row.open { background: var(--fill-2); }
   .dh-share-btn::before { animation: none; }
   .dh-share-btn::after { transition: none; }
 }
+
+/* ---------- 名片「长按保存」大图层 ----------
+   微信内置浏览器里 <a download> 是死路：点了既不下载也不报错。
+   唯一能把图存进相册的办法是长按图片 → 保存图片。
+   所以点「存到相册」时把图铺满全屏，配上明确的操作提示。 */
+.fc-img-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  background: rgba(0, 0, 0, 0.94);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  animation: fv-in 0.22s ease both;
+}
+
+@keyframes fv-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.fc-img-viewer .fv-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: min(100%, 560px);
+  margin: auto;
+}
+
+.fc-img-viewer img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  /* iOS 长按图会弹「存储图像」，这里不要禁掉触摸 */
+  -webkit-touch-callout: default;
+  user-select: auto;
+  -webkit-user-select: auto;
+}
+
+.fc-img-viewer .fv-tip {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  padding: 7px 18px;
+  /* 手机可能盖住顶部状态栏，往下让一点 */
+  margin-top: env(safe-area-inset-top, 0);
+}
+
+.fc-img-viewer .fv-hint {
+  margin: 0 0 env(safe-area-inset-bottom, 0);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fc-img-viewer { animation: none; }
+}
