@@ -250,7 +250,7 @@ function trimProfileOne(p, w) {
   return { ...p, hourly };
 }
 
-/** 抓全国所有机位，返回 Map<机位名, {weather, prof, air}> */
+/** 抓全国所有机位，返回 Map<机位名, {weather, prof, air, horizon}> */
 async function fetchAll(spots) {
   const byName = new Map();
   const chunks = makeChunks(spots);
@@ -282,7 +282,91 @@ async function fetchAll(spots) {
   return byName;
 }
 
-async function writeProvince(prov, spots, data) {
+/* ---------- 地平线柱（缺口 1）----------
+   原来的评分只看「机位头顶这根柱」的低云，但真正杀死日落的是
+   「太阳落下去那个方向」的低云——太阳高度贴近 0° 时，光线横着穿过低层，
+   60 km 外一排低云就能把整条光路挡掉，而头顶可能还是晴的。
+
+   做法：给每个机位算两个偏移点（日落方向 ≈ 265°、日出方向 ≈ 85°，各 65 km），
+   只取三层云量（不需要气压层剖面），合并去重后一次抓回。 */
+const HORIZON_KM = 65;
+const HORIZON_AZ = { west: 265, east: 85 };
+
+function offsetPoint(lat, lon, azDeg, km) {
+  const rad = Math.PI / 180;
+  const dLat = (km * Math.cos(azDeg * rad)) / 111.32;
+  const dLon = (km * Math.sin(azDeg * rad)) / (111.32 * Math.cos(lat * rad));
+  return {
+    lat: Math.round((lat + dLat) * 100) / 100,
+    lon: Math.round((lon + dLon) * 100) / 100
+  };
+}
+
+/** 每个机位一条：{ west:{lat,lon}, east:{lat,lon} } */
+function horizonPointsOf(spots) {
+  const per = new Map();
+  for (const s of spots) {
+    per.set(s.n, {
+      west: offsetPoint(s.lat, s.lon, HORIZON_AZ.west, HORIZON_KM),
+      east: offsetPoint(s.lat, s.lon, HORIZON_AZ.east, HORIZON_KM)
+    });
+  }
+  return per;
+}
+
+const HORIZON_VARS = "cloud_cover_low,cloud_cover_mid,cloud_cover_high";
+
+const nearestResp = (list, lat, lon) => {
+  let best = null;
+  let bestD = Infinity;
+  for (const p of list) {
+    if (typeof p?.latitude !== "number") continue;
+    const d = Math.abs(p.latitude - lat) + Math.abs(p.longitude - lon);
+    if (d < bestD) { bestD = d; best = p; }
+  }
+  return best;
+};
+
+/** 抓地平线柱，返回 Map<机位名, {west,east}> */
+async function fetchHorizon(spots) {
+  const per = horizonPointsOf(spots);
+
+  /* 去重（同一城市多个机位的偏移点常落在同一格） */
+  const uniq = new Map();
+  for (const [, v] of per) {
+    for (const key of ["west", "east"]) {
+      const p = v[key];
+      uniq.set(`${p.lat},${p.lon}`, p);
+    }
+  }
+  const coords = [...uniq.values()];
+  console.log(`地平线柱：${spots.length} 个机位 → ${coords.length} 个唯一坐标`);
+
+  const resp = [];
+  const BATCH = 20;
+  for (let i = 0; i < coords.length; i += BATCH) {
+    const part = coords.slice(i, i + BATCH);
+    if (i) await sleep(800);
+    const LL = `latitude=${part.map((c) => c.lat).join(",")}&longitude=${part.map((c) => c.lon).join(",")}`;
+    const url =
+      `https://api.open-meteo.com/v1/forecast?${LL}` +
+      `&hourly=${HORIZON_VARS}&${TZ}`;
+    const got = await get(url, `horizon ${Math.floor(i / BATCH) + 1}/${Math.ceil(coords.length / BATCH)}`, 3);
+    resp.push(...got);
+  }
+
+  const out = new Map();
+  for (const [name, v] of per) {
+    out.set(name, {
+      west: nearestResp(resp, v.west.lat, v.west.lon),
+      east: nearestResp(resp, v.east.lat, v.east.lon)
+    });
+  }
+  return out;
+}
+
+
+async function writeProvince(prov, spots, data, horizon) {
   const payload = {
     generatedAt: new Date().toISOString(),
     models: MULTI,
@@ -290,7 +374,14 @@ async function writeProvince(prov, spots, data) {
     spots: spots.length,
     weather: spots.map((s) => data.get(s.n)?.weather),
     prof: spots.map((s) => data.get(s.n)?.prof),
-    air: spots.map((s) => data.get(s.n)?.air)
+    air: spots.map((s) => data.get(s.n)?.air),
+    /* 每个机位朝西/朝东各一根「地平线柱」（只有三层云量） */
+    horizon: spots.map((s) => {
+      const h = horizon.get(s.n);
+      if (!h) return null;
+      /* 只要三层云量，取整到百分比即可（省一半字节） */
+      return { west: roundDeep(h.west), east: roundDeep(h.east) };
+    })
   };
 
   const out = resolve(ROOT, prov.out);
@@ -316,12 +407,13 @@ const main = async () => {
   if (!target.length) throw new Error("没有匹配的省份/机位：" + only);
 
   const data = await fetchAll(target);
+  const horizon = await fetchHorizon(target);
 
   console.log("\n按省写文件：");
   for (const prov of PROVINCES) {
     const spots = target.filter((s) => s.prov === prov.key);
     if (!spots.length) continue;
-    await writeProvince(prov, spots, data);
+    await writeProvince(prov, spots, data, horizon);
   }
   console.log(`\n完成 · ${new Date().toISOString()}`);
 };

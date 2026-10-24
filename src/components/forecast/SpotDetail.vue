@@ -45,6 +45,11 @@ const sunText = computed(() => {
 
     <p class="fcd-headline">{{ d.interpret.headline }}</p>
 
+    <p v-if="row.peakScore > row.score + 4" class="fcd-note">
+      更值得蹲的时刻：<b>{{ row.peakTime }}</b>（{{ row.peakScore }} 分，比正点高
+      {{ row.peakScore - row.score }} 分）—— 前后两个小时的天况更连片，不用卡着正点去。
+    </p>
+
     <p v-if="row.rawScore !== row.score" class="fcd-note">
       这个分数怎么来的：那一刻的天气单独算 <b>{{ row.rawScore }}</b> 分 →
       叠加逐时平滑{{ row.models > 1 ? '、模式分歧折扣（±' + row.spread + '）' : '' }}、机位朝向、高空湿度剖面后

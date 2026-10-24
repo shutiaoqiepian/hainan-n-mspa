@@ -5,13 +5,13 @@ import { DETAIL_SPOT, dataFileFor, spotsFor } from '@/data/forecast/spots'
 import { cloudProfile, syntheticProfile } from './clouds'
 import { conflictsOf, interpret } from './interpret'
 import {
-  clarityOf, clamp, crepuscularOf, lclMeters, pillarOf, profileOf, rainbowHint, rainbowOf, scoreOf
+  airmass, clarityOf, clamp, crepuscularOf, lclMeters, pillarOf, profileOf, rainbowHint, rainbowOf, scoreOf, scoreOfAt
 } from './scoring'
 import { state } from './state'
 import { faceMatch, sunPosition } from './sun'
 import { nextUpdateMs, parseIso } from './time'
 import type {
-  CacheData, CloudLayer, DataQuality, Detail, DetailHour, Interpretation, Measure, Phototip, RawData, RawPoint, RawSeries, Row, Spot, SpotDetail, StaticFile, SunPos
+  CacheData, CloudLayer, DataQuality, Detail, DetailHour, HorizonCols, Interpretation, KindKey, Measure, Phototip, RawData, RawPoint, RawSeries, Row, Spot, SpotDetail, StaticFile, SunPos
 } from './types'
 
 /* ---------- 工具 ---------- */
@@ -210,6 +210,36 @@ export function validNumber(v: unknown, min: number, max: number): number | null
   return v
 }
 
+/** 地平线遮挡系数（缺口 1）。
+    看的是「太阳升起/落下那个方向」60 km 外的柱状云，而不是头顶的云。
+    太阳高度贴近 0° 时，光线是横着穿过低层的：西边一排低云就能把整条光路挡掉，
+    而头顶可能是晴的。返回 1 = 那个方向干净；越小越挡。
+    旧缓存没有这个字段时返回 1，等于不启用。 */
+export function horizonBlockOf(
+  cols: HorizonCols | null | undefined,
+  kind: KindKey,
+  idx: number
+): number {
+  if (!cols) return 1
+  const col = kind === 'sunrise' ? cols.east : cols.west
+  if (!col || !col.hourly) return 1
+
+  const pick = (name: string): number | null => {
+    const a = col.hourly?.[name]
+    if (!a) return null
+    const v = a[idx]
+    return Number.isFinite(v) ? (v as number) : null
+  }
+
+  const low = pick('cloud_cover_low')
+  const mid = pick('cloud_cover_mid')
+
+  let block = 1
+  if (low != null) block -= 0.45 * clamp((low - 25) / 60, 0, 1)   /* 低云 25% 起扣，85% 扣满 0.45 */
+  if (mid != null) block -= 0.15 * clamp((mid - 65) / 35, 0, 1)   /* 中云 65% 起扣，最多 0.15 */
+  return clamp(block, 0.4, 1)
+}
+
 /** 关键字段完整度：把「天气不好」和「没有数据」分开。
     这几个字段任一缺测，scoreOf 都会用固定不利值兜底，
     所以缺得越多，分数越不可信，而不是「天气越差」。 */
@@ -287,7 +317,7 @@ export function load(force = false): void {
   if (CACHE && (CACHE as CacheData & { prov?: string }).prov !== state.prov) CACHE = null
 
   if (!force && CACHE && Date.now() - CACHE.at < CACHE_MS) {
-    compute(CACHE.weather, CACHE.air, CACHE.profs)
+    compute(CACHE.weather, CACHE.air, CACHE.profs, CACHE.horizon)
     return
   }
 
@@ -325,12 +355,14 @@ function loadStatic(token: number): void {
         weather: remapBySpots(j.weather, prov) ?? [],
         air: remapBySpots(j.air ?? null, prov),
         profs: remapBySpots(j.prof ?? null, prov),
+        /* 地平线柱在缓存文件里已按机位顺序排好，不需要再按坐标映射 */
+        horizon: j.horizon ?? null,
         at: isNaN(at) ? Date.now() : at,
         fromStatic: true,
         prov: prov
       } as CacheData
       state.fromStatic = true
-      compute(CACHE.weather, CACHE.air, CACHE.profs)
+      compute(CACHE.weather, CACHE.air, CACHE.profs, CACHE.horizon)
     })
     .catch(() => {
       if (token !== loadToken) return
@@ -390,11 +422,13 @@ function loadLive(token: number): void {
       weather: remapBySpots(weather, prov) ?? [],
       air: remapBySpots(air, prov),
       profs: remapBySpots(profs, prov),
+      /* 实时路径不抓地平线柱：显式置空，避免沿用上一次缓存的残余 */
+      horizon: null,
       at: Date.now(),
       fromStatic: false,
       prov: prov
     } as CacheData
-    compute(CACHE.weather, CACHE.air, CACHE.profs)
+    compute(CACHE.weather, CACHE.air, CACHE.profs, CACHE.horizon)
   }).catch((e: unknown) => {
     if (token !== loadToken) return
     state.loading = false
@@ -557,7 +591,7 @@ function buildSpotDetail(o: {
   return detail
 }
 
-function compute(weather: RawData, air: RawData | null, profs: RawData | null): void {
+function compute(weather: RawData, air: RawData | null, profs: RawData | null, horizon?: Array<HorizonCols | null> | null): void {
   state.detail = null
   const cfg = KINDS[state.kind]
   const rows: Row[] = []
@@ -621,30 +655,99 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null): 
     const variance = perModel.reduce((a, b) => a + (b - mean) * (b - mean), 0) / perModel.length
     const spread = Math.round(Math.sqrt(variance))
 
-    /* 逐时平滑 */
-    const s1 = scoreOf(m)
-    const sPrev = idx > 0 ? scoreOf(measureAt(w, airObj, idx - 1, mids)) : s1
-    const sNext = idx < times.length - 1
-      ? scoreOf(measureAt(w, airObj, idx + 1, mids))
-      : s1
-
-    let score = 0.25 * sPrev + 0.5 * s1 + 0.25 * sNext
-
-    /* 模式分歧越大，分数越不可信 → 直接打折（最多扣 28%） */
-    if (mids.length > 1) {
-      score = score * (1 - Math.min(0.28, spread / 55))
+    /* ---------- 逐小时评分（带物理修正）----------
+       每个小时用**它自己的太阳高度**去算斜程气溶胶 —— 日落前后太阳高度从 +12° 掉到 −5°，
+       光程差两倍以上，用同一个 AOD 值算这三小时是不对的。
+       另外两小时内停过雨、现在不再下、而 pop 仍然报得很高时，给一点点回补
+       （原实现只看 pop，雨停了还会继续按坏天气罚）。 */
+    const hourSunEl = (k: number): number | null => {
+      const t = times[k]
+      if (!t) return null
+      const kms = Date.parse(t.length === 16 ? t + ':00+08:00' : t + '+08:00')
+      return isNaN(kms) ? null : sunPosition(kms, spot.lat, spot.lon).el
     }
 
-    /* 朝向匹配 */
-    if (sun) score = Math.round(score * face)
+    const precipAt = (k: number): number | null =>
+      pr && pr.hourly && k >= 0 ? profField(pr, 'precipitation', k) : null
+
+    /* 缺口 1：太阳方向的上游柱；旧缓存没有该字段时为 1（不启用） */
+    const horizonBlock = horizon && horizon[i] ? horizonBlockOf(horizon[i], state.kind, idx) : 1
+
+    const hourScoreCache = new Map<number, number>()
+    /* 基准取窗口内三个小时的平均光程：整个窗口平均下来不改变分数水平，
+       只调整小时之间的相对大小（太阳高时气溶胶影响小，太阳低时影响大）。 */
+    const winMasses = [idx - 1, idx, idx + 1]
+      .map((k) => {
+        const e = hourSunEl(k)
+        return e == null ? null : airmass(e)
+      })
+      .filter((v): v is number => v != null)
+    const refMass = winMasses.length
+      ? winMasses.reduce((a, b) => a + b, 0) / winMasses.length
+      : null
+
+    const hourScore = (k: number): number => {
+      const hit = hourScoreCache.get(k)
+      if (hit != null) return hit
+
+      const mm = measureAt(w, airObj, k, mids)
+      let relief = 0
+      const now = precipAt(k)
+      const prev = precipAt(k - 1)
+      if (now != null && prev != null && now <= 0.1 && prev >= 0.3 && (mm.pop ?? 0) >= 50) {
+        relief = 1      /* 刚停雨 + 概率还高 → 把被 pop 压掉的分数找回一点 */
+      }
+      const v = scoreOfAt(mm, {
+        sunEl: hourSunEl(k),
+        aodRefMass: refMass,
+        horizonBlock,
+        rainRelief: relief
+      })
+      hourScoreCache.set(k, v)
+      return v
+    }
+
+    const rawAt = (k: number): number => {
+      if (k < 0 || k >= times.length) return hourScore(idx)
+      return hourScore(k)
+    }
+
+    /* 每个时刻的「局部平滑值」= 0.25·前一小时 + 0.5·本小时 + 0.25·后一小时 */
+    const smoothedAt = (k: number): number =>
+      0.25 * rawAt(k - 1) + 0.5 * rawAt(k) + 0.25 * rawAt(k + 1)
+
+    /* ---------- 峰值窗口 ----------
+       主分数仍然报「日出/日落正点」这个时刻（与历史分数可比、也不虚高）。
+       额外再找一次「正点前后各一小时」里平滑值最高的那个小时，
+       作为「更值得蹲的时刻」单独展示：
+         · 平稳天气下两者相同，不显示；
+         · 连续两三小时都不错时，峰值会明显高于正点，提示用户晚/早半小时出发。
+       不拿峰值当主分数，是因为它一定会 ≥ 正点值，会整体抬高全站分数。 */
+    const cand = [smoothedAt(idx - 1), smoothedAt(idx), smoothedAt(idx + 1)]
+    const peakVal = Math.max(...cand)
+    const peakIdx = idx - 1 + cand.indexOf(peakVal)
+    const peakTime = times[peakIdx] ? times[peakIdx].slice(11, 16) : (m.time || '')
 
     /* 高空湿度剖面（旧口径，保留以便和历史分数对比） */
     const prof = profileOf(pr, idx)
-    if (prof) score = clamp(Math.round(score * prof.mod), 0, 100)
 
-    /* 时效折扣 */
-    if (state.day === 1) score = Math.round(score * 0.95)
-    score = clamp(score, 0, 96)
+    /* 把「正点评分」和「窗口峰值」走同一串折扣，保证两者口径一致 */
+    function finish(v: number): number {
+      let s = v
+      /* 模式分歧越大，分数越不可信 → 直接打折（最多扣 28%） */
+      if (mids.length > 1) s = s * (1 - Math.min(0.28, spread / 55))
+      /* 朝向匹配 */
+      if (sun) s = Math.round(s * face)
+      /* 高空湿度剖面 */
+      if (prof) s = clamp(Math.round(s * prof.mod), 0, 100)
+      /* 时效折扣 */
+      if (state.day === 1) s = Math.round(s * 0.95)
+      return clamp(s, 0, 96)
+    }
+
+    const baseScore = smoothedAt(idx)
+    const score = finish(baseScore)
+    const peakScore = finish(peakVal)
 
     /* ---- 其它几种“值得跑”的条件 ---- */
     let cape: number | null = null
@@ -708,8 +811,10 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null): 
       spot: spot,
       m: m,
       score: score,
-      rawScore: s1,
+      rawScore: scoreOf(m),
       quality: qualityOf(m),
+      peakScore: peakScore,
+      peakTime: peakTime,
       level: levelOf(score),
       aodName: aodBand(m.aod).name,
       profLabel: prof ? prof.label : '',

@@ -253,6 +253,9 @@ export interface Row {
   ms: number
   /** 流水线第一层的原始分（未平滑、未打折），详情里和最终分并列显示 */
   rawScore: number
+  /** 正点前后一小时里「平滑值最高」的那个小时的分数与时刻（峰值窗口） */
+  peakScore: number
+  peakTime: string
   /** 数据质量：0–100 的完整度 + 缺了哪几项 */
   quality: DataQuality
   /** 这个机位目标时刻的完整详情 */
@@ -260,10 +263,19 @@ export interface Row {
 }
 
 /** 一次取数的缓存（10 分钟） */
+/** 太阳方向上的「上游柱」：日出看东边、日落看西边。
+    只取三层云量，用来判断太阳落下那一路有没有被低云挡住。 */
+export interface HorizonCols {
+  west: RawPoint | null
+  east: RawPoint | null
+}
+
 export interface CacheData {
   weather: RawData
   air: RawData | null
   profs: RawData | null
+  /** 地平线柱（缺口 1）；旧缓存没有这个字段，读取时要有兜底 */
+  horizon?: Array<HorizonCols | null> | null
   at: number
   fromStatic: boolean
 }
@@ -302,4 +314,6 @@ export interface StaticFile {
   weather?: RawData
   air?: RawData | null
   prof?: RawData | null
+  /** 每个机位一条：朝西/朝东各一根柱（缺口 1） */
+  horizon?: Array<HorizonCols | null> | null
 }

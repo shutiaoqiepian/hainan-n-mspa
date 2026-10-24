@@ -50,7 +50,63 @@ function num(v: number | null | undefined, fallback: number, min: number, max: n
   return v
 }
 
-export function scoreOf(m: Measure): number {
+/* ---------- 物理修正项（2026-10-25 新增）----------
+   下面三项都不改 scoreOf 的公式形状，只是往里补信号：
+     ① 斜程 AOD：日落时光线是横穿大气的，光程是正午的十几到几十倍，
+        同样的 AOD 在太阳低时消光严重得多；而原实现把 AOD 当与太阳高度无关。
+     ② 地平线遮挡：原实现只看「我头顶的低云」，
+        但真正杀死日落的是「太阳落下那个方向的低云」——两个完全不同的位置。
+     ③ 雨停转好：降水把气溶胶洗掉、云开始裂，常出大烧；
+        原实现只看降水概率（pop），雨停了 pop 仍然高，于是继续按坏天气罚。 */
+
+/** 大气质量（Kasten–Young，1990）：光线穿过大气的相对光程 */
+export function airmass(elDeg: number): number {
+  /* 太阳在地平线下时直接光路断开，用地面斜程的保守值封顶 */
+  const el = elDeg > 0 ? elDeg : 0
+  const m = 1 / (Math.sin(el * Math.PI / 180) + 0.50572 * Math.pow(el + 6.07995, -1.6364))
+  return clamp(m, 1, 38)
+}
+
+/** 斜程修正后的「等效 AOD」。
+    比值 = 该小时的大气质量 / 基准大气质量：
+      · 传 refMass（推荐）：以窗口内三个小时的平均光程为基准，
+        整个窗口平均下来不改变分数水平，只调整小时之间的相对大小；
+      · 传 refEl：以某个太阳高度为基准（2° ≈ 目标时刻）；
+      · 都不传：按太阳高度 2° 算。 */
+export function aodSlant(
+  aod: number,
+  sunEl: number | null | undefined,
+  ref?: { refEl?: number | null; refMass?: number | null }
+): number {
+  if (sunEl == null || !Number.isFinite(sunEl)) return aod
+  const refMass = ref?.refMass
+  const refEl = ref?.refEl
+  const base = refMass != null && Number.isFinite(refMass)
+    ? refMass
+    : airmass(refEl != null && Number.isFinite(refEl) ? refEl : 2)
+  const ratio = airmass(sunEl) / (base || 1)
+  /* 太阳低于地平线时照亮云层的路径更长，1.6 倍封顶；太阳高时最多降到 0.45 倍 */
+  return clamp(aod * clamp(ratio, 0.45, 1.6), 0, 5)
+}
+
+export interface ScoreOpts {
+  /** 该小时的太阳高度角（度）；给了就启用斜程 AOD 修正 */
+  sunEl?: number | null
+  /** 斜程修正的基准太阳高度（通常取目标时刻，保证目标小时的分数不变） */
+  aodRefEl?: number | null
+  /** 斜程修正的基准大气质量（窗口平均光程，推荐：不改变整体水平） */
+  aodRefMass?: number | null
+  /** 地平线遮挡系数 0–1：1 = 太阳方向干净，0.4 = 完全被低云封住 */
+  horizonBlock?: number | null
+  /** 雨停转好系数 0–1：1 = 两小时内停过雨且现在不再下，0 = 无此项 */
+  rainRelief?: number | null
+}
+
+/**
+ * 单个小时的完整评分。
+ * 不传 opts 时与 scoreOf 完全等价（历史上所有分数都能对它复算）。
+ */
+export function scoreOfAt(m: Measure, opts: ScoreOpts = {}): number {
   /* 缺数据时按“最不利”处理：宁可低估，也不虚高。
      注意 NaN / Infinity 也会被当成缺测 —— 否则分数会变成 NaN 直接显示在页面上。 */
   const high = num(m.high, 90, 0, 100)
@@ -58,7 +114,7 @@ export function scoreOf(m: Measure): number {
   const low = num(m.low, 70, 0, 100)
   const pop = num(m.pop, 60, 0, 100)
   const rh = num(m.rh, 90, 0, 100)
-  const aod = num(m.aod, 0.4, 0, 5)
+  const aodRaw = num(m.aod, 0.4, 0, 5)
 
   const h = clamp(fHigh(high), 0, 1)
   if (h <= 0) return 0
@@ -66,19 +122,40 @@ export function scoreOf(m: Measure): number {
   const lowF = 0.3 + 0.7 * fLow(low)
   const midF = 0.72 + 0.28 * fMid(mid)
 
-  /* 气溶胶对色彩饱和度影响很大，权重比原来更重 */
-  const aodF = 0.55 + 0.45 * fAod(aod)
+  /* 气溶胶对色彩饱和度影响很大，权重比原来更重；
+     给了太阳高度就按斜程换算一次等效 AOD */
+  const aodEff = opts.sunEl === undefined
+    ? aodRaw
+    : aodSlant(aodRaw, opts.sunEl, { refEl: opts.aodRefEl, refMass: opts.aodRefMass })
+  const aodF = 0.55 + 0.45 * fAod(clamp(aodEff, 0, 5))
 
   /* 下雨/起雾基本没戏，惩罚也要更重 */
   const wetF = 0.55 + 0.45 * fWet(pop, rh)
 
-  const raw = h * lowF * midF * aodF * wetF
+  let raw = h * lowF * midF * aodF * wetF
+
+  /* ② 太阳方向的低云会挡掉整条光路（不是头顶的低云） */
+  if (opts.horizonBlock != null) raw *= clamp(opts.horizonBlock, 0, 1)
+
+  /* ③ 雨停转好：最多把被高 pop 压掉的分数找回一小部分，不许凭空加分 */
+  if (opts.rainRelief != null && opts.rainRelief > 0) {
+    /* 只给 3%：raw 进 1.8 次方后约等于 +5 分，属于「把误判的坏天气摘掉一点」的量级，
+       再多就成了凭空加分 */
+    raw *= 1 + 0.03 * clamp(opts.rainRelief, 0, 1)
+  }
+
   const score = 100 * Math.pow(clamp(raw, 0, 1), 1.8)
 
   /* 兜底：任何意外都不让 NaN 流到界面上 */
   if (!Number.isFinite(score)) return 0
   return Math.round(Math.min(96, score))
 }
+
+/** 基线评分（未加物理修正项），保留给历史对照与测试 */
+export function scoreOf(m: Measure): number {
+  return scoreOfAt(m)
+}
+
 
 /* ---------- 云底高度 ----------
    抬升凝结高度 LCL ≈ 125 × (气温 − 露点)，单位米。
