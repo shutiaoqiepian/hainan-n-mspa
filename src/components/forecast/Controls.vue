@@ -4,7 +4,7 @@ import { MODELS } from '@/data/forecast/models'
 import type { KindKey } from '@/lib/forecast/types'
 import { load, clearCache } from '@/lib/forecast/api'
 import { state } from '@/lib/forecast/state'
-import { PROVINCES } from '@/data/forecast/spots'
+import { REGIONS, provincesOfRegion, provName } from '@/data/forecast/spots'
 import type { ProvKey } from '@/lib/forecast/types'
 
 /** 日期 / 时段 / 模式切换（旧版 .fc-controls） */
@@ -20,8 +20,14 @@ function pickKind(k: KindKey): void {
 }
 
 /* 切省份：清缓存、区域复位、重新取数据 */
+function onProv(e: Event): void {
+  const sel = e.target as HTMLSelectElement
+  pickProv(sel.value)
+}
+
 function pickProv(p: ProvKey): void {
   if (state.prov === p) return
+  if (!provName(p)) return
   state.prov = p
   state.area = '全部'
   state.openSpot = ''
@@ -41,17 +47,14 @@ function pickModel(e: Event): void {
 <template>
   <div class="fc-controls">
     <div class="fc-picks">
-      <div class="fc-modes fc-provs" role="group" aria-label="省份">
-        <button
-          v-for="p in PROVINCES"
-          :key="p.key"
-          class="fc-mode"
-          :class="{ 'is-on': state.prov === p.key }"
-          type="button"
-          :title="'看' + p.name + '的机位'"
-          @click="pickProv(p.key)"
-        >{{ p.name }}</button>
-      </div>
+      <label class="fc-prov-wrap">
+        <span>省份</span>
+        <select class="fc-select fc-prov" aria-label="省份" :value="state.prov" @change="onProv">
+          <optgroup v-for="r in REGIONS" :key="r" :label="r">
+            <option v-for="p in provincesOfRegion(r)" :key="p.key" :value="p.key">{{ p.name }}</option>
+          </optgroup>
+        </select>
+      </label>
       <div class="fc-modes" role="group" aria-label="日期">
         <button class="fc-mode" :class="{ 'is-on': state.day === 0 }" type="button" data-day="0" @click="pickDay(0)">今天</button>
         <button class="fc-mode" :class="{ 'is-on': state.day === 1 }" type="button" data-day="1" @click="pickDay(1)">明天</button>

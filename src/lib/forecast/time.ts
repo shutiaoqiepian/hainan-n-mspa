@@ -58,8 +58,8 @@ export function ageText(fromMs: number, now = Date.now()): string {
   return Math.round(h) + ' 小时前'
 }
 
-/** 预生成缓存的更新节奏：每 4 小时一次（01/05/09/13/17/21 点 05 分） */
-export const CACHE_HOURS = [1, 5, 9, 13, 17, 21]
+/** 预生成缓存的更新节奏：每 6 小时一次（01/07/13/19 点 05 分，北京时间 09/15/21/03） */
+export const CACHE_HOURS = [1, 7, 13, 19]
 
 /** 下一次缓存更新的时间（ms） */
 export function nextUpdateMs(now = Date.now()): number {

@@ -2,7 +2,7 @@ import { reactive } from 'vue'
 import { copyText } from '@/composables/useCopyText'
 import { toast } from '@/composables/useToast'
 import { KINDS } from '@/data/forecast/levels'
-import { areasFor } from '@/data/forecast/spots'
+import { ACTIVE_PROVINCES, areasFor } from '@/data/forecast/spots'
 import { dateText, distanceText } from './time'
 import type { ForecastState, KindKey, Row } from './types'
 
@@ -69,13 +69,14 @@ export function initStateFromUrl(): void {
     const q = new URLSearchParams(location.search)
     const k = q.get('k') || q.get('m')
     if (k === 'sunset' || k === 'sunrise') { state.kind = k; picked = true }
+    const known = ACTIVE_PROVINCES.map((p) => p.key)
     const p = q.get('p')
-    if (p === 'hn' || p === 'gd') state.prov = p
+    if (p && known.indexOf(p) >= 0) state.prov = p
     else {
       /* 没带参数就沿用上次看的省份（默认海南） */
       try {
         const saved = localStorage.getItem('mspa:forecast:prov')
-        if (saved === 'hn' || saved === 'gd') state.prov = saved
+        if (saved && known.indexOf(saved) >= 0) state.prov = saved
       } catch { /* 隐私模式忽略 */ }
     }
     const d = q.get('d')

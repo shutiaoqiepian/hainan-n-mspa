@@ -206,19 +206,34 @@ function remapBySpots(points: RawData | null, prov: string = state.prov): RawDat
   return spots.map((_, i) => points[map[i]] || points[0])
 }
 
-/** 动态测到吸附网格后，给界面一句说明 */
+/** 动态测出模式格点大小：看返回的坐标能对齐到哪一种网格（0.25 / 0.125 / 0.1 / 0.0625 / 0.05 度） */
+const GRID_STEPS = [0.25, 0.125, 0.1, 0.0625, 0.05, 0.04]
+
 function noteGrid(points: RawPoint[]): void {
-  if (points.length < 2 || typeof points[0].latitude !== 'number') return
-  let g = 0
-  for (let i = 1; i < points.length; i++) {
-    const dLat = Math.abs((points[i].latitude as number) - (points[0].latitude as number))
-    const dLon = Math.abs((points[i].longitude as number) - (points[0].longitude as number))
-    const d = Math.max(dLat, dLon)
-    if (d > 0.001 && (g === 0 || d < g)) g = d
+  const lats = points.map((p) => p.latitude).filter((v): v is number => typeof v === 'number')
+  const lons = points.map((p) => p.longitude).filter((v): v is number => typeof v === 'number')
+  if (!lats.length) return
+
+  const aligns = (v: number, g: number): boolean => {
+    const r = v / g
+    return Math.abs(r - Math.round(r)) < 0.02
   }
-  state.gridNote = g > 0
-    ? '约 ' + (Math.round(g * 100) / 100) + ' 度（≈' + Math.round(g * 111) + ' km）'
-    : ''
+
+  let step = 0
+  for (const g of GRID_STEPS) {
+    if (lats.every((v) => aligns(v, g)) && lons.every((v) => aligns(v, g))) {
+      step = g
+      break
+    }
+  }
+
+  if (!step) {
+    /* 对不齐（只有一两个机位、或坐标被取整过）就不显示，别给错数字 */
+    state.gridNote = ''
+    return
+  }
+  state.gridNote = step.toFixed(step < 0.1 ? 3 : 2).replace(/0+$/, '').replace(/\.$/, '') +
+    ' 度（≈' + Math.round(step * 111) + ' km）'
 }
 
 /* ---------- 一次取数的缓存 ---------- */

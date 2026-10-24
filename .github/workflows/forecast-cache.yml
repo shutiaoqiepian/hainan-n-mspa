@@ -1,9 +1,10 @@
 name: 更新霞光预报缓存
 
-# 一天 6 次：每 4 小时一次
+# 一天 4 次（每 6 小时）：全国 34 个省的数据一次约 3 MB，
+# 6 次/天会让仓库历史涨得太快；页面顶部会显示数据更新时间，6 小时时效对霞光预报够用。
 on:
   schedule:
-    - cron: "5 1,5,9,13,17,21 * * *"
+    - cron: "5 1,7,13,19 * * *"
   workflow_dispatch:
 
 permissions:
@@ -19,7 +20,7 @@ jobs:
         with:
           node-version: "20"
 
-      - name: 抓取并写入 data/forecast.json
+      - name: 抓取并写入 data/forecast/*.json
         run: node tools/build-cache.mjs
 
       - name: 有变化才提交

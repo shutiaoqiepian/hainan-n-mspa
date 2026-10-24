@@ -18,6 +18,8 @@ import type { Row } from '@/lib/forecast/types'
  */
 
 const canvas = ref<HTMLCanvasElement | null>(null)
+/** 画完之后转成 <img> 显示：微信里 canvas 不能长按保存，img 可以 */
+const preview = ref('')
 
 const kindWord = computed(() => KINDS[state.kind].word)
 const dayText = computed(() => dayWord(state.day))
@@ -73,7 +75,15 @@ const input = computed<ForecastCardInput | null>(() => {
 function render(): void {
   if (!canvas.value || !input.value) return
   drawForecastCard(canvas.value, input.value)
+  try {
+    preview.value = canvas.value.toDataURL('image/png')
+  } catch {
+    preview.value = ''
+  }
 }
+
+/** 微信内置浏览器：下载按钮无效，只能长按图片保存 */
+const inWeChat = /MicroMessenger/i.test(navigator.userAgent)
 
 watch(
   () => [cardUi.open, cardUi.row, cardUi.top, state.kind, state.day, state.model],
@@ -161,13 +171,17 @@ if (typeof document !== 'undefined') document.addEventListener('keydown', onKey)
   >
     <div class="card-modal-inner">
       <button class="card-modal-close" aria-label="关闭" @click="closeCard">✕</button>
-      <canvas ref="canvas" width="1080" height="1350"></canvas>
+      <canvas ref="canvas" width="1080" height="1350" class="card-canvas-hidden"></canvas>
+      <img v-if="preview" :src="preview" class="card-preview" alt="预报名片" />
       <div class="card-modal-actions">
         <button class="btn btn-primary" type="button" @click="onDownload">保存图片</button>
         <button class="btn btn-ghost" type="button" @click="onCopyText">复制文案</button>
         <button class="btn btn-ghost" type="button" @click="onCopyUrl">复制链接</button>
       </div>
-      <p class="card-modal-tip">手机上长按图片也能保存；发群里建议配「复制文案」的文字</p>
+      <p class="card-modal-tip">
+        <template v-if="inWeChat">微信里请<b>长按图片 → 保存图片</b>；文字用下面的「复制文案」</template>
+        <template v-else>手机上长按图片也能保存；发群里建议配「复制文案」的文字</template>
+      </p>
     </div>
   </div>
 </template>

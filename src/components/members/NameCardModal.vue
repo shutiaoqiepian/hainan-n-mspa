@@ -14,6 +14,9 @@ const props = defineProps<{ member: Member | null }>()
 const emit = defineEmits<{ close: [] }>()
 
 const canvas = ref<HTMLCanvasElement | null>(null)
+/** 画完转成 <img>：微信里 canvas 不能长按保存，img 可以 */
+const preview = ref('')
+const inWeChat = /MicroMessenger/i.test(navigator.userAgent)
 /** 旧版存在 modal.dataset.url 里，复制按钮读它 */
 const shareUrl = ref('')
 
@@ -23,7 +26,13 @@ watch(
     if (!m) return
     shareUrl.value = siteBase() + 'members.html#m-' + m.id
     loadCardImages(m, (shots) => {
-      if (canvas.value) drawCard(canvas.value, m, shots)
+      if (!canvas.value) return
+      drawCard(canvas.value, m, shots)
+      try {
+        preview.value = canvas.value.toDataURL('image/png')
+      } catch {
+        preview.value = ''
+      }
     })
   }
 )
@@ -66,7 +75,8 @@ function onShare(): void {
       <button id="card-close" class="card-modal-close" aria-label="关闭" @click="emit('close')">
         ✕
       </button>
-      <canvas id="card-canvas" ref="canvas" width="1080" height="1350"></canvas>
+      <canvas id="card-canvas" ref="canvas" width="1080" height="1350" class="card-canvas-hidden"></canvas>
+      <img v-if="preview" :src="preview" class="card-preview" alt="成员名片" />
       <div class="card-modal-actions">
         <button id="card-download" class="btn btn-primary" type="button" @click="onDownload">
           保存图片
@@ -75,7 +85,10 @@ function onShare(): void {
           复制主页链接
         </button>
       </div>
-      <p class="card-modal-tip">手机上长按图片也能保存</p>
+      <p class="card-modal-tip">
+        <template v-if="inWeChat">微信里请<b>长按图片 → 保存图片</b></template>
+        <template v-else>手机上长按图片也能保存</template>
+      </p>
     </div>
   </div>
 </template>

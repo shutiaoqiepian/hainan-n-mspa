@@ -63,7 +63,7 @@ Cloudflare Pages 的构建配置需要是：
 │   ├── vendor/                # 第三方库（qrcode.js，Kazuhiko Arase, MIT）
 │   └── styles/                # 由旧 style.css 按原行序切分的样式模块
 ├── images/                    # 压缩后的照片（长边 ≤1800px）+ thumbs/ 缩略图（800px）
-├── data/forecast.json         # 预报静态缓存（GitHub Actions 每 4 小时写一次）
+├── data/forecast/             # 预报静态缓存，按省一个文件（Actions 每 6 小时写一次）
 ├── tools/                     # build-cache.mjs、图片压缩脚本、回归比对脚本
 ├── robots.txt / sitemap.xml / _headers
 └── LICENSE
@@ -106,7 +106,7 @@ LEGACY_REF=<commit> node tools/compare-legacy.mjs      # 换一个基线提交
 
 ## 预报数据缓存
 
-`data/forecast.json` 由 GitHub Actions 定时生成（每 4 小时一次，见 `.github/workflows/forecast-cache.yml`），
+`data/forecast/<省份>.json` 由 GitHub Actions 定时生成（每 6 小时一次，见 `.github/workflows/forecast-cache.yml`），
 页面优先读这个静态文件，读不到或超过 14 小时才回退到 Open-Meteo 实时请求。
 
 手动生成：`node tools/build-cache.mjs`

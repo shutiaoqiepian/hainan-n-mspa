@@ -314,3 +314,20 @@
   .fc-model-wrap { width: 100%; justify-content: center; }
   .fc-badge { font-size: 11px; padding: 2px 7px; }
 }
+
+/* 名片预览：canvas 只用来画，真正显示的是 img（微信里 img 才能长按保存） */
+.card-canvas-hidden { display: none; }
+
+.card-preview {
+  width: min(86vw, 420px);
+  height: auto;
+  border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  -webkit-touch-callout: default;
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+@media (max-width: 760px) {
+  .card-preview { width: min(92vw, 460px); }
+}

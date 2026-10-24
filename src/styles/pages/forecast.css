@@ -1225,3 +1225,24 @@ button.fcp-row {
 }
 
 .fcd-conflict-hint b { color: var(--text-2); }
+
+/* ---------- 省份下拉（全国 34 个省，用下拉而不是一排按钮）---------- */
+
+.fc-prov-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--glass);
+  box-shadow: inset 0 1px 0 var(--rim-top);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.fc-prov-wrap > span { letter-spacing: 0.08em; }
+
+.fc-prov { min-width: 94px; padding: 2px 0; font-size: 14px; }
+
+

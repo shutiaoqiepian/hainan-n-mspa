@@ -77,14 +77,14 @@ const headWord = computed(() => kindWord.value + (state.kind === 'sunrise' ? '�
         <span class="fct-label">数据更新</span>
         <b class="fct-value">{{ updated }}</b>
         <span class="fct-note">
-          {{ age }}<template v-if="next"> · 下次约 {{ next }}（每 4 小时一次）</template>
+          {{ age }}<template v-if="next"> · 下次约 {{ next }}（每 6 小时一次）</template>
         </span>
       </div>
       <div class="fct-cell">
         <span class="fct-label">数据来源</span>
         <b class="fct-value">{{ source }}</b>
         <span class="fct-note">
-          <template v-if="state.gridNote">格点约 {{ state.gridNote }}；同一格内的机位共享一份气象数据</template>
+          <template v-if="state.gridNote">格点 {{ state.gridNote }}；同一格内的机位共享一份气象数据</template>
           <template v-else>不同机位的数值本身就不同：气象模式按格点计算，同一格内的机位共享同一份数据</template>
         </span>
       </div>

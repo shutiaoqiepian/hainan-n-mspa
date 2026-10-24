@@ -25,8 +25,8 @@ export interface AodBand {
   v: number
 }
 
-/** 省份 key：hn=海南，gd=广东（以后加省份就在这里扩展） */
-export type ProvKey = 'hn' | 'gd'
+/** 省份 key（hn=海南、gd=广东、bj=北京……见 data/forecast/spots.ts 的 PROVINCES） */
+export type ProvKey = string
 
 /** 机位 */
 export interface Spot {
