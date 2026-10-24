@@ -109,8 +109,8 @@
 }
 
 .fc-row.is-top {
-  border-color: rgba(79, 179, 232, 0.38);
-  box-shadow: 0 10px 34px rgba(79, 179, 232, 0.12);
+  border-color: var(--accent-a-line);
+  box-shadow: 0 10px 34px var(--accent-a-soft);
 }
 
 .fc-score {
@@ -129,7 +129,7 @@
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: #15171a;
+  background: var(--surface-solid);
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -191,7 +191,7 @@
   font-size: 12px;
   padding: 2px 9px;
   border-radius: 5px;
-  background: rgba(79, 179, 232, 0.14);
+  background: var(--accent-a-soft);
   color: var(--link);
 }
 
@@ -406,9 +406,9 @@
 }
 
 .fc-share:hover {
-  background: rgba(79, 179, 232, 0.16);
+  background: var(--accent-a-soft);
   color: var(--link);
-  border-color: rgba(79, 179, 232, 0.4);
+  border-color: var(--accent-a-line);
 }
 
 /* 反馈按钮 */
@@ -430,15 +430,15 @@
 }
 
 .fc-fb:hover {
-  background: rgba(53, 214, 192, 0.16);
+  background: var(--accent-b-soft);
   color: var(--good);
-  border-color: rgba(53, 214, 192, 0.45);
+  border-color: var(--accent-b-line);
 }
 
 .fc-fb.is-done {
-  background: rgba(53, 214, 192, 0.18);
+  background: var(--accent-b-soft);
   color: var(--good);
-  border-color: rgba(53, 214, 192, 0.5);
+  border-color: var(--accent-b-line);
 }
 
 .fc-fb-hint {
@@ -551,7 +551,7 @@
 
 .fb-input::placeholder { color: var(--muted-2); }
 
-.fb-input:focus { border-color: rgba(79, 179, 232, 0.5); }
+.fb-input:focus { border-color: var(--accent-a-line); }
 
 .fb-submit {
   width: 100%;
@@ -581,9 +581,9 @@
 }
 
 .fc-row.is-hl {
-  border-color: rgba(53, 214, 192, 0.55);
-  box-shadow: 0 0 0 1px rgba(53, 214, 192, 0.25),
-              0 12px 34px rgba(53, 214, 192, 0.12);
+  border-color: var(--accent-b-line);
+  box-shadow: 0 0 0 1px var(--accent-b-line),
+              0 12px 34px var(--accent-b-soft);
 }
 
 /* ---------- 复制提示 ---------- */
@@ -596,12 +596,12 @@
   z-index: 300;
   padding: 13px 26px;
   border-radius: 999px;
-  background: rgba(20, 22, 25, 0.92);
+  background: var(--surface-solid);
   color: var(--text);
   font-size: 14px;
   letter-spacing: 0.05em;
-  border: 1px solid rgba(53, 214, 192, 0.4);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--accent-b-line);
+  box-shadow: var(--shadow-float);
   opacity: 0;
   pointer-events: none;
   transition: all 0.28s ease;
@@ -702,9 +702,9 @@
 
 .fc-detail-btn:hover,
 .fc-detail-btn.is-open {
-  border-color: rgba(79, 179, 232, 0.5);
+  border-color: var(--accent-a-line);
   color: var(--text);
-  background: rgba(79, 179, 232, 0.14);
+  background: var(--accent-a-soft);
 }
 
 .b-pillar { color: #d9c6ff; border-color: rgba(180, 150, 255, 0.28); }
@@ -765,8 +765,8 @@
   margin: 0 0 20px;
   padding: 12px 16px;
   border-radius: 11px;
-  background: rgba(79, 179, 232, 0.08);
-  border-left: 3px solid rgba(79, 179, 232, 0.6);
+  background: var(--accent-a-soft);
+  border-left: 3px solid var(--accent-a-line);
   font-size: 14px;
   line-height: 1.85;
   color: var(--text);
@@ -1073,8 +1073,8 @@ button.fcp-row {
 }
 
 button.fcp-row:hover { background: var(--fill-1); }
-button.fcp-row.is-open { background: rgba(79, 179, 232, 0.09); }
-button.fcp-row:focus-visible { outline: 1px solid rgba(79, 179, 232, 0.6); outline-offset: 1px; }
+button.fcp-row.is-open { background: var(--accent-a-soft); }
+button.fcp-row:focus-visible { outline: 1px solid var(--accent-a-line); outline-offset: 1px; }
 
 .fcp-item:last-of-type button.fcp-row { border-bottom: 0; }
 
@@ -1094,7 +1094,7 @@ button.fcp-row:focus-visible { outline: 1px solid rgba(79, 179, 232, 0.6); outli
 }
 
 button.fcp-row.is-open .fcp-caret {
-  border-color: rgba(79, 179, 232, 0.6);
+  border-color: var(--accent-a-line);
   color: #9fd8f5;
 }
 
@@ -1111,8 +1111,8 @@ button.fcp-row {
   margin: 2px 0 8px;
   padding: 10px 14px;
   border-radius: 10px;
-  background: rgba(79, 179, 232, 0.07);
-  border-left: 2px solid rgba(79, 179, 232, 0.45);
+  background: var(--accent-a-soft);
+  border-left: 2px solid var(--accent-a-line);
   font-size: 12.2px;
   line-height: 1.85;
   color: var(--text-2);

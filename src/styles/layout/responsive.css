@@ -10,7 +10,7 @@
   .hero-body::before {
     width: 112vw;
     height: 64vh;
-    background: radial-gradient(closest-side, rgba(6, 8, 10, 0.70), rgba(6, 8, 10, 0.42) 56%, transparent 86%);
+    background: radial-gradient(closest-side, var(--photo-haze), var(--photo-haze-2) 56%, transparent 86%);
   }
   .hero-body { padding: 44px 0 56px; }
   .hero h1 { font-size: clamp(28px, 8.6vw, 40px); line-height: 1.24; }

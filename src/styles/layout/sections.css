@@ -79,7 +79,8 @@
 }
 
 .stats > div {
-  background: rgba(20, 22, 25, 0.72);
+  /* 原来是写死的近黑色块：黑主题正常，白主题下就是一排黑补丁 */
+  background: var(--fill-1);
   padding: 34px 24px;
   text-align: center;
 }

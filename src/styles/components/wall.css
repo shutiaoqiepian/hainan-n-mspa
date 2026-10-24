@@ -42,7 +42,7 @@
   overflow: hidden;
   background: var(--surface-solid);
   cursor: zoom-in;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
 }
 
 .wall img {
@@ -65,8 +65,8 @@
   padding: 34px 18px 16px;
   font-size: 13px;
   letter-spacing: 0.08em;
-  color: #e6eaee;
-  background: linear-gradient(0deg, rgba(6, 8, 10, 0.82), transparent);
+  color: var(--on-photo-2);
+  background: linear-gradient(0deg, var(--photo-scrim), transparent);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -77,7 +77,16 @@
 @media (hover: none) {
   .wall figcaption {
     opacity: 1;
-    background: linear-gradient(0deg, rgba(6, 8, 10, 0.86), rgba(6, 8, 10, 0.10) 62%, transparent);
+    background: linear-gradient(0deg, var(--photo-scrim), var(--photo-scrim-2) 62%, transparent);
   }
 }
 
+
+/* 图片缺失时的文件名提示（颜色要跟主题走，不能写死） */
+.photo-missing-note {
+  padding: 24px;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  word-break: break-all;
+}

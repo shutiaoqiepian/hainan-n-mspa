@@ -41,7 +41,7 @@
     align-items: flex-start;
     gap: 0;
     padding: 8px 20px 18px;
-    background: rgba(14, 15, 17, 0.96);
+    background: var(--nav-bg);
     border-bottom: 1px solid var(--line);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);

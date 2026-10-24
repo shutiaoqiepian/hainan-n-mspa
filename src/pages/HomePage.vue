@@ -16,8 +16,9 @@ function onHeroError(event: Event): void {
   img.style.display = 'none'
   const parent = img.parentNode as HTMLElement | null
   if (parent) {
+    // 首屏图缺失时退回一层柔和渐变，跟着主题走（白主题别露出一块黑）
     parent.style.background =
-      'radial-gradient(120% 90% at 70% 10%, #24303a 0%, #16181b 55%, #101113 100%)'
+      'radial-gradient(120% 90% at 70% 10%, var(--bg-3) 0%, var(--bg-2) 55%, var(--bg) 100%)'
   }
 }
 </script>
@@ -44,8 +45,8 @@ function onHeroError(event: Event): void {
       </p>
       <div class="hero-actions">
         <a class="btn btn-primary" href="gallery.html">看作品</a>
-        <a class="btn btn-accent" href="forecast.html">霞光预报</a>
-        <a class="btn btn-ghost" href="join.html">加入我们</a>
+        <a class="btn btn-on-photo" href="forecast.html">霞光预报</a>
+        <a class="btn btn-on-photo" href="join.html">加入我们</a>
       </div>
     </div>
 

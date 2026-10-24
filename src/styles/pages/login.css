@@ -61,7 +61,7 @@
 
 .login-field input:focus {
   outline: none;
-  border-color: rgba(79, 179, 232, 0.55);
+  border-color: var(--accent-a-line);
   background: var(--fill-2);
 }
 
@@ -116,8 +116,11 @@
 
 .login-submit:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
-  filter: grayscale(0.3);
+  opacity: 1;
+  /* 深青底上的灰白小字看不清，改成「灰底 + 深字」的禁用态 */
+  background: var(--fill-3);
+  color: var(--muted);
+  box-shadow: none;
 }
 
 .btn:disabled { cursor: not-allowed; }

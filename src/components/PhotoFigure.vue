@@ -38,7 +38,7 @@ const figureStyle = computed(() => {
   if (!isMissing.value) return undefined
   return {
     minHeight: props.variant === 'home' ? '220px' : '240px',
-    background: 'linear-gradient(135deg, rgba(79,179,232,.14), rgba(53,214,192,.06))'
+    background: 'linear-gradient(135deg, var(--accent-a-soft), var(--accent-b-soft))'
   }
 })
 </script>
@@ -61,7 +61,7 @@ const figureStyle = computed(() => {
     />
     <div
       v-if="isMissing && variant === 'gallery'"
-      style="padding:24px;font-size:12px;color:#8f979f;letter-spacing:.1em;word-break:break-all"
+      class="photo-missing-note"
     >图片缺失：{{ photo.f }}</div>
     <figcaption v-if="caption">{{ caption }}</figcaption>
   </figure>

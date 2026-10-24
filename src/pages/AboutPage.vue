@@ -34,7 +34,7 @@ import { ws } from '@/composables/useWhitespace'
         </div>
         <div class="glass" style="padding:32px;margin-top:18px">
           <p class="eyebrow" style="margin-bottom:14px">定位</p>
-          <p style="margin:0;font-size:15px;line-height:1.9;color:#c2c9cf">{{ ws(14) }}成员以海南为主，覆盖中学生到大学生，同时也有散落在{{ ws(14) }}北京、上海、广州、深圳、香港、西安、重庆、长沙等地的伙伴。{{ ws(14) }}无论在哪，拍的都是同一件事 —— 此刻。{{ ws(12) }}</p>
+          <p style="margin:0;font-size:15px;line-height:1.9;color:var(--text-2)">{{ ws(14) }}成员以海南为主，覆盖中学生到大学生，同时也有散落在{{ ws(14) }}北京、上海、广州、深圳、香港、西安、重庆、长沙等地的伙伴。{{ ws(14) }}无论在哪，拍的都是同一件事 —— 此刻。{{ ws(12) }}</p>
         </div>
       </div>
     </div>

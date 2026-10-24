@@ -50,12 +50,39 @@
   --accent-ink:  #06171d;
   --link:        #8fc4e6;
 
+  /* 强调色的三档透明版（描边 / 浅底 / 悬停），不要在各页面里写死 rgba */
+  --accent-a-line:  rgba(79, 179, 232, 0.44);
+  --accent-a-soft:  rgba(79, 179, 232, 0.13);
+  --accent-a-fill:  rgba(79, 179, 232, 0.22);
+  --accent-b-line:  rgba(53, 214, 192, 0.44);
+  --accent-b-soft:  rgba(53, 214, 192, 0.13);
+  --accent-glow:    rgba(79, 179, 232, 0.26);
+
   --good: #7fd6a8;
   --warn: #e2b06a;
   --bad:  #e08c74;
 
+  /* 压在照片 / 深色遮罩上的文字与色带——这一段和主题无关，永远按深底来配 */
+  --on-photo:        #ffffff;
+  --on-photo-2:      #e6eaee;
+  --on-photo-muted:  rgba(255, 255, 255, 0.72);
+  --on-photo-faint:  rgba(255, 255, 255, 0.5);
+  --on-photo-rule:   rgba(255, 255, 255, 0.55);
+  --on-photo-line:   rgba(255, 255, 255, 0.2);
+  --photo-haze:      rgba(6, 8, 10, 0.62);
+  --photo-haze-2:    rgba(6, 8, 10, 0.34);
+  --photo-scrim:     rgba(6, 8, 10, 0.82);
+  --photo-scrim-2:   rgba(6, 8, 10, 0.1);
+  --photo-glass:     rgba(255, 255, 255, 0.16);
+  --photo-glass-2:   rgba(255, 255, 255, 0.28);
+  --photo-glass-line:rgba(255, 255, 255, 0.44);
+
+  /* 弹层后面那层暗幕（黑白灰三主题都用它压暗页面） */
+  --scrim:       rgba(6, 7, 9, 0.88);
+
   --shadow-card: 0 22px 60px -28px rgba(0, 0, 0, 0.78);
   --shadow-soft: 0 10px 30px -18px rgba(0, 0, 0, 0.6);
+  --shadow-float: 0 16px 40px rgba(0, 0, 0, 0.5);
 
   /* 银灰渐变大标题 */
   --silver-image: linear-gradient(180deg, #ffffff 0%, #dfe6ec 52%, #9aa4ad 100%);
@@ -99,6 +126,12 @@
   --accent-b:    #a7b3bd;
   --accent-ink:  #15171a;
   --link:        #d3dee6;
+  --accent-a-line:  rgba(211, 218, 224, 0.46);
+  --accent-a-soft:  rgba(211, 218, 224, 0.14);
+  --accent-a-fill:  rgba(211, 218, 224, 0.22);
+  --accent-b-line:  rgba(167, 179, 189, 0.46);
+  --accent-b-soft:  rgba(167, 179, 189, 0.14);
+  --accent-glow:    rgba(211, 218, 224, 0.22);
 
   --good: #a9d6bd;
   --warn: #d9c193;
@@ -106,6 +139,7 @@
 
   --shadow-card: 0 22px 56px -28px rgba(0, 0, 0, 0.7);
   --shadow-soft: 0 10px 28px -18px rgba(0, 0, 0, 0.55);
+  --shadow-float: 0 16px 40px rgba(0, 0, 0, 0.45);
 
   --silver-image: linear-gradient(180deg, #ffffff 0%, #e3e7ea 52%, #a6aeb5 100%);
   --rim-top: rgba(255, 255, 255, 0.5);
@@ -115,20 +149,24 @@
   color-scheme: dark;
 }
 
-/* ---- 白：纸白 + 深青 ---- */
+/* ---- 白：纸白 + 深青 ----
+   白主题不是把黑主题「反相」，是有自己的取舍：
+     · 背景压掉一半彩度，页面像纸，不像显示器
+     · 强调色换成深青，因为 4fb3e8 这种亮青压在纸上读不清
+     · 大面积色块（数字条 / 首屏遮罩）不许用近黑色，否则整页像打了补丁 */
 [data-theme="light"] {
-  --bg:          #f1f2f4;
-  --bg-2:        #e8eaee;
-  --bg-3:        #dfe3e8;
+  --bg:          #f3f4f5;
+  --bg-2:        #e9ebed;
+  --bg-3:        #dfe2e5;
   --bg-image:
-    radial-gradient(1100px 720px at 80% -16%, rgba(79, 179, 232, 0.16), transparent 60%),
-    radial-gradient(900px 620px at 2% 4%, rgba(53, 214, 192, 0.12), transparent 62%),
-    radial-gradient(1300px 820px at 52% 112%, rgba(120, 150, 200, 0.10), transparent 64%);
+    radial-gradient(1200px 760px at 82% -18%, rgba(11, 127, 181, 0.07), transparent 62%),
+    radial-gradient(900px 620px at 0% 2%, rgba(13, 156, 143, 0.05), transparent 64%),
+    radial-gradient(1300px 820px at 52% 112%, rgba(80, 110, 160, 0.05), transparent 64%);
 
   --surface-solid: #ffffff;
-  --text:        #171a1e;
-  --text-2:      #3d454e;
-  --muted:       #69727b;
+  --text:        #16191d;
+  --text-2:      #3a4149;
+  --muted:       #666e76;
   --muted-2:     #8a9299;
 
   --line:        rgba(16, 22, 28, 0.10);
@@ -147,13 +185,20 @@
   --accent-b:    #0d9c8f;
   --accent-ink:  #ffffff;
   --link:        #0b6fa3;
+  --accent-a-line:  rgba(11, 127, 181, 0.42);
+  --accent-a-soft:  rgba(11, 127, 181, 0.09);
+  --accent-a-fill:  rgba(11, 127, 181, 0.16);
+  --accent-b-line:  rgba(13, 156, 143, 0.42);
+  --accent-b-soft:  rgba(13, 156, 143, 0.09);
+  --accent-glow:    rgba(11, 127, 181, 0.20);
 
-  --good: #1a7f53;
-  --warn: #9a6a1c;
-  --bad:  #ac4b36;
+  --good: #12734b;
+  --warn: #8a5c14;
+  --bad:  #a3432f;
 
   --shadow-card: 0 20px 48px -28px rgba(24, 32, 42, 0.35);
   --shadow-soft: 0 8px 24px -16px rgba(24, 32, 42, 0.28);
+  --shadow-float: 0 14px 32px -20px rgba(24, 32, 42, 0.4);
 
   --silver-image: linear-gradient(180deg, #14171b 0%, #3c444c 58%, #6b747c 100%);
   --rim-top: rgba(255, 255, 255, 0.95);

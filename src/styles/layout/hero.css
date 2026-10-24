@@ -49,10 +49,13 @@
       rgba(16,17,19,0.08) 32%,
       rgba(16,17,19,0.14) 50%,
       rgba(16,17,19,0.46) 72%,
-      rgba(16,17,19,0.82) 89%,
+      /* 最下面几层要和页面底色无缝接上：黑主题接近黑，白主题接纸白 */
+      color-mix(in srgb, var(--bg) 78%, rgba(16, 17, 19, 0.82)) 89%,
       var(--bg) 100%),
-    radial-gradient(120% 92% at 50% 42%, transparent 46%, rgba(10, 12, 15, 0.5) 100%);
+    radial-gradient(120% 92% at 50% 42%, transparent 46%, var(--hero-vignette) 100%);
 }
+
+.hero { --hero-vignette: rgba(10, 12, 15, 0.5); }
 
 .hero-body {
   position: relative;
@@ -72,10 +75,15 @@
   width: min(1120px, 96vw);
   height: min(560px, 76vh);
   transform: translate(-50%, -52%);
-  background: radial-gradient(closest-side, rgba(6, 8, 10, 0.62), rgba(6, 8, 10, 0.34) 55%, rgba(6, 8, 10, 0.10) 74%, transparent 88%);
+  background: radial-gradient(closest-side, var(--photo-haze), var(--photo-haze-2) 55%, var(--photo-scrim-2) 74%, transparent 88%);
   filter: blur(10px);
   pointer-events: none;
   z-index: -1;
+}
+
+/* 深色主题：白字压在火烧云的高光上会发飘，雾要更实一点 */
+:root:not([data-theme="light"]):not([data-theme="gray"]) .hero-body::before {
+  background: radial-gradient(closest-side, rgba(6, 8, 10, 0.72), rgba(6, 8, 10, 0.44) 55%, rgba(6, 8, 10, 0.12) 74%, transparent 88%);
 }
 
 .hero h1.silver {
@@ -95,7 +103,7 @@
 }
 
 .hero .eyebrow {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--on-photo-muted);
 }
 
 .hero p.lead {
@@ -121,7 +129,7 @@
   text-align: right;
   font-size: 12px;
   letter-spacing: 0.2em;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--on-photo-faint);
 }
 
 .hero-meta::after {
@@ -130,7 +138,7 @@
   width: 1px;
   height: 54px;
   margin: 12px 0 0 auto;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+  background: linear-gradient(180deg, var(--on-photo-rule), transparent);
   transform-origin: top center;
   animation: scrollCue 2.6s ease-in-out infinite;
 }
@@ -164,7 +172,7 @@
   height: 240px;
   max-width: 86vw;
   transform: translate(-50%, -50%);
-  background: radial-gradient(closest-side, rgba(79, 179, 232, 0.18), transparent 74%);
+  background: radial-gradient(closest-side, var(--accent-glow), transparent 74%);
   filter: blur(10px);
   pointer-events: none;
 }
@@ -182,7 +190,7 @@
 @keyframes logoIn {
   0% {
     opacity: 0;
-    filter: blur(22px) brightness(1.8) drop-shadow(0 0 0 rgba(79, 179, 232, 0));
+    filter: blur(22px) brightness(1.8) drop-shadow(0 0 0 var(--accent-glow));
     transform: scale(1.06);
   }
   55% {
@@ -191,7 +199,7 @@
   100% {
     opacity: 1;
     filter: blur(0) brightness(1) drop-shadow(0 2px 22px rgba(0, 0, 0, 0.55))
-            drop-shadow(0 0 26px rgba(79, 179, 232, 0.22));
+            drop-shadow(0 0 26px var(--accent-glow));
     transform: scale(1);
   }
 }

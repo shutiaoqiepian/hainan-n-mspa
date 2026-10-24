@@ -61,7 +61,7 @@ function onQrError(): void {
             <li><b>核心成员小群</b>（暂无申请渠道）</li>
           </ul>
           <p>{{ ws(14) }}仅支持通过微信审核入大群。你可以添加任意一位审核员微信，完成入群申请即可。{{ ws(12) }}</p>
-          <p style="padding:16px 20px;border-radius:12px;background:rgba(79,179,232,.10);border:1px solid rgba(79,179,232,.28);color:#cfe6f5">{{ ws(14) }}<b>获取管理员微信</b>：请点开公众号私信 <b class="grad">【我要加入】</b>{{ ws(12) }}</p>
+          <p class="join-tip">{{ ws(14) }}<b>获取管理员微信</b>：请点开公众号私信 <b class="grad">【我要加入】</b>{{ ws(12) }}</p>
         </div>
       </div>
       <div class="reveal" data-delay="120">
@@ -74,7 +74,7 @@ function onQrError(): void {
           <div class="auditor">
             <div class="auditor-name silver">暴雪踏墨行</div>
           </div>
-          <p class="muted" style="margin:20px 0 0;font-size:13.5px;line-height:1.9;border-top:1px solid rgba(255,255,255,.08);padding-top:18px">{{ ws(14) }}<b>温馨提示</b>：添加好友请备注「<span class="grad">椰青摄影入群</span>」，可更快通过审核哦。{{ ws(12) }}</p>
+          <p class="muted" style="margin:20px 0 0;font-size:13.5px;line-height:1.9;border-top:1px solid var(--line);padding-top:18px">{{ ws(14) }}<b>温馨提示</b>：添加好友请备注「<span class="grad">椰青摄影入群</span>」，可更快通过审核哦。{{ ws(12) }}</p>
         </div>
         <div class="glass" style="padding:40px 32px;text-align:center;margin-top:18px">
           <p class="eyebrow" style="margin-bottom:20px">公众号</p>
@@ -89,7 +89,7 @@ function onQrError(): void {
             />
             <div
               v-if="qrFailed"
-              style="width:190px;height:190px;border:1.5px dashed rgba(255,255,255,.22);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:12.5px;color:#8f979f;text-align:center;line-height:1.8;padding:12px"
+              class="qr-fallback"
             >把公众号二维码<br />命名为 二维码.jpg<br />放进 images 文件夹</div>
           </div>
           <p class="muted" style="margin:22px 0 0;font-size:14px;line-height:1.9">{{ ws(14) }}扫码关注，私信 <b>我要加入</b><br />{{ ws(14) }}<span style="font-size:13px;opacity:.75">北纬18度椰青摄联</span>{{ ws(12) }}</p>
