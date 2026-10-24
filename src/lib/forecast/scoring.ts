@@ -43,13 +43,22 @@ export function fWet(pop: number, rh: number): number {
 /* 评分：乘法结构，任何一项差都会被放大，而不是被别的项补回来。
    再用 1.8 次方整体压缩——“条件好”不等于“一定烧”，
    误差总云量预报的 TCC 只有 0.47（1 天时效），所以必须保守。 */
+/** 过滤掉 null / NaN / Infinity / 超范围的值，返回可参与计算的数或 null */
+function num(v: number | null | undefined, fallback: number, min: number, max: number): number {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return fallback
+  if (v < min || v > max) return fallback
+  return v
+}
+
 export function scoreOf(m: Measure): number {
-  /* 缺数据时按“最不利”处理：宁可低估，也不虚高 */
-  const high = m.high == null ? 90 : m.high
-  const mid = m.mid == null ? 60 : m.mid
-  const low = m.low == null ? 70 : m.low
-  const pop = m.pop == null ? 60 : m.pop
-  const rh = m.rh == null ? 90 : m.rh
+  /* 缺数据时按“最不利”处理：宁可低估，也不虚高。
+     注意 NaN / Infinity 也会被当成缺测 —— 否则分数会变成 NaN 直接显示在页面上。 */
+  const high = num(m.high, 90, 0, 100)
+  const mid = num(m.mid, 60, 0, 100)
+  const low = num(m.low, 70, 0, 100)
+  const pop = num(m.pop, 60, 0, 100)
+  const rh = num(m.rh, 90, 0, 100)
+  const aod = num(m.aod, 0.4, 0, 5)
 
   const h = clamp(fHigh(high), 0, 1)
   if (h <= 0) return 0
@@ -58,7 +67,7 @@ export function scoreOf(m: Measure): number {
   const midF = 0.72 + 0.28 * fMid(mid)
 
   /* 气溶胶对色彩饱和度影响很大，权重比原来更重 */
-  const aodF = 0.55 + 0.45 * fAod(m.aod ?? 0.4)
+  const aodF = 0.55 + 0.45 * fAod(aod)
 
   /* 下雨/起雾基本没戏，惩罚也要更重 */
   const wetF = 0.55 + 0.45 * fWet(pop, rh)
@@ -66,6 +75,8 @@ export function scoreOf(m: Measure): number {
   const raw = h * lowF * midF * aodF * wetF
   const score = 100 * Math.pow(clamp(raw, 0, 1), 1.8)
 
+  /* 兜底：任何意外都不让 NaN 流到界面上 */
+  if (!Number.isFinite(score)) return 0
   return Math.round(Math.min(96, score))
 }
 
@@ -293,7 +304,7 @@ export function profileOf(pr: RawPoint | null | undefined, idx: number): Profile
     const arr = h[name]
     if (!arr) return null
     const x = arr[idx]
-    return typeof x === 'number' ? x : null
+    return Number.isFinite(x) ? (x as number) : null
   }
 
   const rh850 = v('relative_humidity_850hPa')

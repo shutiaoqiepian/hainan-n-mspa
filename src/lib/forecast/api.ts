@@ -132,7 +132,7 @@ export function fieldOf(
   const a = hourly[base + '_' + mid] || hourly[base]
   if (!a) return null
   const v = a[k]
-  return typeof v === 'number' ? v : null
+  return Number.isFinite(v) ? (v as number) : null
 }
 
 /* 带超时 + 重试：手机网络下偶发挂住，不能让页面一直转圈 */
@@ -184,7 +184,7 @@ export function measureAt(
   let aodMissing = true
   if (airObj && airObj.hourly && airObj.hourly.aerosol_optical_depth) {
     const v2 = airObj.hourly.aerosol_optical_depth[k]
-    if (typeof v2 === 'number') { aod = v2; aodMissing = false }
+    if (Number.isFinite(v2)) { aod = v2 as number; aodMissing = false }
   }
 
   return {
@@ -201,17 +201,26 @@ export function measureAt(
   }
 }
 
+/** 值是否可参与计算：排除 null / NaN / Infinity / 超出物理范围的值。
+    （只判 `typeof === 'number'` 是不够的 —— NaN 也是 number，会一路传到分数上，
+    页面上就会显示「NaN」。） */
+export function validNumber(v: unknown, min: number, max: number): number | null {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return null
+  if (v < min || v > max) return null
+  return v
+}
+
 /** 关键字段完整度：把「天气不好」和「没有数据」分开。
     这几个字段任一缺测，scoreOf 都会用固定不利值兜底，
     所以缺得越多，分数越不可信，而不是「天气越差」。 */
 export function qualityOf(m: Measure): DataQuality {
   const missing: string[] = []
-  if (m.high == null) missing.push('高云量')
-  if (m.mid == null) missing.push('中云量')
-  if (m.low == null) missing.push('低云量')
-  if (m.rh == null) missing.push('相对湿度')
-  if (m.pop == null) missing.push('降水概率')
-  if (m.aodMissing) missing.push('气溶胶(AOD)')
+  if (validNumber(m.high, 0, 100) == null) missing.push('高云量')
+  if (validNumber(m.mid, 0, 100) == null) missing.push('中云量')
+  if (validNumber(m.low, 0, 100) == null) missing.push('低云量')
+  if (validNumber(m.rh, 0, 100) == null) missing.push('相对湿度')
+  if (validNumber(m.pop, 0, 100) == null) missing.push('降水概率')
+  if (m.aodMissing || validNumber(m.aod, 0, 5) == null) missing.push('气溶胶(AOD)')
 
   const total = 6
   const completeness = Math.round(100 * (total - missing.length) / total)
@@ -414,7 +423,7 @@ function profField(pr: RawPoint, name: string, idx: number): number | null {
   const a = ph[name] || ph[name + '_ecmwf_ifs025']
   if (!a) return null
   const v = a[idx]
-  return typeof v === 'number' ? v : null
+  return Number.isFinite(v) ? (v as number) : null
 }
 
 /* 逐小时：目标时刻前后各 2 小时（趋势图 / 详情表用） */

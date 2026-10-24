@@ -32,7 +32,7 @@ function num(pr: RawPoint | null | undefined, name: string, idx: number): number
   const a = h[name] || h[name + '_ecmwf_ifs025']
   if (!a) return null
   const v = a[idx]
-  return typeof v === 'number' ? v : null
+  return Number.isFinite(v) ? (v as number) : null
 }
 
 /** 从静态缓存/实时数据里读某一层的原始值 */
