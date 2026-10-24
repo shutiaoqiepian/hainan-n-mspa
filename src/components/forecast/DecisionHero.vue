@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { state } from '@/lib/forecast/state'
+import { openSpotCard } from '@/lib/forecast/card-ui'
 import { clarityLabel, pillarLabel, rainbowLabel, raysLabel } from '@/lib/forecast/scoring'
 import { dateText } from '@/lib/forecast/time'
 import type { Row } from '@/lib/forecast/types'
@@ -52,6 +53,11 @@ const cells = computed(() => {
 })
 
 const peakBetter = computed(() => r.value.peakScore > r.value.score + 4)
+
+/* 单机位名片：图里带二维码，链接可以在弹窗里单独复制 */
+function onShare(): void {
+  openSpotCard(props.row)
+}
 </script>
 
 <template>
@@ -75,6 +81,18 @@ const peakBetter = computed(() => r.value.peakScore > r.value.score + 4)
       </p>
       <p class="dh-head">{{ d.interpret.headline }}</p>
       <p class="dh-advice">{{ d.interpret.advice }}</p>
+
+      <!-- 单机位名片：这一页最需要转发的就是「这个机位这个分数」 -->
+      <div class="dh-share">
+        <button class="dh-share-btn" type="button" @click="onShare">
+          <span class="ico" aria-hidden="true">⤴</span>
+          <span class="tx">
+            <b>生成{{ r.spot.n }}名片</b>
+            <small>带二维码的图，发群里 / 朋友圈</small>
+          </span>
+        </button>
+        <span class="dh-share-hint">{{ r.score }} 分 · {{ r.level.name }} · {{ kindWord }} {{ d.time }}</span>
+      </div>
     </div>
 
     <!-- 中：大分数 + 等级尺 + 两个峰值 -->
