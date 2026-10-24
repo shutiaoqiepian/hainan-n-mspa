@@ -1,0 +1,54 @@
+name: 存档实况与预报快照（用于事后算误报率）
+
+# 为什么要有这个：算法要改进就得知道「当时到底准不准」。
+# 但没人愿意填反馈表单 —— 所以这里用的全是自动数据：
+#   1) METAR：海口美兰 / 三亚凤凰机场的逐小时实况（云组 + 能见度），免费、无需 key
+#   2) 预报快照：把当天各机位的分数存一份，因为 data/forecast/*.json 每 6 小时会被覆盖
+#
+# 两者按「日期 + 日落时刻」配对，第二天就能算出端到端误报率：
+#   node tools/check-accuracy.mjs
+#
+# 体积：每天约 10 KB（METAR 5 KB + 快照 4 KB），一年约 3.5 MB。
+on:
+  schedule:
+    # 北京时间 20:00，日落后 1.5 小时，保证当天的日落时刻观测已经发报
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      # snapshot-forecast.mjs 用 esbuild 打包 src/ 里的评分代码，
+      # 这样算法只有一份，不会在这里被抄第二遍。
+      - name: 安装依赖
+        run: npm ci --no-audit --no-fund
+
+      - name: 抓 METAR 实况（最近 24 小时）
+        run: node tools/fetch-metar.mjs --days 24
+
+      - name: 存当天预报快照（海南）
+        run: node tools/snapshot-forecast.mjs hn
+        continue-on-error: true
+
+      - name: 有变化才提交
+        run: |
+          git config user.name "18N-MSPA Bot"
+          git config user.email "bot@users.noreply.github.com"
+          if [ -n "$(git status --porcelain data/obs/)" ]; then
+            git add data/obs/
+            git commit -m "chore: archive metar obs + forecast snapshot"
+            git push
+          else
+            echo "no change"
+          fi
