@@ -170,3 +170,18 @@
   background: rgba(255, 255, 255, 0.26);
   border-color: rgba(255, 255, 255, 0.6);
 }
+
+/* ---------- 名片弹窗：背景恒为深色遮罩，关闭按钮固定用浅色 ---------- */
+
+.card-modal .card-modal-close {
+  color: #eef2f5;
+  border-color: rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.10);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.card-modal .card-modal-close:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.4);
+}

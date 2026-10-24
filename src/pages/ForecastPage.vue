@@ -9,7 +9,9 @@ import Explanations from '@/components/forecast/Explanations.vue'
 import Phenomena from '@/components/forecast/Phenomena.vue'
 import References from '@/components/forecast/References.vue'
 import ForecastToast from '@/components/forecast/ForecastToast.vue'
+import ForecastCardModal from '@/components/forecast/ForecastCardModal.vue'
 import { load } from '@/lib/forecast/api'
+import { openListCard, openSpotCard } from '@/lib/forecast/card-ui'
 import { initStateFromUrl, state } from '@/lib/forecast/state'
 
 /** 霞光预报（旧版 forecast.html 的 <main> + assets/forecast.js） */
@@ -34,6 +36,28 @@ watch(
   () => { void nextTick(scrollToShare) },
   { flush: 'post' }
 )
+
+/* 页面顶部的「生成今日名片」 */
+function onListCard(): void {
+  openListCard(rows.value)
+}
+
+/* 支持 ?card=list / ?card=spot 直接打开名片（方便分享「打开就是名片」） */
+let cardOpened = false
+function autoOpenCard(): void {
+  if (cardOpened || !state.rows.length) return
+  const want = new URLSearchParams(location.search).get('card')
+  if (want !== 'list' && want !== 'spot') return
+  cardOpened = true
+  if (want === 'list') {
+    openListCard(rows.value)
+    return
+  }
+  const row = state.rows.find((r) => r.spot.n === state.shareSpot) ?? rows.value[0]
+  if (row) openSpotCard(row)
+}
+
+watch(() => state.rows, () => { void nextTick(autoOpenCard) }, { flush: 'post' })
 
 onMounted(() => {
   initStateFromUrl()
@@ -61,6 +85,14 @@ onMounted(() => {
 
       <Legend />
 
+      <div class="fc-sharebar">
+        <button class="fc-sharebar-btn" type="button" @click="onListCard">
+          <span class="fsb-icon" aria-hidden="true">▣</span>
+          生成今日名片（前 5 个机位）
+        </button>
+        <span class="fc-sharebar-hint">发朋友圈 / 群里用；每行的 ⤴ 是单个机位的名片</span>
+      </div>
+
       <div class="fc-list" id="fc-list">
         <div v-if="state.loading" class="fc-empty">正在获取海南各地的云层与气溶胶数据…</div>
         <div v-else-if="state.error" class="fc-empty" v-html="errorHtml"></div>
@@ -87,4 +119,5 @@ onMounted(() => {
   </section>
 
   <ForecastToast />
+  <ForecastCardModal />
 </template>

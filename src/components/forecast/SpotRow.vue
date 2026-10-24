@@ -3,7 +3,8 @@ import { computed } from 'vue'
 import { KINDS } from '@/data/forecast/levels'
 import { clarityLabel, pillarLabel, rainbowLabel, raysLabel } from '@/lib/forecast/scoring'
 import { isDone, openFeedback } from '@/lib/forecast/feedback'
-import { shareRow, state, toggleSpot } from '@/lib/forecast/state'
+import { state, toggleSpot } from '@/lib/forecast/state'
+import { openSpotCard } from '@/lib/forecast/card-ui'
 import { dateText } from '@/lib/forecast/time'
 import type { Row } from '@/lib/forecast/types'
 
@@ -34,8 +35,9 @@ const open = computed(() => state.openSpot === props.row.spot.n)
 const fbTitle = computed(() => (done.value ? '你已反馈过这一条（可再次提交）' : '回填实际结果'))
 const scoreStyle = computed(() => ({ '--p': String(props.row.score), '--c': props.row.level.color }))
 
+/* 分享＝生成名片：图里带二维码，链接可以在弹窗里单独复制 */
 function onShare(): void {
-  shareRow(props.row)
+  openSpotCard(props.row)
 }
 
 function onFeedback(): void {
@@ -74,6 +76,6 @@ function onToggle(): void {
       @click.stop="onToggle"
     >{{ open ? '收起' : '详情' }}</button>
     <button class="fc-fb" :class="{ 'is-done': done }" type="button" :title="fbTitle" :aria-label="fbTitle" @click.stop="onFeedback">{{ done ? '✓' : '✎' }}</button>
-    <button class="fc-share" type="button" title="复制这一条的链接" aria-label="复制这一条的链接" @click.stop="onShare">⤴</button>
+    <button class="fc-share" type="button" title="生成名片分享" aria-label="生成名片分享" @click.stop="onShare">⤴</button>
   </article>
 </template>
