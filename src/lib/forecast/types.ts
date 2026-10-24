@@ -174,6 +174,16 @@ export interface DetailHour {
   aod: number
   pop: number | null
   score: number
+  /** 该小时的太阳高度角（同一个机位，随时间变化） */
+  sunEl: number | null
+  /** 该小时的通透度与文字档 */
+  clarity: number
+  clarityLabel: string
+  /** 该小时的鲜亮度（本站 0–100 口径，不是 SunsetBot 的 0–2.5） */
+  vivid: number
+  vividLabel: string
+  /** 该小时 AOD 的档位名 */
+  aodName: string
 }
 
 /** 一个机位在目标时刻的完整详情 */
@@ -253,13 +263,35 @@ export interface Row {
   ms: number
   /** 流水线第一层的原始分（未平滑、未打折），详情里和最终分并列显示 */
   rawScore: number
-  /** 正点前后一小时里「平滑值最高」的那个小时的分数与时刻（峰值窗口） */
+  /** 正点前后一小时里「平滑值最高」的那个小时的分数与时刻（最佳时刻） */
   peakScore: number
   peakTime: string
+  /** 目标时刻的鲜亮度（本站 0–100） */
+  vivid: number
+  vividLabel: string
+  /** 窗口内最鲜艳的那一小时（和 peakTime 是两个不同判断） */
+  vividPeak: number
+  vividPeakTime: string
+  vividPeakLabel: string
+  /** 每个模式自己的一份粗分（只换逐层云量），用来摊开各家怎么看 */
+  perModel: ModelScore[]
   /** 数据质量：0–100 的完整度 + 缺了哪几项 */
   quality: DataQuality
   /** 这个机位目标时刻的完整详情 */
   detail: SpotDetail
+}
+
+/** 单个模式的粗分：只把逐层云量换成该模式的，其它量共用 */
+export interface ModelScore {
+  id: string
+  name: string
+  tag: string
+  /** 这个模式有没有给出云量数据 */
+  ok: boolean
+  high: number | null
+  mid: number | null
+  low: number | null
+  score: number | null
 }
 
 /** 一次取数的缓存（10 分钟） */

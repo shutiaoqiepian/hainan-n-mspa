@@ -1,11 +1,12 @@
 import { KINDS, aodBand, levelOf } from '@/data/forecast/levels'
 import { matchPhenomena } from '@/data/forecast/phenomena'
-import { MULTI_MODELS } from '@/data/forecast/models'
+import { ALL_MODELS, MODELS, MULTI_MODELS } from '@/data/forecast/models'
 import { DETAIL_SPOT, dataFileFor, spotsFor } from '@/data/forecast/spots'
 import { cloudProfile, syntheticProfile } from './clouds'
 import { conflictsOf, interpret } from './interpret'
 import {
-  airmass, clarityOf, clamp, crepuscularOf, lclMeters, pillarOf, profileOf, rainbowHint, rainbowOf, scoreOf, scoreOfAt
+  airmass, clarityOf, clarityLabel, clamp, crepuscularOf, lclMeters, pillarOf, profileOf,
+  rainbowHint, rainbowOf, scoreOf, scoreOfAt, vividLabel, vividnessOf
 } from './scoring'
 import { state } from './state'
 import { faceMatch, sunPosition } from './sun'
@@ -117,6 +118,12 @@ export function buildUrl(host: string, params: string, models: string[] | null):
 }
 
 export function modelsForRequest(): string[] {
+  if (!state.model || state.model === 'multi') return ALL_MODELS
+  return [state.model]
+}
+
+/** 多模式实际拿来做平均与分歧统计的三个（参考模式只展示、不计分） */
+export function scoringModels(): string[] {
   if (!state.model || state.model === 'multi') return MULTI_MODELS
   return [state.model]
 }
@@ -300,6 +307,9 @@ function noteGrid(points: RawPoint[]): void {
 
 /* ---------- 一次取数的缓存 ---------- */
 let CACHE: CacheData | null = null
+
+/** 给离线工具（效果图 / 快照脚本）读原始 hourly 用；线上页面不调用 */
+export function rawCache(): CacheData | null { return CACHE }
 const CACHE_MS = 10 * 60 * 1000
 
 /* 请求令牌：每次 load() 自增。快速连点省份/日期时，先发出去的那次
@@ -461,7 +471,13 @@ function profField(pr: RawPoint, name: string, idx: number): number | null {
 }
 
 /* 逐小时：目标时刻前后各 2 小时（趋势图 / 详情表用） */
-function buildHours(w: RawPoint, air: RawPoint | null | undefined, idx: number, mids: string[]): DetailHour[] {
+function buildHours(
+  w: RawPoint,
+  air: RawPoint | null | undefined,
+  idx: number,
+  mids: string[],
+  c0: Spot
+): DetailHour[] {
   const times = hourTimes(w)
   const hours: DetailHour[] = []
   const start = Math.max(0, idx - 2)
@@ -469,6 +485,10 @@ function buildHours(w: RawPoint, air: RawPoint | null | undefined, idx: number, 
 
   for (let k = start; k <= end; k++) {
     const mm = measureAt(w, air, k, mids)
+    const msK = Date.parse(times[k].slice(0, 16) + ':00+08:00')
+    const sz = isNaN(msK) ? null : sunPosition(msK, c0.lat, c0.lon)
+    const clarK = clarityOf(mm)
+    const vivK = sz ? vividnessOf(mm, sz) : 0
     hours.push({
       t: times[k].slice(11, 16),
       high: mm.high,
@@ -476,7 +496,13 @@ function buildHours(w: RawPoint, air: RawPoint | null | undefined, idx: number, 
       low: mm.low,
       aod: mm.aod,
       pop: mm.pop,
-      score: scoreOf(mm)
+      score: scoreOf(mm),
+      sunEl: sz ? Math.round(sz.el * 10) / 10 : null,
+      clarity: clarK,
+      clarityLabel: clarityLabel(clarK),
+      vivid: vivK,
+      vividLabel: sz ? vividLabel(vivK) : '',
+      aodName: aodBand(mm.aod).name
     })
   }
   return hours
@@ -583,7 +609,7 @@ function buildSpotDetail(o: {
       return tipsCache
     },
     get hourly(): DetailHour[] {
-      if (!hoursCache) hoursCache = buildHours(o.w, o.air, o.idx, o.mids)
+      if (!hoursCache) hoursCache = buildHours(o.w, o.air, o.idx, o.mids, o.spot)
       return hoursCache
     }
   }
@@ -595,7 +621,10 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
   state.detail = null
   const cfg = KINDS[state.kind]
   const rows: Row[] = []
-  const mids = modelsForRequest()
+  /* mids：计分用的模型（3 个）；allMids：请求下来的全部模型（8 个），
+     多的那 5 个只用来展示「各家怎么看」，不参与平均与分歧 */
+  const mids = scoringModels()
+  const allMids = modelsForRequest()
 
   spotsFor(state.prov).forEach((spot, i) => {
     const w = weather[i] || weather[0]
@@ -643,16 +672,16 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
     const sunExact: SunPos | null = sun
 
     /* 每个模式各算一遍：平均值当结果，标准差当“可信度” */
-    let perModel: number[] = []
+    let perModelScores: number[] = []
     mids.forEach((mid) => {
       const mm = measureAt(w, airObj, idx, [mid])
       if (mm.high == null) return          /* 这个模式没给数据，不参与统计 */
-      perModel.push(scoreOf(mm))
+      perModelScores.push(scoreOf(mm))
     })
-    if (!perModel.length) perModel = [scoreOf(m)]
+    if (!perModelScores.length) perModelScores = [scoreOf(m)]
 
-    const mean = perModel.reduce((a, b) => a + b, 0) / perModel.length
-    const variance = perModel.reduce((a, b) => a + (b - mean) * (b - mean), 0) / perModel.length
+    const mean = perModelScores.reduce((a, b) => a + b, 0) / perModelScores.length
+    const variance = perModelScores.reduce((a, b) => a + (b - mean) * (b - mean), 0) / perModelScores.length
     const spread = Math.round(Math.sqrt(variance))
 
     /* ---------- 逐小时评分（带物理修正）----------
@@ -793,6 +822,45 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
 
     /* ECMWF 单模式的三档云量：云种剖面就是用这套，和上面的平均值对照用 */
     const ecmM = mids.length > 1 ? measureAt(w, airObj, idx, ['ecmwf_ifs025']) : null
+
+    /* 每个模式自己一份「粗分」：只把逐层云量换成该模式的，其它量共用。
+       用来在界面上摊开「各家怎么看」——比只给一个平均值有信息量得多。
+       务必标清它是粗分：差异只来自云量，不是完整的单模式预报。 */
+    const perModel = allMids.map((mid) => {
+      const mm = measureAt(w, airObj, idx, [mid])
+      const ok = mm.high != null || mm.mid != null || mm.low != null
+      const md = MODELS.find((x) => x.id === mid)
+      return {
+        id: mid,
+        name: md ? md.name : mid,
+        tag: md ? md.tag : '',
+        ok: ok,
+        high: mm.high,
+        mid: mm.mid,
+        low: mm.low,
+        score: ok ? scoreOf(mm) : null
+      }
+    })
+
+    /* 鲜亮度峰值：窗口内最鲜艳的那一小时。
+       和上面的「峰值窗口」是两个不同判断 —— 后者看分数，前者看颜色。 */
+    let vividBest = { t: '', sunEl: null as number | null, v: 0, label: '', aod: m.aod }
+    for (let k = Math.max(0, idx - 1); k <= Math.min(times.length - 1, idx + 1); k++) {
+      const e = hourSunEl(k)
+      if (e == null) continue
+      const mm = measureAt(w, airObj, k, mids)
+      const v = vividnessOf(mm, { el: e, az: 0 })
+      if (v > vividBest.v) {
+        vividBest = {
+          t: times[k].slice(11, 16),
+          sunEl: Math.round(e * 10) / 10,
+          v: v,
+          label: vividLabel(v),
+          aod: mm.aod
+        }
+      }
+    }
+
     const gridText = typeof w.latitude === 'number' && typeof w.longitude === 'number'
       ? (w.latitude as number).toFixed(2) + '°N, ' + (w.longitude as number).toFixed(2) + '°E'
       : ''
@@ -815,6 +883,12 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
       quality: qualityOf(m),
       peakScore: peakScore,
       peakTime: peakTime,
+      vivid: vividnessOf(m, sunExact),
+      vividLabel: vividLabel(vividnessOf(m, sunExact)),
+      vividPeak: vividBest.v,
+      vividPeakTime: vividBest.t,
+      vividPeakLabel: vividBest.label,
+      perModel: perModel,
       level: levelOf(score),
       aodName: aodBand(m.aod).name,
       profLabel: prof ? prof.label : '',

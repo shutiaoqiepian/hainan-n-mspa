@@ -342,6 +342,90 @@ export function rainbowLabel(v: number): string {
   return v >= 60 ? '彩虹窗口' : v >= 35 ? '可能有虹' : v >= 15 ? '概率低' : '无'
 }
 
+/* ---------- 鲜亮度（彩色程度）----------
+   摄影里的「鲜艳度」。注意这一项**不是** SunsetBot 的 0–2.5 口径，
+   本站在界面上永远写清是本站的 0–100 分，避免拿去和别人比数字。
+
+   和「通透」的区别：
+     · 通透看「干不干净」—— 越干净越高，没有云这一项；
+     · 鲜亮度看「颜色能不能出来」—— 太干净反而只剩蓝，
+       需要少量散射介质 + AOD 在 0.06–0.5 之间，且太阳离地平线要近（红光占主导）。
+   所以雾霾天通透低、鲜亮度也低；水晶天通透满分，但鲜亮度只是「湛蓝」，
+   真正「火烧」要的是干净的云 + 恰当的薄雾 + 低太阳角。 */
+export function vividnessOf(m: Measure, sun: SunPos | null): number {
+  if (!sun) return 0
+  const el = sun.el
+
+  let sunF: number
+  if (el >= -6 && el <= 4) sunF = 1
+  else if (el > 4 && el <= 10) sunF = 0.9
+  else if (el > 10 && el <= 25) sunF = 0.62
+  else if (el < -6 && el >= -10) sunF = 0.55
+  else sunF = 0.2
+
+  /* 散射介质：太少只剩纯蓝，太多发灰发浑 */
+  const aod = m.aod ?? 0.25
+  const aodF = aod < 0.06 ? 0.45
+    : aod <= 0.12 ? 0.78
+      : aod <= 0.3 ? 1
+        : aod <= 0.5 ? 0.85
+          : aod <= 0.8 ? 0.5
+            : 0.24
+
+  /* 着色要有载体：云不能太多也不能没有 */
+  const high = m.high ?? 0
+  const mid = m.mid ?? 0
+  const low = m.low ?? 0
+  const canvas = clamp(Math.max(high, mid * 0.9, low * 0.55) / 60, 0, 1)
+
+  /* 挡住太阳的方向就什么颜色都看不到 */
+  const lowF = low >= 80 ? 0.3 : low >= 55 ? 0.6 : low >= 30 ? 0.85 : 1
+
+  const pop = m.pop ?? 0
+  const popF = pop >= 70 ? 0.5 : pop >= 45 ? 0.78 : 1
+
+  const vis = m.vis
+  const visF = vis == null ? 0.9 : vis >= 20 ? 1 : vis >= 10 ? 0.85 : vis >= 5 ? 0.6 : 0.35
+
+  return Math.round(clamp(100 * sunF * aodF * (0.25 + 0.75 * canvas) * lowF * popF * visF, 0, 100))
+}
+
+/** 鲜亮度文字档（本站口径；与「通透」的五档刻意区分） */
+export function vividLabel(v: number): string {
+  return v >= 80 ? '火烧'
+    : v >= 62 ? '橙金'
+      : v >= 45 ? '粉紫'
+        : v >= 28 ? '湛蓝'
+          : v >= 14 ? '淡彩'
+            : '近灰'
+}
+
+/** 一层云能不能被低角度阳光从下方照亮 —— 直接给结论，不让人自己推 */
+export function layerVerdict(l: CloudLayer): string {
+  if (l.code === '--') return '这一层无云，不参与成像'
+  if (l.lit) {
+    return l.cover >= 15
+      ? '薄云，太阳能穿到底下把它染色 —— 火烧云的主力层'
+      : '薄云但量太少，只能当点缀'
+  }
+  return l.cover >= 60
+    ? '厚云或低云，会把阳光和地平线一起挡掉'
+    : '这层照不亮：云太厚 / 太低 / 相态不对'
+}
+
+/** 「日柱 / 太阳光柱」差在哪：一行文字，给界面直接显示 */
+export function sunPillarNote(layers: CloudLayer[], sunAz: number | null): string {
+  const t500 = layers.find((l) => l.level === 500)?.t ?? null
+  const t300 = layers.find((l) => l.level === 300)?.t ?? null
+  const high = layers.filter((l) => l.height >= 6000)
+  const highCover = high.reduce((s, l) => Math.max(s, l.cover), 0)
+  const iceOk = (t500 == null || t500 <= -18) && (t300 == null || t300 <= -30)
+  if (highCover < 8) return '高空几乎没云，缺冰晶载体'
+  if (!iceOk) return '高空温度不够低（500 hPa 需 ≤ −18℃），云里还没有冰晶'
+  if (highCover > 80) return '高空云太厚，把太阳整个挡住'
+  return '高空有薄冰晶云，但太阳方位' + (sunAz == null ? '' : ' ' + sunAz + '°') + '与机位朝向不匹配'
+}
+
 /* 彩虹：太阳高度 4–40°，且日落前两小时内有像样的降水概率
    教程要点：虹总在太阳对面，太阳低于 42° 才可能形成 */
 export function rainbowHint(
