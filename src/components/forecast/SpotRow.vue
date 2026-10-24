@@ -30,6 +30,11 @@ const spreadText = computed(() =>
     : '模式 ±' + props.row.spread
 )
 
+const conflict = computed(() => props.row.detail.conflicts[0] ?? null)
+const conflictTitle = computed(() =>
+  props.row.detail.conflicts.map((c) => c.text).join('；') + '（点「详情」看对照）'
+)
+
 const done = computed(() => isDone(props.row))
 const open = computed(() => state.openSpot === props.row.spot.n)
 const fbTitle = computed(() => (done.value ? '你已反馈过这一条（可再次提交）' : '回填实际结果'))
@@ -62,7 +67,10 @@ function onToggle(): void {
         <span class="fc-badge b-rainbow">彩虹 {{ row.rainbowScore }} · {{ rainbowLabel(row.rainbowScore) }}</span>
         <span v-if="row.models > 1" class="fc-badge b-spread" :class="{ 'is-warn': row.spread >= 18 }">{{ spreadText }}</span>
       </div>
-      <div v-if="row.detail.genusText" class="fc-prof">云种（ECMWF 单模式）：{{ row.detail.genusText }}</div>
+      <div v-if="row.detail.genusText" class="fc-prof">
+        云种（ECMWF 单模式）：{{ row.detail.genusText }}
+        <span v-if="conflict" class="fc-conflict-flag" :title="conflictTitle">⚠ 与平均值差 {{ Math.abs(conflict.diff) }} 个百分点</span>
+      </div>
       <div v-if="row.faceOff && row.sunAz != null" class="fc-faceoff">⚠ 朝向不符：机位朝{{ row.spot.face }}，太阳方位 {{ row.sunAz }}°</div>
       <div v-if="row.rainbow" class="fc-tag">🌈 可能有彩虹</div>
     </div>

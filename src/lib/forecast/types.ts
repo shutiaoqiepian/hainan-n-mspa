@@ -132,6 +132,20 @@ export interface Phototip {
   shoot: string
 }
 
+/** 一个模式与平均值打架的说明 */
+export interface Conflict {
+  /** 云层：高 / 中 / 低 */
+  band: '高云' | '中云' | '低云'
+  /** ECMWF 的值 */
+  ecmwf: number
+  /** 多模式平均 */
+  avg: number
+  /** 差值 */
+  diff: number
+  /** 人话描述 */
+  text: string
+}
+
 /** 自动生成的气象解读 */
 export interface Interpretation {
   /** 一句话结论 */
@@ -179,6 +193,10 @@ export interface SpotDetail {
   genusText: string
   /** 自动解读 */
   interpret: Interpretation
+  /** 各模式分歧说明：ECMWF 的高/中/低云与多模式平均差太大时为非空 */
+  conflicts: Conflict[]
+  /** 这个机位落到的模式格点（吸附后的中心坐标） */
+  grid: string
   /** 匹配到的拍摄题材/黑话 */
   tips: Phototip[]
   /** 逐小时（只有 DETAIL_SPOT 会填） */

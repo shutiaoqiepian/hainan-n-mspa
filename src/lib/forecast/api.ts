@@ -3,7 +3,7 @@ import { matchPhenomena } from '@/data/forecast/phenomena'
 import { MULTI_MODELS } from '@/data/forecast/models'
 import { DETAIL_SPOT, SPOTS } from '@/data/forecast/spots'
 import { cloudProfile, syntheticProfile } from './clouds'
-import { interpret } from './interpret'
+import { conflictsOf, interpret } from './interpret'
 import {
   clarityOf, clamp, crepuscularOf, lclMeters, pillarOf, profileOf, rainbowHint, rainbowOf, scoreOf
 } from './scoring'
@@ -420,6 +420,8 @@ function buildSpotDetail(o: {
   genusText: string
   profLabel: string
   profMod: number
+  ecmwf?: { high: number | null; mid: number | null; low: number | null }
+  grid?: string
 }): SpotDetail {
   const p = parseIso(o.iso)
   const it = interpret({
@@ -476,6 +478,8 @@ function buildSpotDetail(o: {
     sheets: o.sheets,
     genusText: o.genusText,
     interpret: it,
+    conflicts: o.ecmwf ? conflictsOf(o.m, o.ecmwf) : [],
+    grid: o.grid ?? '',
     tips: tips,
     hourly: buildHours(o.w, o.air, o.idx, o.mids)
   }
@@ -613,10 +617,18 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null): 
     const pillar = pillarOf(m, sunExact, layers)
     const faceOff = face < 0.85
 
+    /* ECMWF 单模式的三档云量：云种剖面就是用这套，和上面的平均值对照用 */
+    const ecmM = mids.length > 1 ? measureAt(w, airObj, idx, ['ecmwf_ifs025']) : null
+    const gridText = typeof w.latitude === 'number' && typeof w.longitude === 'number'
+      ? (w.latitude as number).toFixed(2) + '°N, ' + (w.longitude as number).toFixed(2) + '°E'
+      : ''
+
     const detail = buildSpotDetail({
       spot, w, air: airObj, idx, iso, mids, m, sun: sunExact, score, spread, faceOff,
       cape, crep, pillar, clarity, rainbow, cbLow, layers, sheets, genusText,
-      profLabel: prof ? prof.label : '', profMod: prof ? prof.mod : 1
+      profLabel: prof ? prof.label : '', profMod: prof ? prof.mod : 1,
+      ecmwf: ecmM ? { high: ecmM.high, mid: ecmM.mid, low: ecmM.low } : undefined,
+      grid: gridText
     })
 
     if (spot.n === DETAIL_SPOT) state.detail = detail

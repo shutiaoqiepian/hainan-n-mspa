@@ -36,6 +36,7 @@ const sunText = computed(() => {
         <span><b>黄金时刻</b>{{ d.golden }}</span>
         <span><b>蓝调时刻</b>{{ d.blue }}</span>
         <span v-if="d.sunAz != null"><b>太阳方位</b>{{ d.sunAz }}°</span>
+        <span v-if="d.grid"><b>气象格点</b>{{ d.grid }}</span>
       </div>
     </div>
 
@@ -45,6 +46,19 @@ const sunText = computed(() => {
       <div class="fcd-col">
         <h5>云层剖面 · 各高度云种（ECMWF）</h5>
         <CloudProfile :layers="d.layers" />
+        <div v-if="d.conflicts.length" class="fcd-conflict">
+          <p class="fcd-conflict-title">⚠ 两家模式在这几层上打架</p>
+          <ul>
+            <li v-for="c in d.conflicts" :key="c.band">
+              <b>{{ c.band }}</b>：多模式平均 <em>{{ c.avg }}%</em>，ECMWF 单模式 <em>{{ c.ecmwf }}%</em> — {{ c.text }}
+            </li>
+          </ul>
+          <p class="fcd-conflict-hint">
+            上面那行百分比是三个模式的平均值；下面云种剖面只用了 ECMWF 一家的气压层数据。
+            差这么多时，<b>云种只能当参考</b>，别当成实况。
+          </p>
+        </div>
+
         <p class="fcd-note">
           云种按 ECMWF 单模式的气压层数据推得；上面那行的百分比是多模式平均，两者口径不同。
           当前多模式平均：高云 {{ Math.round(row.m.high ?? 0) }}%、中云 {{ Math.round(row.m.mid ?? 0) }}%、低云 {{ Math.round(row.m.low ?? 0) }}%。

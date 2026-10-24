@@ -195,11 +195,21 @@ export function cloudProfile(
 
   if (raw.length < 3) return { layers: [], sheets: [], genusText: '' }
 
-  /* 有云的层：云量 ≥ 30% 或 湿度 ≥ 80% */
-  const cloudy = raw.map((r) => ({
-    ...r,
-    isCloud: (r.cover ?? 0) >= 30 || (r.rh ?? 0) >= 80
-  }))
+  /* 有云的层：云量 ≥ 30% 或 湿度 ≥ 80%。
+     湿度到饱和（≥92%）但 ECMWF 报的云量很低，属于「模式漏报薄云」，
+     按弱云处理，并在说明里标出来 —— 不然会出现「高云 49% / 云种：无」这种自相矛盾。 */
+  const cloudy = raw.map((r) => {
+    const cover = r.cover ?? 0
+    const rh = r.rh ?? 0
+    const byCloud = cover >= 30
+    const byHumid = rh >= 80
+    return {
+      ...r,
+      isCloud: byCloud || byHumid,
+      faint: !byCloud && byHumid,
+      coverEff: byCloud ? cover : Math.min(cover, Math.round((rh - 60) * 0.6))
+    }
+  })
 
   /* 云顶：最高的有云层 */
   let topMost: number | null = null
@@ -209,8 +219,9 @@ export function cloudProfile(
 
   for (let i = 0; i < cloudy.length; i++) {
     const r = cloudy[i]
-    const cover = Math.round(r.cover ?? 0)
+    const cover = Math.round((r as { coverEff?: number }).coverEff ?? r.cover ?? 0)
     const rh = Math.round(r.rh ?? 0)
+    const faint = (r as { faint?: boolean }).faint === true
     if (!r.isCloud) {
       layers.push({
         level: r.level, height: Math.round(r.height), cover, rh,
@@ -250,7 +261,8 @@ export function cloudProfile(
     layers.push({
       level: r.level, height: Math.round(r.height), cover, rh,
       t: r.t, td: r.td, code: g.code, genus: g.genus, species: g.species,
-      base, top, lit: g.lit, note: g.note
+      base, top, lit: g.lit,
+      note: faint ? g.note + '（ECMWF 云量报得偏低、湿度已近饱和，按有云处理）' : g.note
     })
   }
 

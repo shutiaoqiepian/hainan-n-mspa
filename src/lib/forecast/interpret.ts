@@ -7,7 +7,7 @@
    ============================================================ */
 
 import { aodBand } from '@/data/forecast/levels'
-import type { CloudLayer, Interpretation, KindKey, Measure, SunPos } from './types'
+import type { CloudLayer, Conflict, Interpretation, KindKey, Measure, SunPos } from './types'
 import { clamp, fAod, fHigh, fLow, fWet } from './scoring'
 
 export interface InterpretInput {
@@ -210,6 +210,32 @@ function adviceOf(i: InterpretInput, low: number, pop: number, ell: number | nul
 /** 把解读压成一句给分享用的短话 */
 export function interpretOneLine(it: Interpretation): string {
   return it.headline + '。' + it.advice
+}
+
+/* ---------- 模式打架：ECMWF（云种用的那套）vs 多模式平均 ----------
+   界面上「云量%」是三个模式的平均，而「云种」只有 ECMWF 一家。
+   两家差得远时，用户会看到「高云 49%」配「高云：无」这种自相矛盾的组合，
+   必须显式标出来，否则会以为算错了。阈值取 20 个百分点（原来 30 太宽，实际很少触发）。 */
+export const CONFLICT_THRESHOLD = 20
+
+export function conflictsOf(m: Measure, ecmwf: { high: number | null; mid: number | null; low: number | null }): Conflict[] {
+  const out: Conflict[] = []
+  const bands: Array<['高云' | '中云' | '低云', number | null, number | null]> = [
+    ['高云', m.high, ecmwf.high],
+    ['中云', m.mid, ecmwf.mid],
+    ['低云', m.low, ecmwf.low]
+  ]
+  for (const [band, avgV, ecmV] of bands) {
+    if (avgV == null || ecmV == null) continue
+    const diff = Math.round(avgV - ecmV)
+    if (Math.abs(diff) < CONFLICT_THRESHOLD) continue
+    const text =
+      diff > 0
+        ? '平均 ' + Math.round(avgV) + '%、ECMWF 只有 ' + Math.round(ecmV) + '%：ICON/GFS 报得多，ECMWF 报得少'
+        : '平均 ' + Math.round(avgV) + '%、ECMWF 却有 ' + Math.round(ecmV) + '%：ECMWF 报得多，ICON/GFS 报得少'
+    out.push({ band, ecmwf: Math.round(ecmV), avg: Math.round(avgV), diff, text })
+  }
+  return out
 }
 
 /** 供别处检查：分数和文案口径别打架 */
