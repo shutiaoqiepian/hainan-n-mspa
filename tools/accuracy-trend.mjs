@@ -74,3 +74,32 @@ if (aZeroAlways) {
 
 console.log('')
 console.log('看明细：node tools/check-accuracy.mjs --only-a --top 40')
+
+/* ---------- 挂起决定：条件到了就在这里点名 ----------
+   tools/todo.mjs 是台账的单一事实来源。这里只做一件事：
+   把「已经到期」的挂起决定喊出来，免得它沉在交接文档里被忘掉。 */
+try {
+  const { ITEMS } = await import('./todo.mjs')
+  const due = []
+  for (const item of ITEMS) {
+    const m = item.trigger?.metric
+    if (!m) continue
+    if (m === 'aSamples30d' && dates.length >= 30) due.push([item, 'A 级已覆盖 ' + dates.length + ' 天'])
+    if (m === 'aFalseAlarmWarning' && A.judged >= 10 && typeof A.falseAlarmRate === 'number' && A.falseAlarmRate >= 25) {
+      due.push([item, 'A 级误报率 ' + A.falseAlarmRate + '%（n=' + A.judged + '）'])
+    }
+  }
+  if (due.length) {
+    console.log('')
+    console.log('🔔 有 ' + due.length + ' 条挂起决定的条件已经满足，回来看：')
+    for (const [it, why] of due) {
+      console.log('   · [' + it.id + '] ' + it.title)
+      console.log('     依据：' + why + '　详见：' + (it.doc || 'tools/todo.mjs'))
+    }
+    console.log('   处理步骤：node tools/todo.mjs --due')
+  } else {
+    console.log('挂起决定：0 条到期（全部清单：node tools/todo.mjs --all）')
+  }
+} catch {
+  /* 台账文件不在也不影响主结论 */
+}

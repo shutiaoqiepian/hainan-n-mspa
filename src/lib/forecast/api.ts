@@ -902,6 +902,11 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
               对应高度段（中云→850/700、高云→500/300/200），让剖面至少画出来。 */
     const levelsRaw = layers.map((l) => l.level)
     const litSet = new Set(layers.filter((l) => l.lit).map((l) => l.level))
+    /* ★ 挂起决定（全仓搜「挂起决定」）—— profile-data-source
+       下面这段是补丁，不是正解：它让「剖面」和「六格」在模式分歧大时至少
+       不自相矛盾，但剖面底层仍然是 ECMWF 单模式、计分仍是三家平均。
+       要不要把剖面也改成多模式平均，等 A 级校验样本说话（约 2026-11-25）。
+       台账：tools/todo.mjs　说明：交接文档 26.5 */
     const anyCover = layers.some((l) => l.cover >= 8)
     const multiHigh = m.high ?? 0
     const multiMid = m.mid ?? 0
