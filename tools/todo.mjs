@@ -239,6 +239,16 @@ async function main() {
     console.log('（只列到期项。加 --all 看全部，加 --due 只看到期项）')
   }
   console.log(`到期 ${dueCount} 项 / 共 ${ITEMS.length} 项`)
+
+  /* ★ 最后一句是留给「下一个 AI 会话」的：
+     新对话不会自动继承记忆，所以让这条命令自己把该问的话说出来。 */
+  console.log('')
+  console.log('===== 如果你是另一个对话里的 AI，请先问一句 =====')
+  console.log(`  仓库里有 ${ITEMS.length} 条「等数据到位再决定」的挂起事项，其中 ${dueCount} 条已到期。`)
+  console.log('  请先问主人：')
+  console.log(`    「有 ${ITEMS.length} 条挂起事项（${dueCount} 条已到期），现在要处理哪条，还是先做别的？」`)
+  console.log('  别在没问过的情况下动手改预报相关的代码。')
+  console.log('  依据：AGENTS.md 与交接文档 26.6。')
 }
 
 if (process.argv[1]?.endsWith('todo.mjs')) {
