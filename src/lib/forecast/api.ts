@@ -884,6 +884,55 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
 
     if (spot.n === DETAIL_SPOT) state.detail = detail
 
+    /* 逐层「会被染成什么色」：用同一套 vividnessOf 口径的色相部分，
+       只把「有没有云」换成这一层自己的云量。
+       这样横条颜色和顶部「鲜亮度 75 橙金」说的是同一件事，不是另起一套标准。
+
+       ★ 只有「会被照亮」的层才给色相。照不亮的层（太厚/太低）染不出颜色，
+         给它一个假颜色会让人以为这层也能出霞——所以那几层返回「无」，
+         界面上画成暗色小点。
+
+       ★ 2026-10-25 修：云种剖面只看 ECMWF 单模式的逐层云量，
+         所以经常出现「8 层全是无云 / 全照不亮」，但六格里的高云却有 74%。
+         原因是计分用的三层云量是多模式平均，ECMWF 恰好报 0。
+         这里加两条兜底，避免剖面条在明明有画布时一条都不亮：
+           ① 「照不亮」只由云种判定给出；ECMWF 云量足够（≥15%）且本层湿度不像
+              厚云（<88%）时，按可被照亮处理（多模式平均说有云，就该有这层）；
+           ② 八层全无云、但多模式平均的高/中云量 ≥15% 时，把这些云量挂到
+              对应高度段（中云→850/700、高云→500/300/200），让剖面至少画出来。 */
+    const levelsRaw = layers.map((l) => l.level)
+    const litSet = new Set(layers.filter((l) => l.lit).map((l) => l.level))
+    const anyCover = layers.some((l) => l.cover >= 8)
+    const multiHigh = m.high ?? 0
+    const multiMid = m.mid ?? 0
+
+    if (!anyCover && (multiHigh >= 15 || multiMid >= 15)) {
+      for (const l of layers) {
+        const seg = l.height >= 6000 ? 'high' : l.height >= 2000 ? 'mid' : 'low'
+        const v = seg === 'high' ? multiHigh : seg === 'mid' ? multiMid : 0
+        if (v >= 15) {
+          l.cover = Math.round(v)
+          if (l.code === '--') {
+            l.code = seg === 'high' ? 'Ci' : 'Ac'
+            l.genus = seg === 'high' ? '卷云（多模式均）' : '高积云（多模式均）'
+            /* 这一步补出来的云来自多模式平均，ECMWF 单模式没报，所以没有云种判据。
+               薄高云默认「能被夕阳照亮」——否则 74% 的高云会显示成「照不亮」，
+               和下面「会烧成火烧」自相矛盾。 */
+            l.lit = true
+          }
+        }
+      }
+    }
+
+    const hueByLevel = new Map<number, string>()
+    for (const l of layers) {
+      if (l.cover < 4) { hueByLevel.set(l.level, '无'); continue }
+      const reachable = litSet.has(l.level) || (l.cover >= 15 && l.rh < 88)
+      if (!reachable) { hueByLevel.set(l.level, '无'); continue }
+      hueByLevel.set(l.level, vividLabel(vividnessOf({ ...m, high: l.cover, mid: 0, low: 0 }, sunExact)))
+    }
+    void levelsRaw
+
     rows.push({
       spot: spot,
       m: m,
@@ -901,6 +950,7 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
       level: levelOf(score),
       aodName: aodBand(m.aod).name,
       profLabel: prof ? prof.label : '',
+      hues: layers.map((l) => hueByLevel.get(l.level) ?? '无'),
       rainbow: rainbow >= 35,
       rainbowScore: rainbow,
       clarity: clarity,

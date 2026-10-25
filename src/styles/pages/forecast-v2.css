@@ -945,9 +945,11 @@ button.fcl-row.open { background: var(--fill-2); }
   transform-origin: left center;
   transition: width 0.5s cubic-bezier(0.22, 0.7, 0.2, 1);
 }
+/* 云量几乎为 0 的层留一个暗色小点，保持「8 层」的刻度感 */
+.dh-prof-body .bars i.empty { background: var(--fill-3); min-width: 4px; }
 /* 能被夕阳照亮的那几层带一点辉光，一眼就能看出「哪层会被烧」 */
 .dh-prof-body .bars i.lit {
-  box-shadow: 0 0 10px color-mix(in srgb, var(--c) 55%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c) 60%, transparent);
 }
 
 .dh-prof-body .tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }

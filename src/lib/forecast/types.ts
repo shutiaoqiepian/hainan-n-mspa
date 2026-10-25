@@ -280,6 +280,12 @@ export interface Row {
   vividPeak: number
   vividPeakTime: string
   vividPeakLabel: string
+  /**
+   * 每一层云「如果被照亮会染成什么色」，与 detail.layers 同序同长。
+   * 用和 vividLabel 完全相同的档位（火烧 / 橙金 / 粉紫 / 湛蓝 / 淡彩 / 近灰 / 无），
+   * 所以决策卡剖面条的颜色和顶部的「鲜亮度 75 橙金」说的是同一件事。
+   */
+  hues?: string[]
   /** 每个模式自己的一份粗分（只换逐层云量），用来摊开各家怎么看 */
   perModel: ModelScore[]
   /** 数据质量：0–100 的完整度 + 缺了哪几项 */

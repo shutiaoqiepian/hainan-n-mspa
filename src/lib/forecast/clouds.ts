@@ -218,6 +218,35 @@ export function cloudProfile(
 
   const layers: CloudLayer[] = []
 
+  /* 第一遍：先把每层的云属 / 云量 / 湿度定下来（还没算 lit）。
+     lit 依赖「下面有没有厚云挡着」，而判断云属时又需要 cover —— 
+     所以拆两遍，避免被 blockedBelow 掩盖住「其实有云也有湿度」这件事。 */
+  const judged = cloudy.map((r, i) => {
+    if (!r.isCloud) return null
+    const cover = Math.max(0, Math.round((r as { coverEff?: number }).coverEff ?? r.cover ?? 0))
+    const rh = Math.round(r.rh ?? 0)
+    const blockedBelow = cloudy.slice(0, i).some((x) => x.isCloud && (x.coverEff ?? x.cover ?? 0) >= 70)
+    const ctx: JudgeCtx = {
+      height: r.height,
+      cover,
+      rh,
+      t: r.t,
+      pop: opts.pop,
+      cape: opts.cape,
+      blockedBelow,
+      hasAbove: false,
+      isLowest: false
+    }
+    const g = r.height >= 6000 ? highGenus(ctx) : r.height >= 2000 ? midGenus(ctx) : lowGenus(ctx, topMost)
+    return { i, cover, rh, g, blockedBelow }
+  })
+
+  /* 低云全遮时，这一层就是被自身云底挡住的：层内没有“below”能让它遮自己。
+     不补这一条的话，69% 湿度的层积云会判成「透光」被标成能被照亮，
+     实际上地面根本看不到它。这个 bug 在 2026-10-25 加「剖面颜色」时才发现。 */
+  const selfSeals = (j: NonNullable<(typeof judged)[number]>): boolean =>
+    j.g.code === 'Sc' && j.cover >= 55 && j.rh >= 88
+
   for (let i = 0; i < cloudy.length; i++) {
     const r = cloudy[i]
     const cover = Math.max(0, Math.round((r as { coverEff?: number }).coverEff ?? r.cover ?? 0))
@@ -233,25 +262,9 @@ export function cloudProfile(
       continue
     }
 
-    /* 下层是否已经有厚云（决定上层云能不能被太阳照到） */
-    const blockedBelow = cloudy.slice(0, i).some((x) => x.isCloud && (x.cover ?? 0) >= 70)
-
-    const ctx: JudgeCtx = {
-      height: r.height,
-      cover,
-      rh,
-      t: r.t,
-      pop: opts.pop,
-      cape: opts.cape,
-      blockedBelow,
-      hasAbove: false,
-      isLowest: false
-    }
-
-    let g: { code: string; genus: string; species: string; lit: boolean; note: string }
-    if (r.height >= 6000) g = highGenus(ctx)
-    else if (r.height >= 2000) g = midGenus(ctx)
-    else g = lowGenus(ctx, topMost)
+    const j = judged[i]!
+    const g = j.g
+    const lit = g.lit && !selfSeals(j)
 
     /* 云底：这一层的温露差推 LCL，从层底往上抬；温露差大到“不可能饱和”时就用层底。
        必须夹在「本层高度」与「上一层高度」之间、且不低于 0 —— 否则会算出
@@ -265,7 +278,7 @@ export function cloudProfile(
     layers.push({
       level: r.level, height: Math.round(r.height), cover, rh,
       t: r.t, td: r.td, code: g.code, genus: g.genus, species: g.species,
-      base, top, lit: g.lit,
+      base, top, lit,
       note: faint ? g.note + '（ECMWF 云量报得偏低、湿度已近饱和，按有云处理）' : g.note
     })
   }

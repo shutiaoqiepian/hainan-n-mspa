@@ -20,28 +20,52 @@ const rivals = computed(() => props.others.slice(0, 3))
 /* ---------- 云层剖面速览 ----------
    「能不能烧」的答案基本就写在 8 个气压层那几行里，
    但那张表在手机上要往下滚三屏。决策卡这里先用一根极简的竖条把它画出来：
-   每层一条彩色横条，长度 = 云量，颜色按高低云分档，亮的是「能被夕阳照亮」。
+   每层一条横条，长度 = 云量，**颜色 = 这层如果被照亮会染成什么色**
+   （和顶部「鲜亮度 75 橙金」同一套档位），发光的 = 太阳能从底下穿透。
    点整块或右边的按钮 → 滚下去、把那 8 行判据全部摊开。 */
-const BAND_COLOR = {
-  high: '#c9a6ff',  /* 高云：卷云/卷层云，最容易被染色 */
-  mid: '#ffd166',   /* 中云：挡太阳也挡视线 */
-  low: '#8f979f'    /* 低云：封地平线 */
-} as const
+
+/** vividLabel 的七个档 → 实际颜色。刻意和等级色（灰/绿/黄/橙）分开，
+    这样「能烧」和「烧成什么色」是两套视觉语言，不会互相打架。 */
+const HUE_COLOR: Record<string, string> = {
+  火烧: '#ff5a2e',
+  橙金: '#ffa72b',
+  粉紫: '#e07ef0',
+  湛蓝: '#4fb3e8',
+  淡彩: '#9fb6c4',
+  近灰: '#7b848c',
+  无: '#3a4046'
+}
 
 const profile = computed(() => {
-  const layers = [...d.value.layers]
-    .sort((a, b) => b.height - a.height)
-    .map((l) => ({
+  const ls = d.value.layers
+  const hues = props.row.hues ?? []
+  /* detail.layers 与 row.hues 同序同长（都在 compute 里按同一数组生成） */
+  const layers = ls
+    .map((l, i) => ({
       level: l.level,
       height: l.height,
       cover: l.cover,
-      band: (l.height >= 6000 ? 'high' : l.height >= 2000 ? 'mid' : 'low') as keyof typeof BAND_COLOR,
+      band: (l.height >= 6000 ? 'high' : l.height >= 2000 ? 'mid' : 'low') as 'high' | 'mid' | 'low',
       reachable: l.lit,
-      genus: l.code === '--' ? '无云' : l.genus
+      genus: l.code === '--' ? '无云' : l.genus,
+      hue: hues[i] && l.code !== '--' ? hues[i] : '无'
     }))
+    .sort((a, b) => b.height - a.height)
+
   const lit = layers.filter((l) => l.reachable && l.cover > 0)
   const topLit = lit.length ? lit.reduce((a, b) => (a.cover >= b.cover ? a : b)) : null
-  return { layers, lit, topLit }
+
+  /* 一句结论：有能被照亮的高云时，用「什么色」代替「什么云」——
+     这才是追霞的人真正想知道的。
+     颜色取全场「有量且会被照亮」的那几层里色阶最高的一个。 */
+  const RANK = ['无', '近灰', '淡彩', '湛蓝', '粉紫', '橙金', '火烧']
+  let bestHue = '无'
+  for (const l of lit) {
+    if (l.cover < 10) continue
+    if (RANK.indexOf(l.hue) > RANK.indexOf(bestHue)) bestHue = l.hue
+  }
+
+  return { layers, lit, topLit, bestHue, hueColor: HUE_COLOR }
 })
 
 const r = computed(() => props.row)
@@ -131,7 +155,7 @@ function onShare(): void {
       <div class="dh-prof">
         <div class="dh-prof-hd">
           <b>云层剖面</b>
-          <span>{{ profile.layers.length }} 层 · {{ profile.lit.length }} 层能被夕阳照亮</span>
+          <span>{{ profile.layers.length }} 层 · 颜色 = 被夕阳照亮后的色</span>
         </div>
         <button class="dh-prof-body" type="button" @click="emit('showLayers')">
           <span class="bars" aria-hidden="true">
@@ -140,16 +164,23 @@ function onShare(): void {
               :key="l.level"
               :style="{
                 '--w': Math.max(2, l.cover) + '%',
-                '--c': BAND_COLOR[l.band],
+                '--c': profile.hueColor[l.hue],
                 '--d': i * 30 + 'ms',
-                opacity: l.reachable ? 1 : 0.42
+                opacity: l.reachable ? 1 : 0.4
               }"
-              :class="{ lit: l.reachable }"
+              :class="{ lit: l.reachable, empty: l.cover < 2 }"
             ></i>
           </span>
           <span class="tx">
-            <b>{{ profile.topLit ? profile.topLit.genus + ' ' + profile.topLit.cover + '%' : '没有能被照亮的高层云' }}</b>
-            <small>{{ profile.lit.length ? profile.lit.length + ' 层值得等' : '大概率出不了霞' }}</small>
+            <b>
+              <template v-if="profile.bestHue !== '无'">会烧成<span :style="{ color: profile.hueColor[profile.bestHue] }">{{ profile.bestHue }}</span></template>
+              <template v-else-if="profile.topLit">只能{{ profile.topLit.genus }} · 淡彩</template>
+              <template v-else>没有能被照亮的云</template>
+            </b>
+            <small>
+              <template v-if="profile.topLit">{{ profile.topLit.genus }} {{ profile.topLit.cover }}% · {{ profile.topLit.height >= 1000 ? (profile.topLit.height / 1000).toFixed(1) + ' km' : profile.topLit.height + ' m' }}</template>
+              <template v-else>{{ profile.layers.length }} 层都不够薄，夕阳穿不过去</template>
+            </small>
           </span>
           <span class="ico" aria-hidden="true">↓</span>
           <span class="sr-only">展开云层剖面并查看每一层的判据</span>
