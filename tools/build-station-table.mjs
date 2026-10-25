@@ -11,7 +11,7 @@
  * 用法：node tools/build-station-table.mjs
  */
 
-import { writeFile, mkdir } from 'node:fs/promises'
+import { writeFile, mkdir, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 
@@ -89,6 +89,24 @@ async function main() {
   const final = [...byId.values()].sort((a, b) => a.id.localeCompare(b.id))
 
   if (!existsSync(path.dirname(OUT))) await mkdir(path.dirname(OUT), { recursive: true })
+  /* ★ 保留上一版里人工补过的 city / prov。
+     没有这一步，重跑这个脚本会把 enrich-stations.mjs 的成果全部抹掉，
+     机场观测点就再也生成不出来 —— 而且不会报错，只会悄悄少 55 个点。 */
+  if (existsSync(OUT)) {
+    try {
+      const old = JSON.parse(await readFile(OUT, 'utf8'))
+      const byId = new Map((old.stations || []).map((s) => [s.id, s]))
+      let kept = 0
+      for (const s of final) {
+        const o = byId.get(s.id)
+        if (!o) continue
+        if (o.city) { s.city = o.city; kept++ }
+        if (o.prov) s.prov = o.prov
+      }
+      if (kept) console.log('保留人工补的城市名 ' + kept + ' 个（重跑完记得 node tools/build-obs-spots.mjs）')
+    } catch { console.log('旧站点表读不出来，忽略（城市名需要重新跑 enrich-stations.mjs）') }
+  }
+
   await writeFile(OUT, JSON.stringify({ generatedAt: new Date().toISOString(), source: SRC, count: final.length, stations: final }), 'utf8')
 
   console.log('写入 ' + path.relative(process.cwd(), OUT) + '：' + final.length + ' 个站')

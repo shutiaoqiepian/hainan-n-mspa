@@ -1,0 +1,283 @@
+{
+ "generatedAt": "2026-10-25T08:03:06.836Z",
+ "metarRows": 468,
+ "stations": 28,
+ "snapshots": 36,
+ "obsSpots": 55,
+ "days": [
+  "2026-10-24"
+ ],
+ "grades": {
+  "A": {
+   "samples": 0,
+   "judged": 0,
+   "falseAlarm": 0,
+   "ok": 0,
+   "review": 0,
+   "falseAlarmRate": null
+  },
+  "B": {
+   "samples": 23,
+   "judged": 23,
+   "falseAlarm": 0,
+   "ok": 15,
+   "review": 8,
+   "falseAlarmRate": 0
+  }
+ },
+ "samples": [
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZBAA",
+   "obs": "17:30",
+   "truth": "无云",
+   "spot": "国贸 CBD",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZYCC",
+   "obs": "17:00",
+   "truth": "无云",
+   "spot": "长春净月潭",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZGHA",
+   "obs": "18:00",
+   "truth": "无云",
+   "spot": "长沙橘子洲",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZUUU",
+   "obs": "19:00",
+   "truth": "有中高云 SCT 4000ft",
+   "spot": "成都环球中心",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "⚠ 待复核"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZUCK",
+   "obs": "18:00",
+   "truth": "有中高云 SCT 4300ft",
+   "spot": "洪崖洞",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "⚠ 待复核"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZYTL",
+   "obs": "17:00",
+   "truth": "有中高云 SCT 2600ft",
+   "spot": "大连星海广场",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "⚠ 待复核"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZGGG",
+   "obs": "18:00",
+   "truth": "无云",
+   "spot": "白云山摩星岭",
+   "score": 27,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZUGY",
+   "obs": "18:00",
+   "truth": "有中高云 OVC 2000ft",
+   "spot": "贵阳黔灵山",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "⚠ 待复核"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZJHK",
+   "obs": "18:00",
+   "truth": "无云",
+   "spot": "桂林洋海滩",
+   "score": 25,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZSHC",
+   "obs": "17:00",
+   "truth": "低云封挡 BKN 800ft",
+   "spot": "杭州西湖",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZYHB",
+   "obs": "17:00",
+   "truth": "无云",
+   "spot": "哈尔滨冰雪大世界",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZGOW",
+   "obs": "18:00",
+   "truth": "无云",
+   "spot": "潮州广济桥",
+   "score": 23,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZSNJ",
+   "obs": "17:00",
+   "truth": "有中高云 OVC 2000ft",
+   "spot": "南京玄武湖",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "⚠ 待复核"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZSQD",
+   "obs": "17:00",
+   "truth": "无云",
+   "spot": "青岛栈桥",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZJSY",
+   "obs": "18:00",
+   "truth": "少云 FEW",
+   "spot": "三亚天涯海角",
+   "score": 32,
+   "level": "微烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZSSS",
+   "obs": "17:00",
+   "truth": "有中高云 BKN 2300ft",
+   "spot": "外滩",
+   "score": 2,
+   "level": "不烧",
+   "verdict": "⚠ 待复核"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZSPD",
+   "obs": "17:00",
+   "truth": "少云 FEW",
+   "spot": "陆家嘴",
+   "score": 3,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZGSZ",
+   "obs": "18:00",
+   "truth": "无云",
+   "spot": "人才公园",
+   "score": 5,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZGSZ",
+   "obs": "18:00",
+   "truth": "无云",
+   "spot": "大澳",
+   "score": 1,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZBTJ",
+   "obs": "17:30",
+   "truth": "有中高云 BKN 4000ft",
+   "spot": "五大道",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "⚠ 待复核"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZHHH",
+   "obs": "18:00",
+   "truth": "无云",
+   "spot": "武汉东湖",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZLXY",
+   "obs": "18:00",
+   "truth": "有中高云 OVC 7000ft",
+   "spot": "西安钟楼",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "⚠ 待复核"
+  },
+  {
+   "day": "2026-10-24",
+   "grade": "B",
+   "station": "ZSAM",
+   "obs": "18:00",
+   "truth": "无云",
+   "spot": "厦门鼓浪屿",
+   "score": 23,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  }
+ ]
+}

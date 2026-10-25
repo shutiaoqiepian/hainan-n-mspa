@@ -26,7 +26,7 @@
  *   node tools/check-accuracy.mjs --only-a     # 只看 A 级样本
  */
 
-import { readFile, readdir } from 'node:fs/promises'
+import { readFile, readdir, writeFile, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 
@@ -275,6 +275,55 @@ async function main() {
 
   console.log('\n注：「待复核」不是算法结论——要等照片或卫星图才能定；「误报」也只说明预报与机场实况不符。')
   console.log('注：A 级是机场观测点与机场同址配对，可直接用来改算法；B 级机场离机位 11–45 km，只看趋势。')
+
+  /* ---------- 存档 + 自动告警 ----------
+     每天把汇总写一份 data/obs/accuracy/<时间戳>.json，
+     这样趋势不用靠 Action 日志（日志 90 天就没了）。
+     样本够了但误报率偏高时打 GitHub ::warning::，
+     会在 Actions 页面和 run summary 里高亮，不发邮件、不打扰人。 */
+  if (args.includes('--save')) {
+    const dir = path.join(OBS_DIR, 'accuracy')
+    if (!existsSync(dir)) await mkdir(dir, { recursive: true })
+    const grades = {}
+    for (const grade of ['A', 'B']) {
+      const g = results.filter((r) => r.grade === grade)
+      const judged = g.filter((r) => r.verdict !== '—')
+      const fa = judged.filter((r) => r.verdict === '❌ 误报')
+      grades[grade] = {
+        samples: g.length,
+        judged: judged.length,
+        falseAlarm: fa.length,
+        ok: judged.filter((r) => r.verdict === '✅ 合理').length,
+        review: judged.filter((r) => r.verdict.startsWith('⚠')).length,
+        falseAlarmRate: judged.length ? Number((100 * fa.length / judged.length).toFixed(1)) : null
+      }
+    }
+    const now = new Date()
+    const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    const payload = {
+      generatedAt: now.toISOString(),
+      metarRows: metars.length,
+      stations: byStation.size,
+      snapshots: snapshots.length,
+      obsSpots: obsSpots.size,
+      days: [...new Set(results.map((r) => r.day))].sort(),
+      grades,
+      samples: results.map((r) => ({ day: r.day, grade: r.grade, station: r.sid, obs: r.obs, truth: r.truth, spot: r.spot, score: r.score, level: r.level, verdict: r.verdict }))
+    }
+    await writeFile(path.join(dir, stamp + '.json'), JSON.stringify(payload, null, 1), 'utf8')
+    await writeFile(path.join(OBS_DIR, 'accuracy-latest.json'), JSON.stringify(payload, null, 1), 'utf8')
+    console.log('已存档 data/obs/accuracy/' + stamp + '.json')
+
+    /* 告警门槛：A 级可判定样本 ≥10 且误报率 ≥25% 才值得惊动 */
+    const a = grades.A
+    if (a && a.judged >= 10 && a.falseAlarmRate >= 25) {
+      console.log('::warning::A 级误报率 ' + a.falseAlarmRate + '%（' + a.falseAlarm + '/' + a.judged + '），样本已够，建议回头查算法')
+    } else if (a && a.judged >= 10) {
+      console.log('A 级误报率 ' + a.falseAlarmRate + '%，在可接受范围（n=' + a.judged + '）')
+    } else {
+      console.log('A 级可判定样本 ' + (a ? a.judged : 0) + ' 个，还不到 10 个，暂不下结论')
+    }
+  }
 }
 
 main().catch((e) => { console.error('失败：', e); process.exit(1) })

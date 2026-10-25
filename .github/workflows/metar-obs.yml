@@ -40,6 +40,28 @@ jobs:
       - name: 安装依赖
         run: npm ci --no-audit --no-fund
 
+      # 先检查「机位表 ↔ 省级缓存」是否对齐。
+      # 不对齐时 compute() 会让新机位静默拿到 weather[0] 的数据，
+      # 观测点就算进不了 A 级样本 —— 这一步就是为了不让它悄悄坏掉。
+      - name: 检查机位表与缓存是否对齐
+        run: |
+          node -e '
+          const fs = require("fs");
+          const spots = JSON.parse(fs.readFileSync("src/data/forecast/spots.json", "utf8"));
+          const list = Array.isArray(spots) ? spots : spots.spots;
+          const byProv = {};
+          for (const s of list) byProv[s.prov] = (byProv[s.prov] || 0) + 1;
+          let bad = 0;
+          for (const prov of Object.keys(byProv)) {
+            const f = "data/forecast/" + prov + ".json";
+            if (!fs.existsSync(f)) { console.log("缺缓存 " + prov); bad++; continue; }
+            const j = JSON.parse(fs.readFileSync(f, "utf8"));
+            if (j.spots !== byProv[prov]) { console.log("不对齐 " + prov + "：缓存 " + j.spots + "，机位表 " + byProv[prov]); bad++; }
+          }
+          if (bad) { console.log("::error::有 " + bad + " 个省的缓存与机位表数量不一致，先跑 node tools/build-cache.mjs"); process.exit(1); }
+          console.log("机位表与 34 省缓存全部对齐");
+          '
+
       - name: 抓 METAR 实况（最近 24 小时）
         run: node tools/fetch-metar.mjs --days 24
 
@@ -47,8 +69,15 @@ jobs:
         run: node tools/snapshot-forecast.mjs
         continue-on-error: true
 
-      - name: 顺便算一次误报率（写进日志，方便在 Actions 页面直接看）
-        run: node tools/check-accuracy.mjs --top 10
+      # --save 会把 A/B 汇总写进 data/obs/accuracy/，
+      # 这样趋势不依赖 Action 日志（日志 90 天就没了）。
+      # 样本够且误报率偏高时会打 ::warning::，在 Actions 页面高亮，不发邮件。
+      - name: 算误报率并存档（A 级 = 同址配对，主口径）
+        run: node tools/check-accuracy.mjs --top 10 --save
+        continue-on-error: true
+
+      - name: 一句话现状（写进 run summary，手机上也能看）
+        run: node tools/accuracy-trend.mjs | tee -a "$GITHUB_STEP_SUMMARY"
         continue-on-error: true
 
       - name: 有变化才提交
