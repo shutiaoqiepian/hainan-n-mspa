@@ -71,6 +71,8 @@
   --on-photo-line:   rgba(255, 255, 255, 0.2);
   --photo-haze:      rgba(6, 8, 10, 0.62);
   --photo-haze-2:    rgba(6, 8, 10, 0.34);
+  /* 手机竖屏专用的加厚雾：白字要压在火烧云的高光上，0.62 挡不住 */
+  --photo-haze-solid:rgba(6, 8, 10, 0.86);
   --photo-scrim:     rgba(6, 8, 10, 0.82);
   --photo-scrim-2:   rgba(6, 8, 10, 0.1);
   --photo-glass:     rgba(255, 255, 255, 0.16);

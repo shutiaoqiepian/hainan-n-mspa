@@ -90,3 +90,32 @@
   letter-spacing: 0.1em;
   word-break: break-all;
 }
+
+/* ---------- 手机上的作品集 ----------
+   首页那 9 张「精选」保持单列大图（影像是主角）；
+   但作品集是 40 张要翻的目录，单列在 375px 下是 15 291px 的长卷，
+   等于没法浏览。这里改成两列，缩略图仍有 ~170px 宽，
+   点开还是原尺寸大图（灯箱），信息密度和观感折中在这一点。 */
+@media (max-width: 760px) {
+  /* 选择器要写成 .wall.wall--gallery：motion.css 里还有一条 .wall{column-count:1}，
+     同优先级下后加载的会赢，必须提高一格特异性。 */
+  .wall.wall--gallery {
+    column-count: 2;
+    column-gap: 10px;
+  }
+  .wall.wall--gallery figure {
+    margin-bottom: 10px;
+    border-radius: 10px;
+  }
+  .wall.wall--gallery figcaption {
+    padding: 22px 10px 9px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    line-height: 1.45;
+    /* 两列里标题会折行，露出两行就够，多了要盖掉半张图 */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}

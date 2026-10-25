@@ -52,7 +52,9 @@
 
 /* 压在照片上的按钮：文字永远是浅色，底色永远从「照片」那一组变量取 */
 .btn-on-photo {
-  background: var(--photo-glass);
+  background:
+    linear-gradient(rgba(10, 12, 16, 0.34), rgba(10, 12, 16, 0.34)),
+    var(--photo-glass);
   border-color: var(--photo-glass-line);
   color: var(--on-photo);
   -webkit-backdrop-filter: blur(18px) saturate(150%);
@@ -62,8 +64,10 @@
 }
 
 .btn-on-photo:hover {
-  background: var(--photo-glass-2);
-  border-color: rgba(255, 255, 255, 0.62);
+  background:
+    linear-gradient(rgba(10, 12, 16, 0.44), rgba(10, 12, 16, 0.44)),
+    var(--photo-glass-2);
+  border-color: rgba(255, 255, 255, 0.66);
   transform: translateY(-2px);
 }
 

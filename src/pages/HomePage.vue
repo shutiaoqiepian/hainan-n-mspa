@@ -147,36 +147,40 @@ function onHeroError(event: Event): void {
     </div>
   </section>
 
-  <!-- ===== 霞光预报 ===== -->
+  <!-- ===== 两个入口：霞光预报 / 成员与社群 =====
+       原来这里只有一块「霞光预报」和一块「加入我们」，都是全宽玻璃卡片；
+       成员/社群只在导航里，首页完全没有入口。改成两张等高的入口卡并排，
+       左边预报、右边成员，下面再接「加入我们」的 CTA 条。 -->
   <section class="section" style="padding-top:0">
     <div class="wrap">
-      <div class="glass reveal" style="padding:52px 40px;display:flex;gap:40px;align-items:center;justify-content:space-between;flex-wrap:wrap">
-        <div style="flex:1 1 340px;min-width:250px">
+      <div class="home-entries">
+        <article class="home-entry glass reveal">
           <p class="eyebrow">Sunset Forecast</p>
-          <h2 class="silver" style="margin:0 0 14px;font-size:clamp(22px,2.8vw,32px)">
-            这两天，哪里值得跑一趟
-          </h2>
-          <p class="muted" style="margin:0;font-size:15px">
+          <h2 class="silver">这两天，哪里值得跑一趟</h2>
+          <p class="home-entry-p">
             根据云层高度、气溶胶与降水，估算各机位的朝霞与晚霞条件 ——
             目前覆盖海南 25 个机位、广东 40 个机位，东岸拍日出、西岸拍日落，一处看完。
           </p>
-        </div>
-        <a class="btn btn-primary" href="forecast.html">查看霞光预报</a>
-      </div>
-    </div>
-  </section>
+          <a class="btn btn-primary home-entry-btn" href="forecast.html">查看霞光预报</a>
+        </article>
 
-  <!-- ===== 加入 ===== -->
-  <section class="section" style="padding-top:0">
-    <div class="wrap">
-      <div class="glass reveal" style="padding:60px 40px;text-align:center">
-        <p class="eyebrow">Join Us</p>
-        <h2 class="silver" style="margin:0 0 18px;font-size:clamp(24px,3.2vw,36px)">
-          欢迎你认识我们，加入我们
-        </h2>
-        <p class="muted" style="margin:0 0 32px">
-          今天开始，我们很渴望能同你一起，分享这份热爱。
-        </p>
+        <article class="home-entry glass reveal" data-delay="90">
+          <p class="eyebrow">Members &amp; Community</p>
+          <h2 class="silver">谁在拍这座岛</h2>
+          <p class="home-entry-p">
+            小组成员日常一起蹲机位、一起维护这个站；交流群里还有散在北京、上海、广州、香港的伙伴。
+            每张成员卡都能生成带二维码的名片。
+          </p>
+          <a class="btn btn-ghost home-entry-btn" href="members.html">看看成员名单</a>
+        </article>
+      </div>
+
+      <div class="home-join glass reveal">
+        <div>
+          <p class="eyebrow">Join Us</p>
+          <h2 class="silver">欢迎你认识我们，加入我们</h2>
+          <p class="muted home-join-p">今天开始，我们很渴望能同你一起，分享这份热爱。</p>
+        </div>
         <a class="btn btn-primary" href="join.html">了解加入方式</a>
       </div>
     </div>

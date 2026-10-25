@@ -311,10 +311,12 @@
 .theme-switch .ts-dot[data-swatch="gray"]  { background: #3a3f45; border: 1px solid rgba(255, 255, 255, 0.3); }
 .theme-switch .ts-dot[data-swatch="light"] { background: #f4f5f7; border: 1px solid rgba(0, 0, 0, 0.25); }
 
-/* 手机：导航里只留图标，不放文字 */
-@media (max-width: 760px) {
+/* 手机/平板：导航里只留图标，不放文字（与汉堡菜单同断点 900px）。
+   三个圆点原本是 27×24，只刚好踩在 WCAG 2.5.8 的 24px 下限上，手指按着偏小；
+   放大到 32×30（导航高 60–68px 装得下），视觉尺寸几乎没变。 */
+@media (max-width: 900px) {
   .theme-switch { padding: 3px; }
-  .theme-switch button { width: 27px; height: 24px; }
+  .theme-switch button { width: 32px; height: 30px; }
   .theme-switch .ts-label { display: none; }
 }
 

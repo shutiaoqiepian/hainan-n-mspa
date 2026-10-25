@@ -96,6 +96,12 @@
   letter-spacing: 0.04em;
 }
 
+/* 没有作品的成员：一行小字提示，让卡片以名字为主体，不再画空框 */
+.member-meta.is-empty {
+  font-size: 12px;
+  color: var(--muted-2);
+}
+
 .member-actions {
   display: flex;
   flex-wrap: wrap;

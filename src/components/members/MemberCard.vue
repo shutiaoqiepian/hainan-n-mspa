@@ -41,25 +41,25 @@ function onImgError(item: StripItem): void {
       </div>
     </div>
 
-    <div class="member-works">
-      <template v-if="works.length">
-        <figure v-for="item in strip" :key="item.photo.f">
-          <img
-            v-if="item.state !== 'gone'"
-            :src="
-              item.state === 'thumb' ? 'images/thumbs/' + item.photo.f : 'images/' + item.photo.f
-            "
-            loading="lazy"
-            :alt="item.photo.t || '作品'"
-            @error="onImgError(item)"
-          />
-        </figure>
-      </template>
-      <p v-else class="member-empty-works">作品待署名</p>
+    <!-- 没有作品时不再画一个 62px 高的虚线空框：
+         那块框会占掉整张卡最大的视觉重量，让人以为卡是空的。
+         作品数和「待署名」的提示合并到下面一行 meta 里。 -->
+    <div v-if="works.length" class="member-works">
+      <figure v-for="item in strip" :key="item.photo.f">
+        <img
+          v-if="item.state !== 'gone'"
+          :src="
+            item.state === 'thumb' ? 'images/thumbs/' + item.photo.f : 'images/' + item.photo.f
+          "
+          loading="lazy"
+          :alt="item.photo.t || '作品'"
+          @error="onImgError(item)"
+        />
+      </figure>
     </div>
 
-    <div class="member-meta">
-      {{ works.length ? '已收录 ' + works.length + ' 张' : '暂无收录作品' }}
+    <div class="member-meta" :class="{ 'is-empty': !works.length }">
+      {{ works.length ? '已收录 ' + works.length + ' 张' : '作品待署名 · 暂无收录' }}
     </div>
 
     <div class="member-actions">

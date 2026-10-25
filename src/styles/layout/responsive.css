@@ -6,27 +6,67 @@
   /* 首屏——原来 88vh + 底部大留白，小屏上会很挤 */
   .hero { min-height: 80vh; }
   /* 竖屏裁切时把地平线压到文字下方，别让亮点正好穿过正文 */
-  .hero-media img { object-position: 50% 30%; }
+  .hero-media img { object-position: 50% 30%; filter: saturate(112%) contrast(1.03) brightness(0.88); }
+
+  /* 手机竖屏时照片只露出中间一条，文字正好压在火烧云的亮部上。
+     原来那层径向雾是 0.62 → 0.34，白字在橙色高光上实测读不清，
+     这里加厚到 0.9 → 0.62，并把雾拉到 78vh 盖住整个正文块。 */
   .hero-body::before {
-    width: 112vw;
-    height: 64vh;
-    background: radial-gradient(closest-side, var(--photo-haze), var(--photo-haze-2) 56%, transparent 86%);
+    width: 124vw;
+    height: 78vh;
+    background: radial-gradient(
+      closest-side,
+      var(--photo-haze-solid) 0%,
+      var(--photo-haze-solid) 46%,
+      var(--photo-haze) 70%,
+      transparent 94%
+    );
+    filter: blur(14px);
   }
   .hero-body { padding: 44px 0 56px; }
+  /* 竖屏时正文整块压在照片中下部，径向雾再厚也盖不住整行 ——
+     改成竖向压暗（顶部留一点亮、往下越来越暗），底部仍接回页面底色。
+     这是海报式主视觉最常见的处理，也不会把火烧云压死。 */
+  .hero::after {
+    background:
+      linear-gradient(180deg,
+        rgba(8, 10, 13, 0.30) 0%,
+        rgba(8, 10, 13, 0.52) 34%,
+        rgba(8, 10, 13, 0.76) 62%,
+        color-mix(in srgb, var(--bg) 88%, transparent) 88%,
+        var(--bg) 100%);
+  }
+  /* 大标题原本是「白→#cdd6de」的金属渐变，压到橙色高光上尾端会发灰看不清，
+     手机上直接给纯白 + 阴影，宁可少一点金属感。 */
+  .hero h1.silver {
+    background-image: none;
+    color: #fff;
+    text-shadow: 0 6px 40px rgba(0, 0, 0, 0.62);
+  }
   .hero h1 { font-size: clamp(28px, 8.6vw, 40px); line-height: 1.24; }
   .hero p.lead {
     font-size: 14.5px;
     line-height: 1.85;
     margin-bottom: 26px;
+    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.8), 0 0 34px rgba(0, 0, 0, 0.55);
   }
 
-  /* 三个按钮竖排，避免 2+1 的难看换行 */
-  .hero-actions { flex-direction: column; align-items: center; gap: 10px; }
+  /* 主按钮独占一行，两个次级按钮并排：三个 68px 整宽按钮叠在一起太重，
+     2+1 的排法还能让「看作品」在视觉上继续是第一入口。 */
+  .hero-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-items: stretch;
+  }
   .hero-actions .btn {
     width: 100%;
-    max-width: 320px;
+    max-width: none;
     justify-content: center;
+    padding: 14px 12px;
+    font-size: 14.5px;
   }
+  .hero-actions .btn-primary { grid-column: 1 / -1; }
 
   /* 区块间距收紧 */
   .section { padding: 56px 0; }
@@ -90,5 +130,18 @@
   .wrap { padding: 0 16px; }
   .section { padding: 48px 0; }
   .btn { padding: 13px 22px; font-size: 14.5px; }
+}
+
+/* 触屏设备（平板 / 手机 / 触屏本）：文字链接的行高只有 25px，手指不好点。
+   桌面鼠标环境维持原来的紧凑节奏，只在没有 hover 的设备上撑开。 */
+@media (hover: none) {
+  .nav ul a {
+    /* 手机端菜单在 motion.css 里已经改成 52px 整行，这里只影响 761–1024 的平板 */
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .nav ul a.is-active::after { bottom: 4px; }
+  .footer .links { gap: 18px; }
+  .footer .links a { padding: 8px 0; }
 }
 

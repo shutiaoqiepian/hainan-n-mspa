@@ -18,6 +18,7 @@
 @import "./layout/footer.css";
 @import "./layout/page-head.css";
 @import "./pages/join.css";
+@import "./pages/home.css";
 @import "./base/motion.css";
 @import "./pages/forecast.css";
 @import "./pages/forecast-v2.css";

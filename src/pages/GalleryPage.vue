@@ -78,7 +78,7 @@ const photos = computed(() => {
         </template>
       </div>
 
-      <div class="wall" id="wall">
+      <div class="wall wall--gallery" id="wall">
         <PhotoWall :photos="photos" />
         <p
           v-if="startAuthor && !photos.length"

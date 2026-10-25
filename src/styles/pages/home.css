@@ -1,0 +1,81 @@
+/* ============================================================
+   首页：入口区（霞光预报 / 成员·社群）与加入 CTA
+   ------------------------------------------------------------
+   原来这两块各写一套 inline style，宽度、内边距、标题字号都不一样，
+   排版一改就得同时动模板。这里统一成一套类。
+   ============================================================ */
+
+.home-entries {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.home-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 38px 34px 34px;
+  border-radius: 18px;
+}
+
+.home-entry .eyebrow {
+  margin: 0;
+}
+
+.home-entry h2 {
+  margin: 0;
+  font-size: clamp(21px, 2.2vw, 27px);
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+
+.home-entry-p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: var(--text-2);
+}
+
+/* 按钮压到卡片底部，两张卡高度不一致时也对齐 */
+.home-entry-btn {
+  margin-top: auto;
+  align-self: flex-start;
+  padding: 12px 24px;
+  font-size: 14px;
+}
+
+/* 加入我们：一条横向 CTA，不再是一整块大玻璃 */
+.home-join {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  flex-wrap: wrap;
+  padding: 34px 34px;
+  border-radius: 18px;
+}
+
+.home-join h2 {
+  margin: 0 0 8px;
+  font-size: clamp(20px, 2.4vw, 28px);
+  line-height: 1.35;
+}
+
+.home-join .eyebrow {
+  margin: 0 0 8px;
+}
+
+.home-join-p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+@media (max-width: 900px) {
+  .home-entries { grid-template-columns: 1fr; gap: 14px; }
+  .home-entry { padding: 28px 24px 26px; }
+  .home-join { margin-top: 14px; padding: 26px 24px; gap: 18px; }
+  .home-join .btn { width: 100%; justify-content: center; }
+}

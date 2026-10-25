@@ -26,12 +26,23 @@
   .two-col { grid-template-columns: 1fr; gap: 40px; }
 }
 
-@media (max-width: 760px) {
-  .wrap { padding: 0 20px; }
-  :root { --nav-h: 60px; }
-
+/* ============================================================
+   导航折叠断点：900px（不是 760）
+   ------------------------------------------------------------
+   768px 竖屏平板一直是个漏网宽度：桌面导航摆不下
+   「logo + 18N-MSPA + 北纬18度椰青摄联 + 6 个链接 + 主题切换」，
+   而汉堡菜单要到 760px 才出现 —— 中间这段 flex 会把每个链接压到 16px 宽，
+   中文一个字一行，「霞光预报」被撑成 109px 高的竖条。
+   所以导航相关规则单独放到 900px，其余排版仍留在 760px。
+   ============================================================ */
+@media (max-width: 900px) {
   .nav-toggle { display: block; }
+  .brand .cn { display: none; }
 
+  /* 展开的手机菜单必须不透明：
+     .nav 自己已经有 backdrop-filter，子元素再写一层在 Chromium 里不会生效，
+     只剩 0.62 的 --nav-bg 挡不住首屏那张火烧云大图 ——
+     菜单文字会直接压在大标题上，两个都读不清。 */
   .nav ul {
     position: fixed;
     top: var(--nav-h);
@@ -40,15 +51,14 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0;
-    padding: 8px 20px 18px;
-    background: var(--nav-bg);
+    padding: 6px 20px 14px;
+    background: var(--bg-2);
     border-bottom: 1px solid var(--line);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.72);
     transform: translateY(-12px);
     opacity: 0;
     pointer-events: none;
-    transition: all 0.25s ease;
+    transition: transform 0.25s ease, opacity 0.25s ease;
   }
 
   .nav ul.is-open {
@@ -60,15 +70,25 @@
   .nav ul li { width: 100%; }
 
   .nav ul a {
-    display: block;
-    padding: 14px 0;
-    font-size: 16px;
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 0 2px;
+    font-size: 16.5px;
+    letter-spacing: 0.06em;
     border-bottom: 1px solid var(--fill-1);
   }
 
-  .nav ul a.is-active::after { display: none; }
+  .nav ul li:last-child a { border-bottom: 0; }
 
-  .brand .cn { display: none; }
+  .nav ul a.is-active { color: var(--text); font-weight: 600; }
+
+  .nav ul a.is-active::after { display: none; }
+}
+
+@media (max-width: 760px) {
+  .wrap { padding: 0 20px; }
+  :root { --nav-h: 60px; }
 
   .section { padding: 72px 0; }
 

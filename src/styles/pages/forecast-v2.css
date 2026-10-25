@@ -217,9 +217,9 @@
   font-size: 10px;
   color: var(--muted-2);
   line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* 说明文字允许折两行：手机两列布局时「本站 0–100，非 SunsetBot 口径」
+     一行放不下，被 ellipsis 截成「本站 0–100，非 SunsetB…」等于没说。 */
+  overflow-wrap: anywhere;
 }
 
 .dh-opps {
@@ -318,9 +318,13 @@
 .fc-tipcard summary small {
   font-size: 10.5px;
   color: var(--muted-2);
-  white-space: nowrap;
+  /* 一行放不下时折两行，不要截成「耶稣光 / 曙条 / 曙暮…」——
+     这行正是「这个题材具体怎么拍」的索引，截了等于没写。 */
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 .fc-tipcard .caret { position: absolute; right: 9px; top: 8px; font-style: normal; color: var(--muted-2); font-size: 12px; }
 .fc-tipcard[open] .caret { color: var(--accent-a); }
@@ -334,6 +338,9 @@
   border-radius: 10px;
   font-family: inherit;
   font-size: 12px;
+  /* 19px 高低于 WCAG 2.5.8 的 24px 触控下限 */
+  min-height: 32px;
+  padding: 6px 12px;
   cursor: pointer;
   letter-spacing: 0.04em;
 }
@@ -416,6 +423,15 @@
 }
 .fr-more:hover { color: var(--text); }
 .fr-note { margin: 8px 0 0; font-size: 11px; color: var(--muted-2); line-height: 1.6; }
+
+/* 1001–1280 这一段还在用桌面十列布局，但横向空间不够：
+   1024 下机位名只剩 103px，「海口西海岸观海台」会被截成「海口西海岸观海…」。
+   把分数条、鲜亮度、分歧三列各收窄一点，让出 60px 给机位名。 */
+@media (min-width: 1001px) and (max-width: 1280px) {
+  .fr-row {
+    grid-template-columns: 30px minmax(0, 1fr) 88px 56px 68px 112px 74px 88px 54px 56px;
+  }
+}
 
 /* ---------- 各模式怎么看 ---------- */
 .fcm-head {
@@ -891,7 +907,8 @@ button.fcl-row.open { background: var(--fill-2); }
   align-items: baseline;
   gap: 5px;
   max-width: 40vw;
-  padding: 3px 9px;
+  min-height: 26px;
+  padding: 4px 9px;
   font-family: inherit;
   font-size: 12px;
   color: var(--text);
@@ -916,7 +933,8 @@ button.fcl-row.open { background: var(--fill-2); }
 }
 .dh-rivals .all {
   margin-left: auto;
-  padding: 3px 10px;
+  min-height: 26px;
+  padding: 4px 10px;
   font-family: inherit;
   font-size: 11.5px;
   letter-spacing: 0.04em;
