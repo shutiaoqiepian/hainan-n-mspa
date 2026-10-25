@@ -54,6 +54,19 @@ const rank = computed(() => {
 
 const showAll = ref(false)
 
+/* 决策卡里展示的第 2–4 名（不含当前选中项） */
+const others = computed(() => {
+  const cur = selected.value
+  if (!cur) return []
+  return rows.value.filter((r) => r.spot.n !== cur.spot.n).slice(0, 3)
+})
+
+function gotoRank(): void {
+  const el = document.getElementById('fc-rank')
+  if (!el) return
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 function onSelect(name: string): void {
   picked.value = name
   /* 与旧版共用同一个「打开的是哪个机位」状态，分享链接行为不变 */
@@ -143,10 +156,19 @@ onMounted(() => {
 
       <template v-else>
         <!-- ① 决策区 -->
-        <DecisionHero v-if="selected" class="fc-reveal" :row="selected" :rank="rank" :total="rows.length" />
+        <DecisionHero
+          v-if="selected"
+          class="fc-reveal fc-o-hero"
+          :row="selected"
+          :rank="rank"
+          :total="rows.length"
+          :others="others"
+          @select="onSelect"
+          @goto-rank="gotoRank"
+        />
 
         <!-- ② 当次题材 -->
-        <div v-if="selected" class="fc-block fc-reveal">
+        <div v-if="selected" class="fc-block fc-reveal fc-o-tips">
           <div class="fc-block-head">
             <h2>当次能拍的题材</h2>
             <span class="sub">
@@ -157,7 +179,7 @@ onMounted(() => {
         </div>
 
         <!-- ② 机位排行 -->
-        <div class="fc-block fc-reveal">
+        <div id="fc-rank" class="fc-block fc-reveal fc-o-rank">
           <div class="fc-block-head">
             <h2>全部 {{ rows.length }} 个机位</h2>
             <span class="sub">按分数排序 · 点任意一行看它的完整分析</span>
@@ -173,15 +195,15 @@ onMounted(() => {
         </div>
 
         <!-- ② 各模式怎么看 -->
-        <div v-if="selected" class="fc-block fc-reveal">
+        <div v-if="selected" class="fc-block fc-reveal fc-o-mode">
           <ModelTable :row="selected" />
         </div>
 
         <!-- ③ 气象条件分析 -->
-        <SpotPanel v-if="selected" :row="selected" class="fc-block fc-reveal" />
+        <SpotPanel v-if="selected" :row="selected" class="fc-block fc-reveal fc-o-panel" />
 
         <!-- ④ 专业判定与参考 -->
-        <div class="fc-block fc-reveal">
+        <div class="fc-block fc-reveal fc-o-fold">
           <div class="fc-block-head">
             <h2>专业判定与参考</h2>
             <span class="sub">可同时展开多个 · 原有内容一条未删</span>
@@ -222,7 +244,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <p class="fc-fb-hint">
+        <p class="fc-fb-hint fc-o-hint">
           <b>拍完请回填一次</b>：点表格每行右侧的「✎」，记录实际烧到什么程度。
           攒够数据就能校准算法——这是让这个工具变准的唯一办法。
         </p>

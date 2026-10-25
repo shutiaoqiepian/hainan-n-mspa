@@ -9,7 +9,13 @@ import type { Row } from '@/lib/forecast/types'
 /** 首屏决策卡：分数 + 等级 + 结论 + 两个峰值时刻 + 六格指标 + 四个机会指数
     原来分散在「大标题 / 时间条 / 图例 / 首行卡片」里的信息，合成一张卡。 */
 
-const props = defineProps<{ row: Row; rank: number; total: number }>()
+const props = defineProps<{ row: Row; rank: number; total: number; others: Row[] }>()
+
+const emit = defineEmits<{ (e: 'select', name: string): void; (e: 'gotoRank'): void }>()
+
+/* 决策卡只讲一个机位，很容易被当成「今天只有一个点」。
+   这里把第 2–4 名做成三颗可点的胶囊，并给一个跳到完整排行的入口。 */
+const rivals = computed(() => props.others.slice(0, 3))
 
 const r = computed(() => props.row)
 const d = computed(() => props.row.detail)
@@ -92,6 +98,23 @@ function onShare(): void {
           </span>
         </button>
         <span class="dh-share-hint">{{ r.score }} 分 · {{ r.level.name }} · {{ kindWord }} {{ d.time }}</span>
+      </div>
+
+      <!-- 这一页不止一个机位：把第 2–4 名直接摆出来 -->
+      <div v-if="total > 1" class="dh-rivals">
+        <span class="k">另外 {{ total - 1 }} 个机位</span>
+        <div class="chips">
+          <button
+            v-for="o in rivals"
+            :key="o.spot.n"
+            type="button"
+            :title="'切到 ' + o.spot.n + '（朝' + o.spot.face + '，' + o.level.name + '）'"
+            @click="emit('select', o.spot.n)"
+          >
+            {{ o.spot.n }}<b :style="{ color: o.level.color }">{{ o.score }}</b>
+          </button>
+        </div>
+        <button class="all" type="button" @click="emit('gotoRank')">全部 {{ total }} 个 ↓</button>
       </div>
     </div>
 

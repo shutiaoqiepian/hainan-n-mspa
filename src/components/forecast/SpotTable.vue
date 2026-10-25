@@ -81,7 +81,9 @@ const kindWord = computed(() => KINDS[state.kind].word)
       <span class="fr-lvl c" :style="{ color: r.level.color }">{{ r.level.name }}</span>
       <span class="fr-dim col-cloud">{{ n0(r.m.high) }} / {{ n0(r.m.mid) }} / {{ n0(r.m.low) }}</span>
       <span class="fr-dim col-aod r">{{ fx(r.m.aod) }}</span>
-      <span class="fr-dim col-vivid r" style="color: var(--accent-b)">{{ r.vivid }} {{ r.vividLabel }}</span>
+      <span class="fr-dim col-vivid r" style="color: var(--accent-b)">
+        <i class="mlab">鲜亮度</i>{{ r.vivid }} {{ r.vividLabel }}
+      </span>
       <span class="fr-dim col-spread r">{{ r.models > 1 ? '±' + r.spread : '—' }}</span>
       <span class="fr-acts">
         <button class="fr-icb" :class="{ done: isDone(r) }" type="button" title="回填实际结果" @click.stop="onFeedback(r)">
