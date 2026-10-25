@@ -70,6 +70,12 @@ function gotoRank(): void {
   el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
+/* 决策卡上的「云层剖面」→ 滚到气象分析里的那 8 行，并把判据全部摊开。
+   SpotPanel 监听一个自定义事件，比把 ref 传下去干净。 */
+function showLayers(): void {
+  window.dispatchEvent(new CustomEvent('fc:show-layers'))
+}
+
 function onSelect(name: string): void {
   picked.value = name
   /* 与旧版共用同一个「打开的是哪个机位」状态，分享链接行为不变 */
@@ -168,6 +174,7 @@ onMounted(() => {
           :others="others"
           @select="onSelect"
           @goto-rank="gotoRank"
+          @show-layers="showLayers"
         />
 
         <!-- ② 当次题材 -->

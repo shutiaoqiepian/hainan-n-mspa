@@ -348,6 +348,7 @@
 
 /* 锚点跳转时给固定导航留出位置（scrollIntoView 认 scroll-margin） */
 #fc-rank,
+#fc-layers,
 #fc-phenomena { scroll-margin-top: calc(var(--nav-h) + 14px); }
 
 /* ---------- 机位排行表 ---------- */
@@ -881,6 +882,133 @@ button.fcl-row.open { background: var(--fill-2); }
   .dh-share-btn { width: 100%; justify-content: flex-start; }
   .dh-share-hint { font-size: 11px; }
 }
+
+/* ---------- 决策卡里的「云层剖面」速览 ----------
+   「能不能烧」的答案就写在 8 个气压层里，但那张表在手机上要滚三屏。
+   这里先用一根竖条画出来（长度=云量，颜色=高低云，亮的=能被夕阳照亮），
+   点一下滚到那张表并把 8 条判据全部摊开。 */
+.dh-prof {
+  margin-top: 12px;
+  padding: 11px 12px 12px;
+  border: 1px solid var(--fc-line);
+  border-radius: 12px;
+  background: var(--fill-1);
+}
+
+.dh-prof-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+.dh-prof-hd b { font-size: 12.5px; letter-spacing: 0.06em; color: var(--text); }
+.dh-prof-hd span { font-size: 11px; color: var(--muted-2); font-variant-numeric: tabular-nums; }
+
+.dh-prof-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px 8px 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, transform 0.18s;
+}
+.dh-prof-body:hover {
+  background: var(--fill-2);
+  border-color: var(--accent-a-line);
+  transform: translateY(-1px);
+}
+.dh-prof-body:focus-visible { outline: 2px solid var(--accent-a); outline-offset: 2px; }
+
+/* 8 根横条，从上到下 = 从高到低 */
+.dh-prof-body .bars {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  width: 96px;
+  flex: none;
+}
+.dh-prof-body .bars i {
+  display: block;
+  height: 6px;
+  width: var(--w, 0%);
+  min-width: 3px;
+  border-radius: 3px;
+  background: var(--c, var(--muted));
+  transform-origin: left center;
+  transition: width 0.5s cubic-bezier(0.22, 0.7, 0.2, 1);
+}
+/* 能被夕阳照亮的那几层带一点辉光，一眼就能看出「哪层会被烧」 */
+.dh-prof-body .bars i.lit {
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c) 55%, transparent);
+}
+
+.dh-prof-body .tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dh-prof-body .tx b {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dh-prof-body .tx small {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted-2);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dh-prof-body .ico {
+  margin-left: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-a-line);
+  color: var(--accent-b);
+  font-size: 13px;
+  transition: transform 0.2s, background 0.2s;
+}
+.dh-prof-body:hover .ico { transform: translateY(2px); background: var(--accent-a-soft); }
+
+@media (max-width: 560px) {
+  .dh-prof { padding: 10px 10px 11px; }
+  .dh-prof-hd { flex-wrap: wrap; gap: 4px 10px; }
+  .dh-prof-body { gap: 10px; }
+  .dh-prof-body .bars { width: 74px; }
+  .dh-prof-body .tx b { font-size: 12.5px; }
+}
+
+/* 云层结构卡里「收起全部判据」 */
+.fcd2-ch { flex-wrap: wrap; }
+.fcl-collapse {
+  margin-left: auto;
+  padding: 4px 10px;
+  min-height: 28px;
+  font-family: inherit;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--accent-b);
+  background: transparent;
+  border: 1px solid var(--accent-a-line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.fcl-collapse:hover { background: var(--accent-a-soft); }
 
 /* ---------- 决策卡里的「别的机位」 ----------
    决策卡只讲排第一的那个点，手机上排第一眼看到的就是它，

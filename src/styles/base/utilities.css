@@ -1,5 +1,18 @@
 /* ---------- 通用工具类 ---------- */
 
+/* 只给读屏器看的文字：视觉隐藏、仍可被朗读（按钮需要可读名称时用） */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .wrap {
   width: 100%;
   max-width: var(--maxw);

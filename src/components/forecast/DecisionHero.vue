@@ -11,11 +11,38 @@ import type { Row } from '@/lib/forecast/types'
 
 const props = defineProps<{ row: Row; rank: number; total: number; others: Row[] }>()
 
-const emit = defineEmits<{ (e: 'select', name: string): void; (e: 'gotoRank'): void }>()
+const emit = defineEmits<{ (e: 'select', name: string): void; (e: 'gotoRank'): void; (e: 'showLayers'): void }>()
 
 /* 决策卡只讲一个机位，很容易被当成「今天只有一个点」。
    这里把第 2–4 名做成三颗可点的胶囊，并给一个跳到完整排行的入口。 */
 const rivals = computed(() => props.others.slice(0, 3))
+
+/* ---------- 云层剖面速览 ----------
+   「能不能烧」的答案基本就写在 8 个气压层那几行里，
+   但那张表在手机上要往下滚三屏。决策卡这里先用一根极简的竖条把它画出来：
+   每层一条彩色横条，长度 = 云量，颜色按高低云分档，亮的是「能被夕阳照亮」。
+   点整块或右边的按钮 → 滚下去、把那 8 行判据全部摊开。 */
+const BAND_COLOR = {
+  high: '#c9a6ff',  /* 高云：卷云/卷层云，最容易被染色 */
+  mid: '#ffd166',   /* 中云：挡太阳也挡视线 */
+  low: '#8f979f'    /* 低云：封地平线 */
+} as const
+
+const profile = computed(() => {
+  const layers = [...d.value.layers]
+    .sort((a, b) => b.height - a.height)
+    .map((l) => ({
+      level: l.level,
+      height: l.height,
+      cover: l.cover,
+      band: (l.height >= 6000 ? 'high' : l.height >= 2000 ? 'mid' : 'low') as keyof typeof BAND_COLOR,
+      reachable: l.lit,
+      genus: l.code === '--' ? '无云' : l.genus
+    }))
+  const lit = layers.filter((l) => l.reachable && l.cover > 0)
+  const topLit = lit.length ? lit.reduce((a, b) => (a.cover >= b.cover ? a : b)) : null
+  return { layers, lit, topLit }
+})
 
 const r = computed(() => props.row)
 const d = computed(() => props.row.detail)
@@ -98,6 +125,35 @@ function onShare(): void {
           </span>
         </button>
         <span class="dh-share-hint">{{ r.score }} 分 · {{ r.level.name }} · {{ kindWord }} {{ d.time }}</span>
+      </div>
+
+      <!-- 云层剖面速览：8 层云量一根竖条，点开看每一层的判据 -->
+      <div class="dh-prof">
+        <div class="dh-prof-hd">
+          <b>云层剖面</b>
+          <span>{{ profile.layers.length }} 层 · {{ profile.lit.length }} 层能被夕阳照亮</span>
+        </div>
+        <button class="dh-prof-body" type="button" @click="emit('showLayers')">
+          <span class="bars" aria-hidden="true">
+            <i
+              v-for="(l, i) in profile.layers"
+              :key="l.level"
+              :style="{
+                '--w': Math.max(2, l.cover) + '%',
+                '--c': BAND_COLOR[l.band],
+                '--d': i * 30 + 'ms',
+                opacity: l.reachable ? 1 : 0.42
+              }"
+              :class="{ lit: l.reachable }"
+            ></i>
+          </span>
+          <span class="tx">
+            <b>{{ profile.topLit ? profile.topLit.genus + ' ' + profile.topLit.cover + '%' : '没有能被照亮的高层云' }}</b>
+            <small>{{ profile.lit.length ? profile.lit.length + ' 层值得等' : '大概率出不了霞' }}</small>
+          </span>
+          <span class="ico" aria-hidden="true">↓</span>
+          <span class="sr-only">展开云层剖面并查看每一层的判据</span>
+        </button>
       </div>
 
       <!-- 这一页不止一个机位：把第 2–4 名直接摆出来 -->

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import CloudProfile from './CloudProfile.vue'
 import HourTable from './HourTable.vue'
 import { layerVerdict, sunPillarNote } from '@/lib/forecast/scoring'
@@ -70,6 +70,37 @@ const sunRows = computed(() => {
 })
 
 const consistency = computed(() => Math.min(100, Math.max(0, 100 - props.row.spread)))
+
+/* ---------- 剖面图的展开 / 收起 ----------
+   云层结构那张卡在手机上要往下滚三屏才看得到，
+   而「能不能烧」的答案基本就写在那 8 行里。
+   所以决策卡上放一个按钮，点它滚下来并把这 8 行逐条摊开。 */
+const layerBox = ref<HTMLElement | null>(null)
+const allOpen = ref(false)
+
+async function expandAllLayers(): Promise<void> {
+  const el = layerBox.value
+  if (!el) return
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  /* 等滚动落位再展开，否则展开瞬间高度变化会把滚动位置带偏 */
+  await new Promise((r) => setTimeout(r, 320))
+  allOpen.value = true
+}
+
+/** 单层点开后把「全部展开」复位，免得按钮文字和实际状态自相矛盾 */
+function onToggleLayer(level: number): void {
+  toggleLayer(level)
+  allOpen.value = false
+}
+
+/** 全部展开时一次性把 8 层都算作打开 */
+function isLayerOpen(level: number): boolean {
+  return allOpen.value || openLayer.value === level
+}
+
+/* 决策卡上的「云层剖面」按钮会派发这个事件（见 ForecastPage.showLayers） */
+onMounted(() => { window.addEventListener('fc:show-layers', expandAllLayers) })
+onBeforeUnmount(() => { window.removeEventListener('fc:show-layers', expandAllLayers) })
 </script>
 
 <template>
@@ -84,12 +115,18 @@ const consistency = computed(() => Math.min(100, Math.max(0, 100 - props.row.spr
 
     <div class="fcd2-cols">
       <!-- 云层结构：全页最高的一张，独占左半 -->
-      <div class="fcd2-col fcd2-col-l">
+      <div ref="layerBox" class="fcd2-col fcd2-col-l" id="fc-layers">
         <div class="fcd2-card">
           <div class="fcd2-ch">
             <h3>云层结构</h3>
             <label>8 个气压层的云量 / 云属 / 温湿 / 云底云顶</label>
             <s>ECMWF 单模式 · 点每一层看判据</s>
+            <button
+              v-if="allOpen"
+              class="fcl-collapse"
+              type="button"
+              @click="allOpen = false"
+            >收起全部判据</button>
           </div>
 
           <div class="fcl">
@@ -100,9 +137,9 @@ const consistency = computed(() => Math.min(100, Math.max(0, 100 - props.row.spr
               <button
                 type="button"
                 class="fcl-row fcl-line"
-                :class="{ open: openLayer === l.level }"
-                :aria-expanded="openLayer === l.level ? 'true' : 'false'"
-                @click="toggleLayer(l.level)"
+                :class="{ open: isLayerOpen(l.level) }"
+                :aria-expanded="isLayerOpen(l.level) ? 'true' : 'false'"
+                @click="onToggleLayer(l.level)"
               >
                 <span class="h">
                   {{ l.height >= 1000 ? (l.height / 1000).toFixed(1) + ' km' : l.height + ' m' }}<i>{{ l.level }} hPa</i>
@@ -120,7 +157,7 @@ const consistency = computed(() => Math.min(100, Math.max(0, 100 - props.row.spr
                 <span class="ct">{{ l.t == null ? '—' : Math.round(l.t) + '°' }}</span>
                 <span class="cbt">{{ hm(l.base) }}<template v-if="l.top != null">→{{ hm(l.top) }}</template></span>
               </button>
-              <div v-if="openLayer === l.level" class="fcl-note">
+              <div v-if="isLayerOpen(l.level)" class="fcl-note">
                 <p>
                   <b>判据</b>：{{ l.level }} hPa 约 {{ l.height >= 1000 ? (l.height / 1000).toFixed(1) + ' km' : l.height + ' m' }}，
                   云量 {{ l.cover }}%、相对湿度 {{ l.rh }}%<template v-if="l.t != null">、气温 {{ Math.round(l.t) }}℃</template
