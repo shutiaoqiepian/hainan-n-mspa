@@ -33,8 +33,11 @@ const prov = computed(() => provName(state.prov))
 const picked = ref('')
 
 const rows = computed(() => {
-  const list = state.rows.filter((r) => state.area === '全部' || r.spot.area === state.area)
-  return list
+  const list = state.rows
+    /* 观测点（机场本身）默认不进排行：它们是校验用的同地点参照，
+       不是给人跑一趟的机位。?obs=1 时才露出来。 */
+    .filter((r) => state.obsMode || !r.spot.obs)
+  return state.area === '全部' ? list : list.filter((r) => r.spot.area === state.area)
 })
 
 const selected = computed<Row | null>(() => {

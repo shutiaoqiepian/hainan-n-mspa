@@ -3,6 +3,13 @@
  *
  * 不需要任何人填表：METAR 是机场自动观测，每 30 分钟一条。
  *
+ * ★ 两种配对（2026-10-25 起）：
+ *   A 级：机位库里就有「XX机场观测点」（spots.json 里带 obs 字段的点）。
+ *         这种点的预报分和实况是同一个坐标，误差里只剩「模式 vs 真值」，
+ *         是唯一能拿来改算法的样本。设 A 级样本为 0 时说明观测点还没算进缓存。
+ *   B 级：没有观测点时，用 45 km 内分数最高的机位代表机场（旧逻辑）。
+ *         机场在郊区、云是局地的，这类样本只作参考，不计入主口径。
+ *
  * 判定口径（故意保守，宁可少判也不冤枉算法）：
  *   实况无云（CAVOK / NSC / SKC）        → 天上没有「画布」，不可能有火烧云
  *      若算法给 ≥ 48 分（小烧及以上）    → 记一次【误报】
@@ -16,6 +23,7 @@
  *   node tools/check-accuracy.mjs
  *   node tools/check-accuracy.mjs --from 2026-10-01 --to 2026-10-31
  *   node tools/check-accuracy.mjs --top 30
+ *   node tools/check-accuracy.mjs --only-a     # 只看 A 级样本
  */
 
 import { readFile, readdir } from 'node:fs/promises'
@@ -25,6 +33,7 @@ import path from 'node:path'
 const ROOT = process.cwd()
 const OBS_DIR = path.join(ROOT, 'data', 'obs')
 const STATION_TABLE = path.join(OBS_DIR, 'stations-cn.json')
+const SPOTS_JSON = path.join(ROOT, 'src', 'data', 'forecast', 'spots.json')
 
 const MAX_SPOT_KM = 45
 
@@ -81,6 +90,16 @@ async function loadStations() {
   return m
 }
 
+/** 机场 ICAO → 观测点机位名（spots.json 里带 obs 字段的那些） */
+async function loadObsSpots() {
+  if (!existsSync(SPOTS_JSON)) return new Map()
+  const raw = JSON.parse(await readFile(SPOTS_JSON, 'utf8'))
+  const list = Array.isArray(raw) ? raw : raw.spots || []
+  const m = new Map()
+  for (const s of list) if (s.obs) m.set(s.obs, s.n)
+  return m
+}
+
 async function loadSnapshots() {
   if (!existsSync(OBS_DIR)) return []
   const files = (await readdir(OBS_DIR)).filter((f) => f.startsWith('forecast-') && f.endsWith('.json'))
@@ -127,21 +146,23 @@ async function main() {
   const from = args.includes('--from') ? args[args.indexOf('--from') + 1] : ''
   const to = args.includes('--to') ? args[args.indexOf('--to') + 1] : ''
   const topN = args.includes('--top') ? Number(args[args.indexOf('--top') + 1]) : 40
+  const onlyA = args.includes('--only-a')
 
   const metars = await loadMetar()
   const snapshots = await loadSnapshots()
   const stations = await loadStations()
+  const obsSpots = await loadObsSpots()
 
   if (!metars.length) { console.log('还没有 METAR 数据，先跑 node tools/fetch-metar.mjs'); return }
   if (!snapshots.length) { console.log('还没有预报快照，先跑 node tools/snapshot-forecast.mjs'); return }
 
-  /* 按站分组 */
   const byStation = new Map()
   for (const m of metars) {
     if (!byStation.has(m.station)) byStation.set(m.station, [])
     byStation.get(m.station).push(m)
   }
-  console.log('METAR 观测 ' + metars.length + ' 条 / ' + byStation.size + ' 个站；预报快照 ' + snapshots.length + ' 份\n')
+  console.log('METAR 观测 ' + metars.length + ' 条 / ' + byStation.size + ' 个站；预报快照 ' + snapshots.length + ' 份')
+  console.log('机位库里的机场观测点 ' + obsSpots.size + ' 个（有对应点的才是 A 级样本）')
 
   const results = []
 
@@ -156,34 +177,50 @@ async function main() {
       const st = stations.get(sid)
       if (!st) continue
 
-      /* 离该机场 45 km 内的机位 */
-      const near = snap.rows
-        .map((r) => ({ ...r, d: km(st.lat, st.lon, r.lat, r.lon) }))
-        .filter((r) => r.d <= MAX_SPOT_KM)
-        .sort((a, b) => a.d - b.d)
-      if (!near.length) continue
-
       const m = nearestMetar(list, sunsetLocal)
       if (!m) continue
-
       const truth = truthOf(m)
-      const top = near[0]
+
+      /* ---- A 级：机场自己有观测点机位，坐标完全一致 ---- */
+      const obsName = obsSpots.get(sid)
+      const obsRow = obsName ? snap.rows.find((r) => r.n === obsName) : null
+
+      let row = null
+      let grade = ''
+      let dist = 0
+
+      if (obsRow) {
+        row = obsRow
+        grade = 'A'
+        dist = 0
+      } else if (!onlyA) {
+        /* ---- B 级：没有观测点，用 45 km 内最近的机位代表机场 ---- */
+        const near = snap.rows
+          .map((r) => ({ ...r, d: km(st.lat, st.lon, r.lat, r.lon) }))
+          .filter((r) => r.d <= MAX_SPOT_KM)
+          .sort((a, b) => a.d - b.d)
+        if (!near.length) continue
+        row = near[0]
+        grade = 'B'
+        dist = Math.round(near[0].d)
+      }
+      if (!row) continue
 
       let verdict = '—'
       if (truth.kind === 'clear' || truth.kind === 'blocked') {
-        verdict = top.score >= 48 ? '❌ 误报' : '✅ 合理'
+        verdict = row.score >= 48 ? '❌ 误报' : '✅ 合理'
       } else if (truth.kind === 'cloudy') {
-        verdict = top.score < 30 ? '⚠ 待复核' : '✅ 合理'
+        verdict = row.score < 30 ? '⚠ 待复核' : '✅ 合理'
       } else {
-        verdict = top.score >= 48 ? '⚠ 待复核' : '✅ 合理'
+        verdict = row.score >= 48 ? '⚠ 待复核' : '✅ 合理'
       }
 
       results.push({
-        day, station: st.name || sid, sid,
+        day, station: st.name || sid, sid, grade,
         obs: m.time_bj.slice(11, 16),
         truth: truth.text,
-        spot: top.n, km: Math.round(top.d),
-        score: top.score, level: top.level,
+        spot: row.n, km: dist,
+        score: row.score, level: row.level,
         verdict
       })
     }
@@ -196,16 +233,17 @@ async function main() {
 
   results.sort((a, b) => (a.day === b.day ? a.station.localeCompare(b.station) : a.day.localeCompare(b.day)))
 
-  console.log('日期        机场            观测  实况                    最近机位          距离   分  等级    判定')
-  console.log('-'.repeat(106))
+  console.log('\n级别 日期        机场            观测  实况                    机位              距离   分  等级    判定')
+  console.log('-'.repeat(112))
   for (const r of results.slice(0, topN)) {
     console.log(
+      ' ' + r.grade + '   ' +
       r.day + '  ' +
       String(r.station).slice(0, 12).padEnd(13, '　') + ' ' +
       r.obs + '  ' +
       r.truth.padEnd(22, ' ') + ' ' +
       r.spot.slice(0, 10).padEnd(11, '　') + ' ' +
-      String(r.km).padStart(3) + 'km ' +
+      (r.km === 0 ? '  同址' : String(r.km).padStart(3) + 'km') + ' ' +
       String(r.score).padStart(3) + '  ' +
       r.level.padEnd(5, '　') + ' ' +
       r.verdict
@@ -213,24 +251,30 @@ async function main() {
   }
   if (results.length > topN) console.log('… 还有 ' + (results.length - topN) + ' 条，用 --top 调大')
 
-  const judged = results.filter((r) => r.verdict !== '—')
-  const falseAlarm = judged.filter((r) => r.verdict === '❌ 误报')
-  const ok = judged.filter((r) => r.verdict === '✅ 合理')
-  const review = judged.filter((r) => r.verdict.startsWith('⚠'))
-
-  console.log('\n===== 汇总 =====')
-  console.log('可判定 ' + judged.length + ' 个样本��误报 ' + falseAlarm.length + '　合理 ' + ok.length + '　待复核 ' + review.length)
-  if (judged.length) console.log('误报率 ' + (100 * falseAlarm.length / judged.length).toFixed(1) + '%')
-
-  if (falseAlarm.length) {
-    console.log('\n误报明细：')
-    for (const r of falseAlarm) {
-      console.log('  ' + r.day + ' ' + r.station + '｜实况『' + r.truth + '』但 ' + r.spot + ' 给了 ' + r.score + ' 分（' + r.level + '）')
+  /* A / B 分开汇总：A 才是能拿来改算法的口径 */
+  for (const grade of ['A', 'B']) {
+    const g = results.filter((r) => r.grade === grade)
+    const judged = g.filter((r) => r.verdict !== '—')
+    console.log('\n===== ' + grade + ' 级' + (grade === 'A' ? '（同址配对，主口径）' : '（就近代表，仅参考）') + ' =====')
+    if (!g.length) {
+      console.log('没有样本' + (grade === 'A' ? '（观测点还没进省级缓存，跑一次 tools/build-cache.mjs 就有了）' : ''))
+      continue
+    }
+    const fa = judged.filter((r) => r.verdict === '❌ 误报')
+    const ok = judged.filter((r) => r.verdict === '✅ 合理')
+    const rv = judged.filter((r) => r.verdict.startsWith('⚠'))
+    console.log('样本 ' + g.length + '　可判定 ' + judged.length + '　误报 ' + fa.length + '　合理 ' + ok.length + '　待复核 ' + rv.length)
+    if (judged.length) console.log('误报率 ' + (100 * fa.length / judged.length).toFixed(1) + '%')
+    if (fa.length) {
+      console.log('误报明细：')
+      for (const r of fa) {
+        console.log('  ' + r.day + ' ' + r.station + '｜实况『' + r.truth + '』但 ' + r.spot + ' 给了 ' + r.score + ' 分（' + r.level + '）')
+      }
     }
   }
 
   console.log('\n注：「待复核」不是算法结论——要等照片或卫星图才能定；「误报」也只说明预报与机场实况不符。')
-  console.log('注：机场多在郊区，与市区机位的云况会有偏差；样本按最近机位代表该机场周边。')
+  console.log('注：A 级是机场观测点与机场同址配对，可直接用来改算法；B 级机场离机位 11–45 km，只看趋势。')
 }
 
 main().catch((e) => { console.error('失败：', e); process.exit(1) })

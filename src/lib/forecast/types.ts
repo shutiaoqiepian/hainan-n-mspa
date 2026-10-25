@@ -38,6 +38,13 @@ export interface Spot {
   area: string
   /** 所属省份 */
   prov: ProvKey
+  /**
+   * 观测互补点位：机场 ICAO 四字码。
+   * 有这一项说明这个「机位」就是机场本身 —— 它存在的意义是拿机场 METAR 实况
+   * 与同一地点的预报分做校验（tools/check-accuracy.mjs）。
+   * 它不是拍摄机位：face 为 "—"，默认不展示，只在「观测点」模式下出现。
+   */
+  obs?: string
 }
 
 export interface ModelInfo {
@@ -336,6 +343,13 @@ export interface ForecastState {
   nextUpdateAt: number
   /** 动态测到的模式格点，如「约 0.05 度（≈6 km）」 */
   gridNote: string
+  /**
+   * 观测点模式：URL 带 ?obs=1 时为真。
+   * 打开后，机位列表里额外出现「XX机场观测点」——
+   * 它们是机场本身，用来和 METAR 实况做同地点校验，不是给人去拍的机位，
+   * 所以默认隐藏，避免把 224 个点全塞给用户。
+   */
+  obsMode: boolean
 }
 
 /* ---------- 静态缓存文件 schema ---------- */

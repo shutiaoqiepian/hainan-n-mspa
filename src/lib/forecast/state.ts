@@ -24,7 +24,8 @@ export const state = reactive<ForecastState>({
   targetDate: '',
   targetTime: '',
   nextUpdateAt: 0,
-  gridNote: ''
+  gridNote: '',
+  obsMode: false
 })
 
 export function dayWord(d: number): string {
@@ -83,6 +84,8 @@ export function initStateFromUrl(): void {
     if (d === '0' || d === '1') { state.day = Number(d); picked = true }
     const a = q.get('a')
     if (a && areasFor(state.prov).indexOf(a) >= 0) state.area = a
+    /* 观测点模式：只给自己人看，用来核对机场预报分与 METAR 实况 */
+    if (q.get('obs') === '1') state.obsMode = true
     /* 分享链接直接展开那个机位的详情 */
     const s = q.get('s')
     if (s) { state.shareSpot = s; state.openSpot = s }

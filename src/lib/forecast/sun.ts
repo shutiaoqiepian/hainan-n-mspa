@@ -45,6 +45,10 @@ export const FACE_AZ: Record<string, number | undefined> = {
 
 /* 太阳落在这个方向，这个机位才拍得到。偏太多就明显降分 */
 export function faceMatch(spot: Spot, az: number): number {
+  /* "—" 是「观测互补点位」（机场）：四周开阔，不存在拍不到的方向。
+     这里必须返回 1，否则机场分被平白打折 10%，
+     拿它和机场 METAR 实况比对时会带一层系统性偏低。 */
+  if (spot.face === '—') return 1
   const center = FACE_AZ[spot.face]
   if (center == null) return 0.9          /* 山顶等不限方向 */
 

@@ -87,11 +87,14 @@ export function provincesOfRegion(region: string): Province[] {
   return ACTIVE_PROVINCES.filter((p) => p.region === region)
 }
 
-/** 某省的分区（城市）：从机位表里自动去重，顺序按出现先后 */
-export function areasFor(prov: ProvKey | string): readonly string[] {
+/** 某省的分区（城市）：从机位表里自动去重，顺序按出现先后。
+    观测点（'XX·观测点'）默认不进筛选条，否则每个省都会多出一个奇怪的选项；
+    打开 ?obs=1 时才一起列出。 */
+export function areasFor(prov: ProvKey | string, includeObs = false): readonly string[] {
   const list: string[] = []
   for (const s of SPOTS) {
     if (s.prov !== prov) continue
+    if (!includeObs && s.obs) continue
     if (!list.includes(s.area)) list.push(s.area)
   }
   return ['全部', ...list]

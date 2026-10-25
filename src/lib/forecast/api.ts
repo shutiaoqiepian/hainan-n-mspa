@@ -626,7 +626,16 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
   const mids = scoringModels()
   const allMids = modelsForRequest()
 
-  spotsFor(state.prov).forEach((spot, i) => {
+  const spots = spotsFor(state.prov)
+  /* 缓存是按「建缓存那一刻的 spots.json 顺序」存 weather[] 的，索引必须一一对齐。
+     spots.json 加了机位但缓存没重跑时，多出来的点会静默退回 weather[0]
+     （= 海口西海岸的天气），这种错最难发现，所以显式报一句。 */
+  if (Array.isArray(weather) && weather.length && weather.length !== spots.length) {
+    console.warn('[forecast] 缓存与机位数量不一致：缓存 ' + weather.length + ' 个点，机位表 ' +
+      spots.length + ' 个。多出来的机位会拿到 weather[0] 的数据，请重跑 tools/build-cache.mjs。')
+  }
+
+  spots.forEach((spot, i) => {
     const w = weather[i] || weather[0]
     if (!w) return
 
