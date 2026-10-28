@@ -82,8 +82,8 @@ jobs:
 
       - name: 有变化才提交
         run: |
-          git config user.name "18N-MSPA Bot"
-          git config user.email "bot@users.noreply.github.com"
+          git config user.name "yt437700"
+          git config user.email "yt437700@users.noreply.github.com"
           if [ -n "$(git status --porcelain data/obs/)" ]; then
             git add data/obs/
             git commit -m "chore: archive metar obs + forecast snapshot"
