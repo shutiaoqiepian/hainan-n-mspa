@@ -86,7 +86,7 @@ jobs:
           git config user.email "yt437700@users.noreply.github.com"
           if [ -n "$(git status --porcelain data/obs/)" ]; then
             git add data/obs/
-            git commit -m "chore: archive metar obs + forecast snapshot"
+            git commit -m "chore: 存档 metar obs + 预报快照"
             git push
           else
             echo "no change"
