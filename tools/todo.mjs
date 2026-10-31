@@ -99,6 +99,51 @@ export const ITEMS = [
     files: []
   },
   {
+    id: 'cross-section',
+    title: '水平—垂直大气剖面图（现在只有单点 8 层廓线，没有横向空间信息）',
+    state: 'pending',
+    trigger: {
+      text: '需要人决定：① 接不接 GFS ② 先做 Open-Meteo 原型还是直接上真数据',
+      metric: null
+    },
+    why:
+      '任务书要求的是一张「沿方位角切开的断面」，横向必须是多个空间点。' +
+      '线上现在 8 层云层表只是单点廓线 —— 把它当截面用就是伪造水平空间信息。' +
+      '实测确认：五个免费源里，只有 NOAA GFS pgrb2.0p25 同时给 CLWMR（云水）和 ICMR（云冰），' +
+      'ECMWF 开放数据在压力层没有云水云冰，Open-Meteo 的压力层云量是 RH 诊断值。',
+    how: [
+      '先读 docs/阶段四-大气剖面技术方案.md，里面写了空间采样、垂直坐标、太阳投影三处易错点',
+      'GFS 单层只需 0.16~0.36 MB（实测 Range 请求可行），必须放 GitHub Action 预计算，不能在浏览器解析 GRIB',
+      '横向只有 5 个真实格点（GFS 0.25° ≈27 km），图上必须画出格点位置，不能编造连续细节',
+      '云区阈值（CLWMR+ICMR >= 1e-5）是假设不是结论，落地第一步必须用实测分位数校准',
+      '剖面是解释层，绝不参与 scoreOf —— 现有硬约束 1 和任务书第七部分都禁止',
+      '太阳不能随手放：剖面方位与太阳方位差 >15° 时必须提示「太阳不在剖面内，仅为投影」',
+    ],
+    doc: 'docs/阶段四-大气剖面技术方案.md、docs/阶段三-免费气象数据源调研.md',
+    files: []
+  },
+  {
+    id: 'ui-touch-360',
+    title: '360px 手机上 11 处行内链接只有 15~22px 高，不好戳',
+    state: 'open',
+    trigger: {
+      text: '随时可做，低风险；等一次「要改 UI」的时机一起做',
+      metric: null
+    },
+    why:
+      '本轮补测任务书要求的 360px（真手机模拟 isMobile+hasTouch）发现：' +
+      '霞光预报「查看原文」52×15、「原文」×8 26×15；登录页两处 128×22 和 103×15。' +
+      '都是句子里的行内链接 —— WCAG 2.5.8 对行内链接有豁免，但手机上确实难戳。' +
+      '同一轮 1920px 复核结论是「没问题」（文字容器本来就有 max-width，1440/1920 宽度完全一致）。',
+    how: [
+      '用 tools 里的 .perf-tools/audit-360-1920.mjs 复现（注意必须 isMobile+hasTouch，否则 @media (hover:none) 不生效）',
+      '修法：@media (max-width:560px) 给行内链接加 display:inline-block + padding:8px 2px + 负 margin 抵消位移',
+      '改完必须重跑同一脚本，并确认 375/390/430 没回归',
+    ],
+    doc: 'docs/阶段一-全站现状审查-2026-11-01.md §5',
+    files: []
+  },
+  {
     id: 'a-level-coverage',
     title: 'A 级样本「数量够了但不用上用场」：110 个样本里只有 1 个分数 ≥48',
     state: 'open',
