@@ -32,6 +32,10 @@ const tIdx = ref(0)
 const az = ref(265)
 const yMaxKm = ref(16)
 const layers = ref({ rh: false, temp: false, wind: false, w: false })
+/** 渲染模式：综合 / 云水 / 云冰 / 总云量 —— 四种变量绝不混画 */
+const mode = ref<'photo' | 'water' | 'ice' | 'total'>('photo')
+/** 纵轴：海拔 MSL / 离地 AGL */
+const heightAxis = ref<'msl' | 'agl'>('msl')
 const full = ref(false)
 const card = ref<HTMLElement | null>(null)
 /** 从预报页点进来时带的机位（可能不在 8 个代表机位里） */
@@ -417,6 +421,30 @@ const SUNSET_TEXT = computed(() => {
           </div>
 
           <div class="xsec-group">
+            <span class="xsec-group-label">视图</span>
+            <div class="xsec-seg">
+              <button
+                v-for="m in [{ k: 'photo', n: '综合' }, { k: 'water', n: '云水' }, { k: 'ice', n: '云冰' }, { k: 'total', n: '总云量' }]"
+                :key="m.k"
+                type="button"
+                class="xsec-seg-btn"
+                :class="{ 'is-on': mode === m.k }"
+                @click="mode = m.k as 'photo' | 'water' | 'ice' | 'total'"
+              >
+                {{ m.n }}
+              </button>
+            </div>
+          </div>
+
+          <div class="xsec-group">
+            <span class="xsec-group-label">高度轴</span>
+            <div class="xsec-seg">
+              <button type="button" class="xsec-seg-btn" :class="{ 'is-on': heightAxis === 'msl' }" @click="heightAxis = 'msl'">海拔</button>
+              <button type="button" class="xsec-seg-btn" :class="{ 'is-on': heightAxis === 'agl' }" @click="heightAxis = 'agl'">离地</button>
+            </div>
+          </div>
+
+          <div class="xsec-group">
             <span class="xsec-group-label">高度</span>
             <div class="xsec-seg">
               <button
@@ -484,11 +512,22 @@ const SUNSET_TEXT = computed(() => {
                 :layers="layers"
                 :sun="sun"
                 :sun-down="sunDown"
+                :mode="mode"
+                :height-axis="heightAxis"
               />
             </div>
 
             <div class="xsec-legend">
-              <template v-if="!isOm">
+              <template v-if="mode === 'water'">
+                <span class="xsec-lg"><i class="xsec-sw xsec-sw-liquid" />云水 CLWMR（只画液态水）</span>
+              </template>
+              <template v-else-if="mode === 'ice'">
+                <span class="xsec-lg"><i class="xsec-sw xsec-sw-ice" />云冰 ICMR（只画冰晶）</span>
+              </template>
+              <template v-else-if="mode === 'total'">
+                <span class="xsec-lg"><i class="xsec-sw xsec-sw-est" />总云量 TCDC（模式云分数，不是水物质）</span>
+              </template>
+              <template v-else-if="!isOm">
                 <span class="xsec-lg"><i class="xsec-sw xsec-sw-liquid" />云水（液）</span>
                 <span class="xsec-lg"><i class="xsec-sw xsec-sw-ice" />云冰</span>
               </template>
@@ -525,11 +564,11 @@ const SUNSET_TEXT = computed(() => {
           <!-- 云层清单 + 数据说明 -->
           <div class="xsec-panels">
             <div class="card xsec-panel">
-              <h2 class="xsec-panel-title">这条路径上有几层云</h2>
+              <h2 class="xsec-panel-title">这条路径上的云层结构</h2>
               <p class="xsec-panel-sub">
                 取路径中点那一个格点，
                 <template v-if="isOm">按「云量 ≥ 50%」判为有云（RH 诊断，估算）。</template>
-                <template v-else>按「总凝结水 ≥ 10 mg/kg」判为有云。</template>
+                <template v-else>按「总凝结水 ≥ 10 mg/kg（0.01 g/kg）」判为有云；云底/云顶取中段采样点的最低/最高有云层，厚度 = 云顶 − 云底。</template>
                 <span v-if="!bandList.length">这一时刻路径中段没有达到该阈值的云。</span>
               </p>
               <ul v-if="bandList.length" class="xsec-bands">

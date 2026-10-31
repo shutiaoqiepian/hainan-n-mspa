@@ -161,6 +161,48 @@ export const ITEMS = [
     files: []
   },
   {
+    id: 'cross-224-national',
+    title: '/cross 全国 224 机位尚未铺开（现在只有 8 个试点）',
+    state: 'open',
+    trigger: {
+      text: '阶段 D/E 信息卡完成后开工；需先补 224 个机位的海拔（当前全缺）',
+      metric: null
+    },
+    why:
+      '任务书范围修正要求最终覆盖全国 224 机位。实测：224 机位全部没有海拔字段；' +
+      '每机位 20 sections 全量约 9.3 MB，4 次/天会让仓库增长失控。' +
+      '必须先做统一 tile 分组下载 + 海拔补齐 + 体量/频率实测，再全量。',
+    how: [
+      '用 Open-Meteo elevation（Copernicus DEM GLO-30）批量补 224 个机位海拔并标注来源精度；补不到的标记 null 并拒绝出图',
+      'build_cross.py 改造成任意机位列表 + 1° tile 分组下载（同 tile 共用一次取数）',
+      '全国首版按「每机位 3 时次 × 1 方位（当天日落方位）」生成 ≈1.4 MB；试点 8 机位保留 4×5',
+      '先跑 14 个分区验证机位（海岸/山地/高原/盆地/岛屿/高纬），通过后再全量',
+      '实测 CI 时间与 git 日增长，再决定 1 次/天还是 2 次/天',
+    ],
+    doc: 'docs/阶段七-00-cross重构审计与方案.md §7',
+    files: ['tools/xsec/build_cross.py']
+  },
+  {
+    id: 'cross-sun-geometry-card',
+    title: '/cross 的太阳几何卡与摄影价值卡还没做（公式已核实）',
+    state: 'open',
+    trigger: {
+      text: '现在就能做：几何公式已在阶段六-03 用三个案例验证',
+      metric: null
+    },
+    why:
+      '任务书要求「太阳能否照亮这些云」「对日落摄影有什么意义」。' +
+      '公式（2√(2Rh)、时间窗、边界高度角）已验证，但还没接进界面。',
+    how: [
+      '按 docs/阶段六-01 实现 src/lib/litgeo/ 纯函数（earth/sunlight/timing/aerosol）',
+      '把阶段六-03 的 76 项检查转成正式单测',
+      '在 /cross 加「太阳几何卡」：能否照到、开始/结束时间、边界高度角、方位差',
+      '摄影价值卡只做解释，不产生分数、不写回 forecast',
+    ],
+    doc: 'docs/阶段七-00 §6、docs/阶段六-01',
+    files: []
+  },
+  {
     id: 'xsec-era5-validate',
     title: '大气剖面的云阈值只用 GFS 自己的云分数标定过，还没跟 ERA5 历史量级对照',
     state: 'pending',

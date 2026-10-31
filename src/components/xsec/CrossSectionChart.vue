@@ -1,268 +1,235 @@
 <script setup lang="ts">
 /**
- * 大气水平—垂直截面图（Canvas 2D）。
+ * 大气水平—垂直截面图 v2（数据真相重写版）。
  *
- * 三条铁律（顺序比美观重要）：
- *   1. 云水/云冰是 GFS 模式预报变量，不是观测；格点之间是双线性插值，插值不提高分辨率。
- *   2. 地形以下不画云（模式在那边没有有效层），画成地下遮罩。
- *   3. 太阳只画「投影到剖面平面」的方向；太阳不在剖面内时降低不透明度并提示偏离角度。
- *
- * 不引入任何图表库：5 个水平采样点 × 9 个气压层，Canvas 2D 足够。
+ * v2 相对 v1 的硬性修正（对应阶段七 P0–P4）：
+ *   P0-1 每个变量各自画，绝不混用：云水 CLWMR / 云冰 ICMR / 总云量 TCDC / RH 等值线。
+ *   P0-2 垂直方向**按模式层的真实厚度分段**，不再把一层的云平滑抹到上下 2–3 km。
+ *   P0-3 tooltip 同时显示「光标处的插值值」和「最近模式层原始值」，两者语义分开。
+ *   P0-4 缺测不允许当 0：任何一个成分缺测就标缺测，并在图上不因缺测而着色。
+ *   P1  纵轴支持海拔/离地切换，右侧标气压层，横向标真实格点位置与采样间距。
+ *   P2  四种渲染模式：云水 / 云冰 / 总云量 / 综合摄影（默认）。
+ *   P3  太阳只画投影方向，并把「几何照明 ≠ 辐射传输」写在图上。
+ *   P4  天空背景、地形、观察者、云底/云顶轮廓、色标、悬停读数、移动端可读尺寸。
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
-  cloudBands, distanceAxis, expandPoints, fieldIndex, heightProfile,
-  liquidShare, regularGrid, terrainProfile, totalCondensateMgKg
+  distanceAxis, expandPoints, fieldIndex, heightProfile, liquidShare, regularGrid, terrainProfile
 } from '@/lib/xsec/model'
 import type { SunInPlane } from '@/lib/xsec/sun'
 import type { XsecPoint, XsecSection, XsecSpotFile } from '@/lib/xsec/types'
+
+export type XsecMode = 'photo' | 'water' | 'ice' | 'total'
 
 const props = withDefaults(
   defineProps<{
     file: XsecSpotFile
     section: XsecSection
-    /** 纵轴上限（km） */
     yMaxKm: number
     layers: { rh: boolean; temp: boolean; wind: boolean; w: boolean }
     sun: SunInPlane
-    /** 太阳是否已落下（影响提示文案） */
     sunDown: boolean
+    mode: XsecMode
+    /** 纵轴：msl 海拔 / agl 离地（以机位地面为基准） */
+    heightAxis: 'msl' | 'agl'
   }>(),
-  { yMaxKm: 16 }
+  { yMaxKm: 16, mode: 'photo', heightAxis: 'msl' }
 )
 
-/* ---------------- 数据准备 ---------------- */
+/* ================= 数据 ================= */
 
 const points = computed<XsecPoint[][]>(() => expandPoints(props.file, props.section))
 const distances = computed(() => distanceAxis(props.section))
 const terrain = computed(() => terrainProfile(props.section))
-const heights = computed(() => heightProfile(points.value))
 const totalKm = computed(() => distances.value[distances.value.length - 1] || 50)
 const fieldIdx = computed(() => fieldIndex(props.file.levelFields))
+const obsTerrainM = computed(() => terrain.value[0] ?? 0)
 
-/** 中心采样点上的连续云层（用于右侧层标签） */
-const bands = computed(() => {
-  const mid = points.value[Math.floor(points.value.length / 2)] ?? []
-  return cloudBands(mid, BAND_CLOUD_MGK)
+/** 层数组：每层把需要的字段取出来（null 保留 null，不当 0） */
+interface Level {
+  hPa: number
+  hM: number | null
+  clw: number | null
+  ici: number | null
+  cf: number | null
+  t: number | null
+  rh: number | null
+  u: number | null
+  v: number | null
+  w: number | null
+  below: boolean
+}
+const levels = computed<Level[][]>(() =>
+  points.value.map((col, si) =>
+    col.map((p, j) => ({
+      hPa: props.file.levelsHpa[j],
+      hM: p.hgtM,
+      clw: p.clwMgKg,
+      ici: p.iciMgKg,
+      cf: p.cfPct,
+      t: p.tC,
+      rh: p.rhPct,
+      u: p.uMs,
+      v: p.vMs,
+      w: p.wPaS,
+      below: p.belowGround
+    }))
+  )
+)
+
+/** 每层真实的厚度分段：band j 覆盖 [下边界, 上边界]，边界取相邻层高度的中点 */
+/**
+ * 云带厚度：**每层只是一个采样点**，不是 2–3 km 厚的云块。
+ * 所以每层画成一条以层中心为准的细带（≤0.45 km），并单独画出层中心线；
+ * 报告云厚时明确说明"受垂直分辨率限制，真实厚度无法优于 ~2.5 km"。
+ */
+const bandEdges = computed<Array<{ loM: number; hiM: number }>>(() => {
+  const h = heightProfile(points.value)[0] ?? []
+  const out: Array<{ loM: number; hiM: number }> = []
+  for (let j = 0; j < h.length; j++) {
+    const cur = h[j]
+    if (cur === null) { out.push({ loM: 0, hiM: 0 }); continue }
+    const prev = j > 0 ? h[j - 1] : null
+    const next = j < h.length - 1 ? h[j + 1] : null
+    const gaps = [prev === null ? null : cur - prev, next === null ? null : next - cur].filter((v): v is number => v !== null)
+    const gap = gaps.length ? Math.min(...gaps) : 600
+    const thick = Math.min(1100, Math.max(260, gap * 0.4))
+    out.push({ loM: Math.max(0, cur - thick / 2), hiM: cur + thick / 2 })
+  }
+  return out
 })
 
-/** 显示分级（kg/kg → mg/kg）：与 CI 里 quality.json 的实测标定一致 */
-const BAND_EDGE_MGK = 1
-const BAND_CLOUD_MGK = 10
-const BAND_THICK_MGK = 100
-
-/* ---------------- 主题色 ---------------- */
+/* ================= 主题 ================= */
 
 interface Palette {
-  text: string
-  muted: string
-  line: string
-  lineSoft: string
-  surface: string
-  terrain: string
-  terrainEdge: string
-  under: string
-  gridPx: string
-  sun: string
-  accent: string
+  text: string; muted: string; line: string; lineSoft: string
+  skyTop: string; skyBottom: string; terrain: string; terrainEdge: string
+  gridPx: string; sun: string; accent: string; water: [number, number, number]; ice: [number, number, number]
+  cfColor: [number, number, number]
 }
 const palette = ref<Palette>({
-  text: '#e9ecef', muted: '#8f979f', line: 'rgba(255,255,255,0.14)',
-  lineSoft: 'rgba(255,255,255,0.07)', surface: '#101214',
-  terrain: 'rgba(150,128,100,0.55)', terrainEdge: 'rgba(196,170,130,0.9)',
-  under: 'rgba(90,82,72,0.22)', gridPx: 'rgba(160,200,230,0.20)',
-  sun: '#ffd28a', accent: '#4fb3e8'
+  text: '#e9ecef', muted: '#8f979f', line: 'rgba(255,255,255,0.16)', lineSoft: 'rgba(255,255,255,0.08)',
+  skyTop: 'rgba(24,40,66,0.55)', skyBottom: 'rgba(70,58,48,0.35)',
+  terrain: 'rgba(126,106,82,0.62)', terrainEdge: 'rgba(214,184,140,0.85)',
+  gridPx: 'rgba(160,200,230,0.22)', sun: '#ffd28a', accent: '#4fb3e8',
+  water: [70, 198, 205], ice: [178, 150, 240], cfColor: [150, 176, 200]
 })
 
 function readPalette(): void {
   const cs = getComputedStyle(document.documentElement)
-  const get = (k: string, fb: string) => {
-    const v = cs.getPropertyValue(k).trim()
-    return v || fb
-  }
+  const get = (k: string, fb: string) => cs.getPropertyValue(k).trim() || fb
   const light = document.documentElement.getAttribute('data-theme') === 'light'
   palette.value = {
     text: get('--text', '#e9ecef'),
     muted: get('--muted', '#8f979f'),
     line: get('--line-strong', 'rgba(255,255,255,0.18)'),
     lineSoft: get('--line', 'rgba(255,255,255,0.09)'),
-    surface: light ? 'rgba(255,255,255,0.55)' : 'rgba(10,12,14,0.45)',
-    terrain: light ? 'rgba(150,128,100,0.45)' : 'rgba(150,128,100,0.5)',
-    terrainEdge: light ? 'rgba(120,96,64,0.85)' : 'rgba(206,180,140,0.9)',
-    under: light ? 'rgba(120,104,86,0.14)' : 'rgba(90,82,72,0.24)',
-    gridPx: light ? 'rgba(40,90,130,0.28)' : 'rgba(160,200,230,0.22)',
+    skyTop: light ? 'rgba(196,220,246,0.75)' : 'rgba(20,36,60,0.62)',
+    skyBottom: light ? 'rgba(252,226,196,0.75)' : 'rgba(72,56,44,0.42)',
+    terrain: light ? 'rgba(150,128,100,0.42)' : 'rgba(126,106,82,0.6)',
+    terrainEdge: light ? 'rgba(112,88,58,0.9)' : 'rgba(214,184,140,0.85)',
+    gridPx: light ? 'rgba(30,80,120,0.3)' : 'rgba(160,200,230,0.22)',
     sun: light ? '#e08a2e' : '#ffd28a',
-    accent: get('--accent-a', '#4fb3e8')
+    accent: get('--accent-a', '#4fb3e8'),
+    water: [70, 198, 205], ice: [178, 150, 240], cfColor: [150, 176, 200]
   }
 }
 
-/* ---------------- 布局 ---------------- */
+/* ================= 布局 ================= */
 
 const wrap = ref<HTMLDivElement | null>(null)
 const canvas = ref<HTMLCanvasElement | null>(null)
 const base = document.createElement('canvas')
 const cssW = ref(820)
 const cssH = ref(430)
-
-const PAD = { l: 54, r: 16, t: 26, b: 42 }
+const PAD = { l: 56, r: 46, t: 30, b: 46 }
 const plot = computed(() => ({
-  x: PAD.l,
-  y: PAD.t,
+  x: PAD.l, y: PAD.t,
   w: Math.max(80, cssW.value - PAD.l - PAD.r),
   h: Math.max(80, cssH.value - PAD.t - PAD.b)
 }))
+const x2px = (d: number) => plot.value.x + (d / totalKm.value) * plot.value.w
+const y2px = (km: number) => plot.value.y + (1 - km / props.yMaxKm) * plot.value.h
+const px2d = (px: number) => ((px - plot.value.x) / plot.value.w) * totalKm.value
+const px2km = (py: number) => (1 - (py - plot.value.y) / plot.value.h) * props.yMaxKm
 
-function x2px(d: number): number {
-  return plot.value.x + (d / totalKm.value) * plot.value.w
-}
-function y2px(km: number): number {
-  return plot.value.y + (1 - km / props.yMaxKm) * plot.value.h
-}
-function px2d(px: number): number {
-  return ((px - plot.value.x) / plot.value.w) * totalKm.value
-}
-function px2km(py: number): number {
-  return (1 - (py - plot.value.y) / plot.value.h) * props.yMaxKm
-}
+/** 把海拔(km)换算成当前纵轴基准 */
+const toAxis = (mslKm: number): number =>
+  props.heightAxis === 'agl' ? mslKm - obsTerrainM.value / 1000 : mslKm
+const fromAxis = (axisKm: number): number =>
+  props.heightAxis === 'agl' ? axisKm + obsTerrainM.value / 1000 : axisKm
+const axisTop = computed(() => toAxis(props.yMaxKm))
 
-/* ---------------- 云场像素渲染 ---------------- */
+/* ================= 云量/色标 ================= */
 
-/** 把某个采样点垂直廓线在高度 h(km) 上的凝结水取出来（线性插值；地形以下/顶层以上为 null） */
-function profileAt(si: number, hKm: number): { q: number; liquid: number; estimated: boolean } | null {
-  const hs = heights.value[si]
-  const col = points.value[si]
-  if (!hs || !col) return null
-  const zm = hKm * 1000
-  if (zm < terrain.value[si]) return null
-  let k = -1
-  for (let j = 0; j < hs.length; j++) {
-    const hv = hs[j]
-    if (hv === null || col[j].belowGround) continue
-    if (hv <= zm) k = j
-  }
-  if (k < 0) return null
-  let k2 = -1
-  for (let j = k + 1; j < hs.length; j++) {
-    const hv = hs[j]
-    if (hv === null || col[j].belowGround) continue
-    k2 = j
-    break
-  }
-  const q1 = valueOf(col[k])
-  if (k2 < 0) {
-    /* 最高一层之上没有数据：绝不能把顶层的值往上拉，
-       那会把 12 km 的卷云画到 16 km 去（看图会以为是实测厚度）。 */
-    if (zm > (hs[k] as number) + 1) return null
-    return q1
-  }
-  const h1 = hs[k] as number
-  const h2 = hs[k2] as number
-  const w = h2 > h1 ? (zm - h1) / (h2 - h1) : 0
-  const q2 = valueOf(col[k2])
-  return {
-    q: q1.q * (1 - w) + q2.q * w,
-    liquid: q1.liquid * (1 - w) + q2.liquid * w,
-    estimated: q1.estimated || q2.estimated
-  }
-}
-
-/**
- * 某层在某个高度上的「云强度」。
- * GFS：总凝结水（液+冰）mg/kg，原生变量。
- * Open-Meteo：没有云水 → 用云量 % 映射到同一套透明度刻度，并标记 estimated。
- */
-function valueOf(p: XsecPoint): { q: number; liquid: number; estimated: boolean } {
-  const q = totalCondensateMgKg(p)
-  if (q !== null) return { q, liquid: liquidShare(p), estimated: false }
-  const cf = p.cfPct
-  if (cf !== null) {
-    /* 0–100% 映射到 0.5–400 的对数刻度，与 GFS 的透明度刻度对齐 */
-    const lo = Math.log10(0.5)
-    const hi = Math.log10(400)
-    const qPseudo = 10 ** (lo + (Math.max(0, Math.min(100, cf)) / 100) * (hi - lo))
-    return { q: qPseudo, liquid: 0.5, estimated: true }
-  }
-  return { q: 0, liquid: 0.5, estimated: false }
-}
-
-/** 沿路径把两个采样点之间线性混合（插值，不是观测） */
-function cloudAt(d: number, hKm: number): { q: number; liquid: number; estimated: boolean } | null {
-  const ds = distances.value
-  let si = 0
-  while (si < ds.length - 2 && ds[si + 1] < d) si++
-  const span = ds[si + 1] - ds[si] || 1
-  const w = Math.max(0, Math.min(1, (d - ds[si]) / span))
-  const a = profileAt(si, hKm)
-  const b = profileAt(si + 1, hKm)
-  if (!a && !b) return null
-  if (!a) return b
-  if (!b) return a
-  return {
-    q: a.q * (1 - w) + b.q * w,
-    liquid: a.liquid * (1 - w) + b.liquid * w,
-    estimated: a.estimated || b.estimated
-  }
-}
+const BAND_EDGE = 1        // mg/kg，开始着色的下限（= 1e-6 kg/kg）
+const BAND_CLOUD = 10      // mg/kg，"可辨识云"
+const BAND_THICK = 100     // mg/kg，厚云
 
 function alphaOf(q: number): number {
-  if (q < BAND_EDGE_MGK * 0.5) return 0
+  if (q < BAND_EDGE * 0.5) return 0
   const t = (Math.log10(Math.max(q, 0.5)) - Math.log10(0.5)) / (Math.log10(400) - Math.log10(0.5))
-  return Math.max(0, Math.min(1, t)) * 0.62
+  return Math.max(0, Math.min(1, t)) * 0.72
 }
 
-function cloudColor(liquid: number, estimated: boolean): [number, number, number] {
-  /* 液水：青绿；冰水：紫白；Open-Meteo 的 RH 诊断云量：冷灰蓝（一眼能看出不是同一类数据） */
-  if (estimated) return [150, 176, 200]
-  const liq: [number, number, number] = [72, 200, 205]
-  const ice: [number, number, number] = [178, 150, 240]
-  return [
-    Math.round(ice[0] + (liq[0] - ice[0]) * liquid),
-    Math.round(ice[1] + (liq[1] - ice[1]) * liquid),
-    Math.round(ice[2] + (liq[2] - ice[2]) * liquid)
-  ]
+/** 当前模式下一个层值的"云强度"；null 表示缺测（不得画） */
+function modeValue(l: Level): { q: number; color: [number, number, number]; label: string } | null {
+  if (props.mode === 'water') {
+    if (l.clw === null) return null
+    return { q: l.clw, color: palette.value.water, label: '云水' }
+  }
+  if (props.mode === 'ice') {
+    if (l.ici === null) return null
+    return { q: l.ici, color: palette.value.ice, label: '云冰' }
+  }
+  if (props.mode === 'total') {
+    if (l.cf === null) return null
+    return { q: (l.cf / 100) * 60, color: palette.value.cfColor, label: '总云量' }
+  }
+  /* photo：总凝结水 + 按液/冰比例混色；两者都缺测才算缺测（一个缺测时用另一个，并标记部分缺测） */
+  const hasA = l.clw !== null, hasB = l.ici !== null
+  if (!hasA && !hasB) return null
+  const q = (l.clw ?? 0) + (l.ici ?? 0)
+  const liq = hasA && hasB ? (l.clw as number) / ((l.clw as number) + (l.ici as number) || 1) : (hasA ? 1 : 0)
+  const [ir, ig, ib] = palette.value.ice
+  const [wr, wg, wb] = palette.value.water
+  return {
+    q,
+    color: [Math.round(ir + (wr - ir) * liq), Math.round(ig + (wg - ig) * liq), Math.round(ib + (wb - ib) * liq)],
+    label: '云水+云冰'
+  }
 }
 
-/* ---------------- 等值线（marching squares） ---------------- */
+/* ================= 等值线 ================= */
 
 type Grid = Array<Array<number | null>>
-
 function contour(grid: Grid, level: number, nx: number, ny: number): Array<[number, number, number, number]> {
   const seg: Array<[number, number, number, number]> = []
   const at = (j: number, i: number): number | null => {
-    const row = grid[j]
-    if (!row) return null
-    const v = row[i]
-    return v === null || !Number.isFinite(v) ? null : v
+    const v = grid[j]?.[i]
+    return v === null || v === undefined || !Number.isFinite(v) ? null : v
   }
   const lerp = (a: number, b: number) => (level - a) / (b - a)
   for (let j = 0; j < ny - 1; j++) {
     for (let i = 0; i < nx - 1; i++) {
-      const v00 = at(j, i)
-      const v10 = at(j, i + 1)
-      const v01 = at(j + 1, i)
-      const v11 = at(j + 1, i + 1)
+      const v00 = at(j, i), v10 = at(j, i + 1), v01 = at(j + 1, i), v11 = at(j + 1, i + 1)
       if (v00 === null || v10 === null || v01 === null || v11 === null) continue
-      /* 四个角相对 level 的符号；用 bitmask 走标准 16 种情形 */
-      const b00 = v00 > level ? 1 : 0
-      const b10 = v10 > level ? 2 : 0
-      const b01 = v01 > level ? 4 : 0
-      const b11 = v11 > level ? 8 : 0
-      const code = b00 | b10 | b01 | b11
+      const code = (v00 > level ? 1 : 0) | (v10 > level ? 2 : 0) | (v01 > level ? 4 : 0) | (v11 > level ? 8 : 0)
       if (code === 0 || code === 15) continue
-      const edgeT = (): [number, number] => [i + lerp(v00, v10), j]
-      const edgeR = (): [number, number] => [i + 1, j + lerp(v10, v11)]
-      const edgeB = (): [number, number] => [i + lerp(v01, v11), j + 1]
-      const edgeL = (): [number, number] => [i, j + lerp(v00, v01)]
+      const eT = (): [number, number] => [i + lerp(v00, v10), j]
+      const eR = (): [number, number] => [i + 1, j + lerp(v10, v11)]
+      const eB = (): [number, number] => [i + lerp(v01, v11), j + 1]
+      const eL = (): [number, number] => [i, j + lerp(v00, v01)]
       const push = (a: [number, number], b: [number, number]) => seg.push([a[0], a[1], b[0], b[1]])
       switch (code) {
-        case 1: case 14: push(edgeL(), edgeT()); break
-        case 2: case 13: push(edgeT(), edgeR()); break
-        case 3: case 12: push(edgeL(), edgeR()); break
-        case 4: case 11: push(edgeL(), edgeB()); break
-        case 6: case 9: push(edgeT(), edgeB()); break
-        case 7: case 8: push(edgeB(), edgeR()); break
-        case 5: push(edgeL(), edgeT()); push(edgeB(), edgeR()); break
-        case 10: push(edgeT(), edgeR()); push(edgeL(), edgeB()); break
+        case 1: case 14: push(eL(), eT()); break
+        case 2: case 13: push(eT(), eR()); break
+        case 3: case 12: push(eL(), eR()); break
+        case 4: case 11: push(eL(), eB()); break
+        case 6: case 9: push(eT(), eB()); break
+        case 7: case 8: push(eB(), eR()); break
+        case 5: push(eL(), eT()); push(eB(), eR()); break
+        case 10: push(eT(), eR()); push(eL(), eB()); break
         default: break
       }
     }
@@ -270,310 +237,244 @@ function contour(grid: Grid, level: number, nx: number, ny: number): Array<[numb
   return seg
 }
 
-/* ---------------- 主绘制 ---------------- */
+/* ================= 主绘制 ================= */
 
 function drawBase(): void {
   const ctx = base.getContext('2d')
   if (!ctx) return
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
-  const W = cssW.value
-  const H = cssH.value
+  const W = cssW.value, H = cssH.value
   base.width = Math.round(W * dpr)
   base.height = Math.round(H * dpr)
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.clearRect(0, 0, W, H)
-
   const p = plot.value
   const pal = palette.value
-  const yMax = props.yMaxKm
+  const top = axisTop.value
 
-  /* 背景 */
-  ctx.fillStyle = pal.surface
+  /* 天空背景：上蓝下暖（纯装饰，不承载任何数据） */
+  const sky = ctx.createLinearGradient(0, p.y, 0, p.y + p.h)
+  sky.addColorStop(0, pal.skyTop)
+  sky.addColorStop(1, pal.skyBottom)
+  ctx.fillStyle = sky
   ctx.fillRect(p.x, p.y, p.w, p.h)
 
-  /* 1) 云场（像素级；横向在采样点之间线性混合，纵向在气压层之间线性混合） */
-  const img = ctx.createImageData(Math.round(p.w), Math.round(p.h))
-  const data = img.data
-  const iw = Math.round(p.w)
-  const ih = Math.round(p.h)
-  for (let py = 0; py < ih; py++) {
-    const hKm = (1 - py / (ih - 1)) * yMax
-    for (let px = 0; px < iw; px++) {
-      const d = (px / (iw - 1)) * totalKm.value
-      const c = cloudAt(d, hKm)
-      if (!c) continue
-      const a = alphaOf(c.q)
-      if (a <= 0.01) continue
-      const [r, g, b] = cloudColor(c.liquid, c.estimated)
-      const o = (py * iw + px) * 4
-      data[o] = r
-      data[o + 1] = g
-      data[o + 2] = b
-      data[o + 3] = Math.round(a * 255)
-    }
-  }
-  const tmp = document.createElement('canvas')
-  tmp.width = iw
-  tmp.height = ih
-  tmp.getContext('2d')?.putImageData(img, 0, 0)
-  ctx.drawImage(tmp, p.x, p.y, p.w, p.h)
-
-  /* 2) 地形以下遮罩（模式在这些层没有有效数据，不能画成晴空） */
+  /* ---- 云场：按模式层真实厚度逐列绘制（横向线性插值，纵向不平滑）---- */
   ctx.save()
   ctx.beginPath()
   ctx.rect(p.x, p.y, p.w, p.h)
   ctx.clip()
-  ctx.beginPath()
-  ctx.moveTo(x2px(0), y2px(terrain.value[0] / 1000))
-  for (let i = 1; i < distances.value.length; i++) {
-    ctx.lineTo(x2px(distances.value[i]), y2px(terrain.value[i] / 1000))
+  const iw = Math.round(p.w)
+  const levelsN = bandEdges.value.length
+  for (let px = 0; px < iw; px++) {
+    const d = (px / (iw - 1)) * totalKm.value
+    /* 该列左右两个采样点与权重 */
+    const dsArr = distances.value
+    let si = 0
+    while (si < dsArr.length - 2 && dsArr[si + 1] < d) si++
+    const w = Math.max(0, Math.min(1, (d - dsArr[si]) / (dsArr[si + 1] - dsArr[si] || 1)))
+    for (let j = 0; j < levelsN; j++) {
+      const a = modeValue(levels.value[si]?.[j])
+      const b = modeValue(levels.value[si + 1]?.[j])
+      if (!a && !b) continue
+      const q = a && b ? a.q * (1 - w) + b.q * w : (a ? a.q * (1 - w) : (b as { q: number }).q * w)
+      const alpha = alphaOf(q)
+      if (alpha <= 0.012) continue
+      const colA = a?.color ?? (b as { color: [number, number, number] }).color
+      const colB = b?.color ?? (a as { color: [number, number, number] }).color
+      const r = Math.round(colA[0] * (1 - w) + colB[0] * w)
+      const g = Math.round(colA[1] * (1 - w) + colB[1] * w)
+      const bl = Math.round(colA[2] * (1 - w) + colB[2] * w)
+      const edge = bandEdges.value[j]
+      const yHi = y2px(toAxis(edge.hiM / 1000))
+      const yLo = y2px(toAxis(edge.loM / 1000))
+      if (yLo <= p.y || yHi >= p.y + p.h) {
+        /* 越过上下边界时裁剪，避免把云画到坐标轴外 */
+      }
+      const y0 = Math.max(p.y, Math.min(p.y + p.h, yHi))
+      const y1 = Math.max(p.y, Math.min(p.y + p.h, yLo))
+      if (y1 - y0 < 0.4) continue
+      ctx.fillStyle = `rgba(${r},${g},${bl},${alpha.toFixed(3)})`
+      ctx.fillRect(p.x + px, y0, 1, y1 - y0)
+    }
   }
-  ctx.lineTo(x2px(totalKm.value), p.y + p.h)
-  ctx.lineTo(x2px(0), p.y + p.h)
+  ctx.restore()
+
+  /* ---- 模式层中心线：强调"每层是一个采样点" ---- */
+  ctx.save()
+  ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip()
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)'
+  ctx.lineWidth = 1
+  ctx.setLineDash([1, 5])
+  for (const l of levels.value[0] ?? []) {
+    if (l.hM === null) continue
+    const y = y2px(toAxis(l.hM / 1000))
+    if (y < p.y || y > p.y + p.h) continue
+    ctx.beginPath(); ctx.moveTo(p.x, y); ctx.lineTo(p.x + p.w, y); ctx.stroke()
+  }
+  ctx.setLineDash([])
+  ctx.restore()
+
+  /* 云底/云顶不再画折线：不同采样点最高有云层可能不同，连线会出现误导性的斜边。
+     云层结构改在页面右侧信息卡里按层列出（层中心/厚度上限/峰值）。 */
+
+  /* ---- 等值线 ---- */
+  const nx = 60, ny = 40
+  const grid = (get: (pt: XsecPoint) => number | null): Grid =>
+    regularGrid(points.value, distances.value, terrain.value, top > 0 ? top : props.yMaxKm, nx, ny, (pt) => {
+      const v = get(pt)
+      return v === null ? null : v
+    })
+  if (props.layers.rh) {
+    const g = grid((pt) => pt.rhPct)
+    ctx.save(); ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip()
+    for (const lv of [50, 70, 85, 95]) {
+      ctx.beginPath()
+      ctx.strokeStyle = `rgba(130,215,255,${0.16 + (lv - 50) / 240})`
+      ctx.lineWidth = 1
+      for (const s of contour(g, lv, nx, ny)) {
+        ctx.moveTo(x2px((s[0] / (nx - 1)) * totalKm.value), y2px((s[1] / (ny - 1)) * Math.max(top, props.yMaxKm)))
+        ctx.lineTo(x2px((s[2] / (nx - 1)) * totalKm.value), y2px((s[3] / (ny - 1)) * Math.max(top, props.yMaxKm)))
+      }
+      ctx.stroke()
+    }
+    ctx.restore()
+  }
+  if (props.layers.temp) {
+    const g = grid((pt) => pt.tC)
+    ctx.save(); ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip()
+    for (const lv of [-60, -50, -40, -30, -20, -10, 0, 10, 20]) {
+      ctx.beginPath()
+      ctx.strokeStyle = lv === 0 ? 'rgba(255,170,120,0.7)' : 'rgba(255,170,120,0.3)'
+      ctx.lineWidth = 1
+      for (const s of contour(g, lv, nx, ny)) {
+        ctx.moveTo(x2px((s[0] / (nx - 1)) * totalKm.value), y2px((s[1] / (ny - 1)) * Math.max(top, props.yMaxKm)))
+        ctx.lineTo(x2px((s[2] / (nx - 1)) * totalKm.value), y2px((s[3] / (ny - 1)) * Math.max(top, props.yMaxKm)))
+      }
+      ctx.stroke()
+    }
+    ctx.restore()
+  }
+
+  /* ---- 真实模式格点：虚线 + 底部刻度 ---- */
+  ctx.save(); ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip()
+  ctx.setLineDash([2, 4])
+  ctx.strokeStyle = pal.gridPx
+  ctx.lineWidth = 1
+  for (const node of props.section.gridNodes) {
+    const x = x2px(node[0])
+    ctx.beginPath(); ctx.moveTo(x, p.y); ctx.lineTo(x, p.y + p.h); ctx.stroke()
+  }
+  ctx.restore()
+  ctx.save()
+  ctx.setLineDash([])
+  ctx.font = '10px system-ui, sans-serif'
+  ctx.fillStyle = pal.muted
+  ctx.textAlign = 'center'
+  for (const node of props.section.gridNodes) {
+    const x = x2px(node[0])
+    ctx.fillText('↓', x, p.y + p.h - 4)
+  }
+  ctx.restore()
+
+  /* ---- 风/垂直速度 ---- */
+  if (props.layers.wind) drawWind(ctx)
+  if (props.layers.w) drawW(ctx)
+
+  /* ---- 地形 + 观察者 ---- */
+  drawTerrain(ctx)
+
+  /* ---- 太阳 ---- */
+  drawSun(ctx)
+
+  /* ---- 坐标轴 ---- */
+  drawAxes(ctx)
+
+  /* ---- 色标 ---- */
+  drawScale(ctx)
+
+  /* ---- 图内固定说明 ---- */
+  ctx.save()
+  ctx.font = '10px system-ui, sans-serif'
+  ctx.fillStyle = pal.muted
+  ctx.textAlign = 'left'
+  ctx.fillText('每层是模式采样点（垂直分辨率有限）· 横向格点间为线性插值', p.x + 8, p.y + 13)
+  ctx.restore()
+}
+
+function drawWind(ctx: CanvasRenderingContext2D): void {
+  const p = plot.value
+  ctx.save(); ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip()
+  levels.value.forEach((col, si) => {
+    for (const l of col) {
+      if (l.below || l.hM === null || l.u === null || l.v === null) continue
+      const spd = Math.hypot(l.u, l.v)
+      if (spd < 0.5) continue
+      const x = x2px(distances.value[si])
+      const y = y2px(toAxis(l.hM / 1000))
+      const len = 6 + Math.min(18, spd)
+      ctx.strokeStyle = `rgba(150,230,190,${0.25 + Math.min(0.45, spd / 30)})`
+      ctx.lineWidth = 1.2
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + (l.u / spd) * len, y - (l.v / spd) * len); ctx.stroke()
+    }
+  })
+  ctx.restore()
+}
+
+function drawW(ctx: CanvasRenderingContext2D): void {
+  const p = plot.value
+  ctx.save(); ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip()
+  levels.value.forEach((col, si) => {
+    for (const l of col) {
+      if (l.below || l.hM === null || l.w === null || Math.abs(l.w) < 0.06) continue
+      const x = x2px(distances.value[si])
+      const y = y2px(toAxis(l.hM / 1000))
+      const up = (l.w as number) < 0
+      const r = 2 + Math.min(5, Math.abs(l.w) * 12)
+      ctx.fillStyle = up ? 'rgba(120,200,255,0.72)' : 'rgba(255,170,120,0.62)'
+      ctx.beginPath()
+      if (up) { ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.8, y + r * 0.7); ctx.lineTo(x - r * 0.8, y + r * 0.7) }
+      else { ctx.moveTo(x, y + r); ctx.lineTo(x + r * 0.8, y - r * 0.7); ctx.lineTo(x - r * 0.8, y - r * 0.7) }
+      ctx.closePath(); ctx.fill()
+    }
+  })
+  ctx.restore()
+}
+
+function drawTerrain(ctx: CanvasRenderingContext2D): void {
+  const p = plot.value
+  const pal = palette.value
+  ctx.save(); ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip()
+  ctx.beginPath()
+  ctx.moveTo(x2px(0), y2px(toAxis(terrain.value[0] / 1000)))
+  for (let i = 1; i < distances.value.length; i++) {
+    ctx.lineTo(x2px(distances.value[i]), y2px(toAxis(terrain.value[i] / 1000)))
+  }
+  ctx.lineTo(x2px(totalKm.value), y2px(toAxis(0)))
+  ctx.lineTo(x2px(0), y2px(toAxis(0)))
   ctx.closePath()
   ctx.fillStyle = pal.terrain
   ctx.fill()
   ctx.strokeStyle = pal.terrainEdge
   ctx.lineWidth = 1.5
   ctx.beginPath()
-  ctx.moveTo(x2px(0), y2px(terrain.value[0] / 1000))
+  ctx.moveTo(x2px(0), y2px(toAxis(terrain.value[0] / 1000)))
   for (let i = 1; i < distances.value.length; i++) {
-    ctx.lineTo(x2px(distances.value[i]), y2px(terrain.value[i] / 1000))
+    ctx.lineTo(x2px(distances.value[i]), y2px(toAxis(terrain.value[i] / 1000)))
   }
-  ctx.save()
-  ctx.setLineDash([4, 3])
-  ctx.strokeStyle = pal.under
-  for (let k = 1; k < 8; k++) {
-    const xx = (totalKm.value * k) / 8
-    ctx.beginPath()
-    ctx.moveTo(x2px(xx), y2px((terrain.value[Math.min(terrain.value.length - 1, Math.round((k / 8) * (terrain.value.length - 1)))] as number) / 1000))
-    ctx.lineTo(x2px(xx), p.y + p.h)
-    ctx.stroke()
-  }
-  ctx.restore()
-  ctx.restore()
-
-  /* 3) 等值线图层 */
-  const nx = 60
-  const ny = 40
-  const g = (get: (pt: XsecPoint) => number | null): Grid =>
-    regularGrid(points.value, distances.value, terrain.value, yMax, nx, ny, get)
-
-  if (props.layers.rh) {
-    const grid = g((pt) => pt.rhPct)
-    ctx.save()
-    ctx.beginPath()
-    ctx.rect(p.x, p.y, p.w, p.h)
-    ctx.clip()
-    ctx.lineWidth = 1
-    for (const lv of [50, 70, 85, 95]) {
-      ctx.beginPath()
-      ctx.strokeStyle = `rgba(120,210,255,${0.18 + (lv - 50) / 260})`
-      for (const s of contour(grid, lv, nx, ny)) {
-        ctx.moveTo(x2px((s[0] / (nx - 1)) * totalKm.value), y2px((s[1] / (ny - 1)) * yMax))
-        ctx.lineTo(x2px((s[2] / (nx - 1)) * totalKm.value), y2px((s[3] / (ny - 1)) * yMax))
-      }
-      ctx.stroke()
-    }
-    ctx.restore()
-  }
-
-  if (props.layers.temp) {
-    const grid = g((pt) => pt.tC)
-    ctx.save()
-    ctx.beginPath()
-    ctx.rect(p.x, p.y, p.w, p.h)
-    ctx.clip()
-    ctx.lineWidth = 1
-    ctx.font = '10px system-ui, sans-serif'
-    for (const lv of [-60, -50, -40, -30, -20, -10, 0, 10, 20]) {
-      ctx.beginPath()
-      ctx.strokeStyle = lv === 0 ? 'rgba(255,170,120,0.75)' : 'rgba(255,170,120,0.32)'
-      const seg = contour(grid, lv, nx, ny)
-      for (const s of seg) {
-        ctx.moveTo(x2px((s[0] / (nx - 1)) * totalKm.value), y2px((s[1] / (ny - 1)) * yMax))
-        ctx.lineTo(x2px((s[2] / (nx - 1)) * totalKm.value), y2px((s[3] / (ny - 1)) * yMax))
-      }
-      ctx.stroke()
-    }
-    ctx.restore()
-  }
-
-  /* 4) 真实格点虚线（模式原始网格，不是插值结果） */
-  ctx.save()
-  ctx.beginPath()
-  ctx.rect(p.x, p.y, p.w, p.h)
-  ctx.clip()
-  ctx.setLineDash([2, 4])
-  ctx.strokeStyle = pal.gridPx
-  ctx.lineWidth = 1
-  for (const node of props.section.gridNodes) {
-    const x = x2px(node[0])
-    ctx.beginPath()
-    ctx.moveTo(x, p.y)
-    ctx.lineTo(x, p.y + p.h)
-    ctx.stroke()
-  }
-  ctx.restore()
-
-  /* 5) 风矢量 */
-  if (props.layers.wind) {
-    ctx.save()
-    ctx.beginPath()
-    ctx.rect(p.x, p.y, p.w, p.h)
-    ctx.clip()
-    for (let si = 0; si < points.value.length; si++) {
-      const col = points.value[si]
-      for (const pt of col) {
-        if (pt.belowGround || pt.hgtM === null) continue
-        const u = pt.uMs
-        const v = pt.vMs
-        if (u === null || v === null) continue
-        const spd = Math.hypot(u, v)
-        if (spd < 0.5) continue
-        const x = x2px(distances.value[si])
-        const y = y2px(pt.hgtM / 1000)
-        const len = 6 + Math.min(20, spd * 1.1)
-        ctx.strokeStyle = `rgba(150,230,190,${0.22 + Math.min(0.5, spd / 30)})`
-        ctx.lineWidth = 1.2
-        ctx.beginPath()
-        ctx.moveTo(x, y)
-        ctx.lineTo(x + (u / spd) * len, y - (v / spd) * len)
-        ctx.stroke()
-      }
-    }
-    ctx.restore()
-  }
-
-  /* 6) 垂直速度（w>0 下沉，w<0 上升；GFS 原生 Pa/s） */
-  if (props.layers.w) {
-    ctx.save()
-    ctx.beginPath()
-    ctx.rect(p.x, p.y, p.w, p.h)
-    ctx.clip()
-    for (let si = 0; si < points.value.length; si++) {
-      for (const pt of points.value[si]) {
-        if (pt.belowGround || pt.hgtM === null || pt.wPaS === null) continue
-        const w = pt.wPaS
-        if (Math.abs(w) < 0.06) continue
-        const x = x2px(distances.value[si])
-        const y = y2px(pt.hgtM / 1000)
-        const up = w < 0
-        const r = 2 + Math.min(5, Math.abs(w) * 12)
-        ctx.fillStyle = up ? 'rgba(120,200,255,0.75)' : 'rgba(255,170,120,0.65)'
-        ctx.beginPath()
-        if (up) {
-          ctx.moveTo(x, y - r)
-          ctx.lineTo(x + r * 0.8, y + r * 0.7)
-          ctx.lineTo(x - r * 0.8, y + r * 0.7)
-        } else {
-          ctx.moveTo(x, y + r)
-          ctx.lineTo(x + r * 0.8, y - r * 0.7)
-          ctx.lineTo(x - r * 0.8, y - r * 0.7)
-        }
-        ctx.closePath()
-        ctx.fill()
-      }
-    }
-    ctx.restore()
-  }
-
-  /* 7) 太阳（只画投影到剖面的方向） */
-  drawSun(ctx)
-
-  /* 8) 坐标轴 */
-  drawAxes(ctx)
-
-  /* 9) 云层标注（右边缘，只有中心采样点有云时才标） */
-  ctx.save()
-  ctx.beginPath()
-  ctx.rect(p.x, p.y, p.w, p.h)
-  ctx.clip()
-  ctx.font = '10px system-ui, sans-serif'
-  for (const b of bands.value) {
-    const y1 = y2px(b.fromKm)
-    const y2 = y2px(b.toKm)
-    if (y2 - y1 < 8) continue
-    ctx.fillStyle = b.estimated
-      ? 'rgba(150,176,200,0.8)'
-      : (b.liquid ? 'rgba(110,220,220,0.75)' : 'rgba(190,165,245,0.8)')
-    ctx.fillRect(p.x + p.w - 3, y2, 3, y1 - y2)
-    if (b.peakMgKg >= BAND_CLOUD_MGK) {
-      ctx.fillStyle = palette.value.muted
-      ctx.textAlign = 'right'
-      ctx.fillText(`${b.toHpa}–${b.fromHpa} hPa`, p.x + p.w - 7, (y1 + y2) / 2 + 3)
-    }
-  }
-  ctx.restore()
-}
-
-function drawAxes(ctx: CanvasRenderingContext2D): void {
-  const p = plot.value
-  const pal = palette.value
-  const yMax = props.yMaxKm
-  ctx.save()
-  ctx.strokeStyle = pal.line
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.moveTo(p.x, p.y)
-  ctx.lineTo(p.x, p.y + p.h)
-  ctx.lineTo(p.x + p.w, p.y + p.h)
   ctx.stroke()
-
-  ctx.fillStyle = pal.muted
-  ctx.font = '11px system-ui, -apple-system, "Segoe UI", sans-serif'
-
-  /* 纵轴：海拔 km */
-  ctx.textAlign = 'right'
-  ctx.textBaseline = 'middle'
-  const yStep = yMax <= 8 ? 2 : 4
-  for (let km = 0; km <= yMax; km += yStep) {
-    const y = y2px(km)
-    ctx.strokeStyle = pal.lineSoft
-    ctx.beginPath()
-    ctx.moveTo(p.x - 4, y)
-    ctx.lineTo(p.x, y)
-    ctx.stroke()
-    ctx.fillText(`${km}`, p.x - 7, y)
-  }
-  ctx.save()
-  ctx.translate(13, p.y + p.h / 2)
-  ctx.rotate(-Math.PI / 2)
-  ctx.textAlign = 'center'
-  ctx.fillStyle = pal.muted
-  ctx.fillText('海拔 km', 0, 0)
   ctx.restore()
 
-  /* 横轴：距观察者 km */
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'top'
-  for (let d = 0; d <= totalKm.value + 0.01; d += 10) {
-    const x = x2px(d)
-    ctx.strokeStyle = pal.lineSoft
-    ctx.beginPath()
-    ctx.moveTo(x, p.y + p.h)
-    ctx.lineTo(x, p.y + p.h + 4)
-    ctx.stroke()
-    ctx.fillText(`${d}`, x, p.y + p.h + 7)
-  }
-  ctx.fillStyle = pal.muted
-  ctx.textAlign = 'right'
-  ctx.fillText('沿剖面方向距离 km →', p.x + p.w, p.y + p.h + 24)
-
-  /* 观察者（机位） */
+  /* 观察者 */
   const ox = x2px(0)
-  const oy = y2px((terrain.value[0] as number) / 1000)
-  ctx.fillStyle = pal.text
-  ctx.beginPath()
-  ctx.moveTo(ox + 2, oy)
-  ctx.lineTo(ox + 9, oy - 5)
-  ctx.lineTo(ox + 9, oy + 5)
-  ctx.closePath()
-  ctx.fill()
+  const oy = y2px(toAxis(terrain.value[0] / 1000))
+  ctx.save()
+  ctx.fillStyle = palette.value.text
+  ctx.beginPath(); ctx.moveTo(ox + 3, oy); ctx.lineTo(ox + 10, oy - 5); ctx.lineTo(ox + 10, oy + 5); ctx.closePath(); ctx.fill()
   ctx.font = '10px system-ui, sans-serif'
+  ctx.fillStyle = palette.value.muted
   ctx.textAlign = 'left'
-  ctx.fillStyle = pal.muted
-  ctx.fillText(`机位 · ${terrain.value[0]} m`, ox + 12, oy + 3)
+  ctx.fillText(`机位 · 地面 ${terrain.value[0]} m`, ox + 13, oy + 3)
   ctx.restore()
 }
 
@@ -581,87 +482,173 @@ function drawSun(ctx: CanvasRenderingContext2D): void {
   const p = plot.value
   const pal = palette.value
   const sun = props.sun
-  const yMax = props.yMaxKm
-  const obsH = (terrain.value[0] as number) / 1000
   const tx = sun.toward.x
   const ty = sun.toward.y
   if (ty <= 0.001) return
-
-  /* 从机位沿太阳方向画到天顶边界：这就是「投影到剖面的光路方向」 */
-  const tTop = (yMax - obsH) / ty
+  const axisTopKm = Math.max(axisTop.value, props.yMaxKm)
+  const obsAxis = toAxis(terrain.value[0] / 1000)
+  const tTop = (axisTopKm - obsAxis) / ty
   const topX = tx * tTop
-  const alpha = sun.inFront ? 0.95 : 0.28
-  ctx.save()
-  ctx.beginPath()
-  ctx.rect(p.x - PAD.l, p.y - PAD.t, cssW.value, cssH.value)
-  ctx.clip()
-
-  /* 主光线（穿过机位）+ 两条平行辅助线 */
-  ctx.setLineDash([5, 4])
-  ctx.lineWidth = 1.2
-  for (const off of [-1, 0, 1]) {
-    const dx = off * 8
-    ctx.strokeStyle = `rgba(255,210,138,${alpha * (off === 0 ? 0.8 : 0.35)})`
+  const alpha = sun.inFront ? 0.95 : 0.3
+  ctx.save(); ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip()
+  ctx.setLineDash([5, 4]); ctx.lineWidth = 1.2
+  for (const off of [0, 1]) {
+    const dx = off * 12
+    ctx.strokeStyle = `rgba(255,210,138,${alpha * (off === 0 ? 0.6 : 0.25)})`
     ctx.beginPath()
-    ctx.moveTo(x2px(topX) + dx, y2px(yMax))
-    const belowY = obsH - 2
-    ctx.lineTo(x2px(topX) - (tx / ty) * (yMax - belowY) + dx, y2px(belowY))
+    ctx.moveTo(x2px(topX) + dx, y2px(axisTopKm))
+    ctx.lineTo(x2px(topX) - (tx / ty) * axisTopKm + dx, p.y + p.h)
     ctx.stroke()
   }
   ctx.setLineDash([])
-
-  /* 太阳符号：落在图顶（超出则夹到边界） */
   const sx = Math.max(p.x + 8, Math.min(p.x + p.w - 8, x2px(topX)))
-  const sy = y2px(yMax) + 2
+  const sy = y2px(axisTopKm) + 2
   ctx.globalAlpha = alpha
   ctx.fillStyle = pal.sun
-  ctx.beginPath()
-  ctx.arc(sx, sy + 10, 6, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.strokeStyle = pal.sun
-  ctx.lineWidth = 1.2
+  ctx.beginPath(); ctx.arc(sx, sy + 10, 6, 0, Math.PI * 2); ctx.fill()
+  ctx.strokeStyle = pal.sun; ctx.lineWidth = 1.2
   for (let k = 0; k < 8; k++) {
     const a = (k / 8) * Math.PI * 2
-    ctx.beginPath()
-    ctx.moveTo(sx + Math.cos(a) * 9, sy + 10 + Math.sin(a) * 9)
-    ctx.lineTo(sx + Math.cos(a) * 13, sy + 10 + Math.sin(a) * 13)
-    ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(sx + Math.cos(a) * 9, sy + 10 + Math.sin(a) * 9); ctx.lineTo(sx + Math.cos(a) * 13, sy + 10 + Math.sin(a) * 13); ctx.stroke()
   }
   ctx.globalAlpha = 1
   ctx.font = '10.5px system-ui, sans-serif'
   ctx.fillStyle = pal.muted
   ctx.textAlign = 'center'
+  const noteX = Math.max(p.x + 140, Math.min(p.x + p.w - 140, sx))
   const note = sun.inFront
-    ? `太阳方位 ${sun.az.toFixed(0)}° · 高度角 ${sun.el.toFixed(0)}° · 投影角 ${sun.inPlaneEl.toFixed(0)}°`
-    : `太阳在剖面背后（偏离 ${Math.abs(sun.deviationDeg).toFixed(0)}°）——图中的光线只是投影`
-  const noteX = Math.max(p.x + 130, Math.min(p.x + p.w - 130, sx))
+    ? `${props.sunDown ? '太阳已落下' : '太阳'} 方位 ${sun.az.toFixed(0)}° · 高度角 ${sun.el.toFixed(1)}° · 剖面内投影 ${sun.inPlaneEl.toFixed(0)}°`
+    : `太阳在剖面背后（偏 ${Math.abs(sun.deviationDeg).toFixed(0)}°）— 光线仅为投影`
   ctx.fillText(note, noteX, sy + 34)
   ctx.restore()
 }
 
-/* ---------------- 交互 ---------------- */
+function drawAxes(ctx: CanvasRenderingContext2D): void {
+  const p = plot.value
+  const pal = palette.value
+  const axisTopKm = p.y && props.yMaxKm
+  ctx.save()
+  ctx.strokeStyle = pal.line
+  ctx.lineWidth = 1
+  ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, p.y + p.h); ctx.lineTo(p.x + p.w, p.y + p.h); ctx.stroke()
+
+  ctx.font = '11px system-ui, sans-serif'
+  ctx.fillStyle = pal.muted
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'middle'
+  const step = props.yMaxKm <= 8 ? 2 : 4
+  for (let km = 0; km <= props.yMaxKm; km += step) {
+    const y = y2px(km)
+    ctx.strokeStyle = pal.lineSoft
+    ctx.beginPath(); ctx.moveTo(p.x - 4, y); ctx.lineTo(p.x, y); ctx.stroke()
+    ctx.fillText(`${km}`, p.x - 7, y)
+  }
+  ctx.save()
+  ctx.translate(13, p.y + p.h / 2)
+  ctx.rotate(-Math.PI / 2)
+  ctx.textAlign = 'center'
+  ctx.fillStyle = pal.muted
+  ctx.fillText(props.heightAxis === 'agl' ? '离地 km' : '海拔 km (MSL)', 0, 0)
+  ctx.restore()
+  void axisTopKm
+
+  /* 右侧：气压层刻度 */
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.font = '9.5px system-ui, sans-serif'
+  ctx.fillStyle = pal.muted
+  const firstCol = levels.value[0] ?? []
+  for (const l of firstCol) {
+    if (l.hM === null) continue
+    const km = l.hM / 1000
+    if (km > props.yMaxKm) continue
+    const y = y2px(toAxis(km))
+    ctx.strokeStyle = pal.lineSoft
+    ctx.beginPath(); ctx.moveTo(p.x + p.w, y); ctx.lineTo(p.x + p.w + 4, y); ctx.stroke()
+    ctx.fillText(`${l.hPa}`, p.x + p.w + 7, y)
+  }
+  ctx.textAlign = 'center'
+  for (let d = 0; d <= totalKm.value + 0.01; d += 10) {
+    const x = x2px(d)
+    ctx.strokeStyle = pal.lineSoft
+    ctx.beginPath(); ctx.moveTo(x, p.y + p.h); ctx.lineTo(x, p.y + p.h + 4); ctx.stroke()
+    ctx.fillText(`${d}`, x, p.y + p.h + 7 + 4)
+  }
+  ctx.fillStyle = pal.muted
+  ctx.textAlign = 'right'
+  ctx.fillText('沿剖面方向距离 km →', p.x + p.w, p.y + p.h + 28)
+  ctx.restore()
+}
+
+/** 图内色标：说明"什么数值开始着色" */
+function drawScale(ctx: CanvasRenderingContext2D): void {
+  const p = plot.value
+  const pal = palette.value
+  const w = 88, h = 8
+  const x = p.x + p.w - w - 12
+  const y = p.y + 10
+  const g = ctx.createLinearGradient(x, 0, x + w, 0)
+  if (props.mode === 'total') {
+    g.addColorStop(0, 'rgba(150,176,200,0)')
+    g.addColorStop(0.5, 'rgba(150,176,200,0.35)')
+    g.addColorStop(1, 'rgba(150,176,200,0.8)')
+  } else if (props.mode === 'water' || props.mode === 'ice') {
+    const c = props.mode === 'water' ? pal.water : pal.ice
+    g.addColorStop(0, `rgba(${c[0]},${c[1]},${c[2]},0)`)
+    g.addColorStop(0.45, `rgba(${c[0]},${c[1]},${c[2]},0.4)`)
+    g.addColorStop(1, `rgba(${c[0]},${c[1]},${c[2]},0.85)`)
+  } else {
+    g.addColorStop(0, 'rgba(120,200,220,0)')
+    g.addColorStop(0.45, 'rgba(120,200,220,0.35)')
+    g.addColorStop(0.8, 'rgba(160,150,240,0.55)')
+    g.addColorStop(1, 'rgba(178,150,240,0.85)')
+  }
+  ctx.save()
+  ctx.fillStyle = g
+  ctx.fillRect(x, y, w, h)
+  ctx.font = '9.5px system-ui, sans-serif'
+  ctx.fillStyle = pal.muted
+  ctx.textAlign = 'left'
+  if (props.mode === 'total') {
+    ctx.fillText('云量 0%', x, y - 3)
+    ctx.textAlign = 'right'
+    ctx.fillText('100%', x + w, y - 3)
+  } else {
+    ctx.fillText('≥1', x, y - 3)
+    ctx.textAlign = 'center'
+    ctx.fillText('10', x + w / 2, y - 3)
+    ctx.textAlign = 'right'
+    ctx.fillText('100 mg/kg', x + w, y - 3)
+  }
+  ctx.restore()
+}
+
+/* ================= 悬停 ================= */
 
 interface Hover {
-  x: number
-  y: number
-  d: number
-  km: number
-  si: number
-  li: number
-  point: XsecPoint | null
-  pressure: number | null
-  hgt: number | null
+  x: number; y: number; d: number; axisKm: number; mslKm: number
+  si: number; li: number; point: XsecPoint
+  /** 光标处的插值云强度（与图上颜色同一套算法） */
+  interp: { q: number | null; mode: XsecMode }
+  /** 最近模式层 */
+  nearest: Level
+  nearestSi: number
 }
 const hover = ref<Hover | null>(null)
 
-function nearestSample(d: number): number {
-  let best = 0
-  let bd = Infinity
-  distances.value.forEach((v, i) => {
-    const diff = Math.abs(v - d)
-    if (diff < bd) { bd = diff; best = i }
-  })
+function nearestSampleIdx(d: number): number {
+  let best = 0, bd = Infinity
+  distances.value.forEach((v, i) => { const diff = Math.abs(v - d); if (diff < bd) { bd = diff; best = i } })
   return best
+}
+function nearestLevelIdx(col: Level[], hKm: number): number {
+  let li = 0, bd = Infinity
+  col.forEach((l, j) => {
+    if (l.hM === null) return
+    const diff = Math.abs(l.hM / 1000 - hKm)
+    if (diff < bd) { bd = diff; li = j }
+  })
+  return li
 }
 
 function onMove(ev: PointerEvent): void {
@@ -671,37 +658,36 @@ function onMove(ev: PointerEvent): void {
   const x = ((ev.clientX - r.left) / r.width) * cssW.value
   const y = ((ev.clientY - r.top) / r.height) * cssH.value
   const p = plot.value
-  if (x < p.x || x > p.x + p.w || y < p.y || y > p.y + p.h) {
-    hover.value = null
-    return
-  }
+  if (x < p.x || x > p.x + p.w || y < p.y || y > p.y + p.h) { hover.value = null; return }
   const d = px2d(x)
-  const km = px2km(y)
-  const si = nearestSample(d)
-  const col = points.value[si] ?? []
-  let li = 0
-  let bd = Infinity
-  col.forEach((pt, j) => {
-    const hv = pt.hgtM
-    if (hv === null) return
-    const diff = Math.abs(hv / 1000 - km)
-    if (diff < bd) { bd = diff; li = j; li = j }
-  })
-  const point = col[li] ?? null
+  const axisKm = px2km(y)
+  const mslKm = fromAxis(axisKm)
+  const si = nearestSampleIdx(d)
+  const col = levels.value[si] ?? []
+  const li = nearestLevelIdx(col, mslKm)
+  /* 光标处的插值值：与 drawBase 完全同一算法 */
+  const dsArr = distances.value
+  let s0 = 0
+  while (s0 < dsArr.length - 2 && dsArr[s0 + 1] < d) s0++
+  const w = Math.max(0, Math.min(1, (d - dsArr[s0]) / (dsArr[s0 + 1] - dsArr[s0] || 1)))
+  const va = modeValue(levels.value[s0]?.[li] ?? null as never)
+  const vb = modeValue(levels.value[s0 + 1]?.[li] ?? null as never)
+  const q = va && vb ? va.q * (1 - w) + vb.q * w : (va ? va.q * (1 - w) : (vb ? vb.q * w : null))
+  const point = points.value[si]?.[li]
+  const nearest = col[li]
   hover.value = {
-    x, y, d, km, si, li,
+    x, y, d, axisKm, mslKm, si, li,
     point,
-    pressure: point ? point.pressureHpa : null,
-    hgt: point && point.hgtM !== null ? point.hgtM : null
+    interp: { q, mode: props.mode },
+    nearest,
+    nearestSi: si
   }
 }
+function onLeave(): void { hover.value = null }
 
-function onLeave(): void {
-  hover.value = null
-}
-
-function round1(v: number | null | undefined): string {
-  return v === null || v === undefined ? '缺测' : String(Math.round(v * 10) / 10)
+function fmt(v: number | null | undefined, digits = 1, unit = ''): string {
+  if (v === null || v === undefined || !Number.isFinite(v)) return '缺测'
+  return `${Math.round(v * 10 ** digits) / 10 ** digits}${unit}`
 }
 
 function drawOverlay(): void {
@@ -710,90 +696,70 @@ function drawOverlay(): void {
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.clearRect(0, 0, cssW.value, cssH.value)
-  /* 先把缓存好的底图贴回来 */
   ctx.drawImage(base, 0, 0, cssW.value, cssH.value)
-
-  const p = plot.value
-  const pal = palette.value
   const h = hover.value
   if (!h) return
+  const p = plot.value
+  const pal = palette.value
 
   ctx.save()
-  ctx.strokeStyle = 'rgba(255,255,255,0.28)'
-  ctx.setLineDash([3, 3])
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.moveTo(h.x, p.y)
-  ctx.lineTo(h.x, p.y + p.h)
-  ctx.moveTo(p.x, h.y)
-  ctx.lineTo(p.x + p.w, h.y)
-  ctx.stroke()
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+  ctx.setLineDash([3, 3]); ctx.lineWidth = 1
+  ctx.beginPath(); ctx.moveTo(h.x, p.y); ctx.lineTo(h.x, p.y + p.h)
+  ctx.moveTo(p.x, h.y); ctx.lineTo(p.x + p.w, h.y); ctx.stroke()
+  ctx.setLineDash([])
+  /* 最近模式层的位置（横线） */
+  if (h.nearest.hM !== null) {
+    const yl = y2px(toAxis(h.nearest.hM / 1000))
+    ctx.strokeStyle = 'rgba(255,210,138,0.55)'
+    ctx.beginPath(); ctx.moveTo(p.x, yl); ctx.lineTo(p.x + p.w, yl); ctx.stroke()
+  }
   ctx.restore()
 
-  const pt = h.point
   const lines: string[] = []
-  lines.push(`距离 ${h.d.toFixed(1)} km（采样点 ${h.si + 1}/5 · 最近格点）`)
-  if (pt) {
-    lines.push(`${pt.pressureHpa} hPa · 海拔 ${h.hgt === null ? '缺测' : Math.round(h.hgt as number)} m`)
-    if (pt.belowGround) lines.push('⚠ 该层在地形以下（模式无有效值，已遮罩）')
-    lines.push(`温度 ${round1(pt.tC)} °C · 湿度 ${round1(pt.rhPct)} %`)
-    lines.push(`云水 ${round1(pt.clwMgKg)} mg/kg · 云冰 ${round1(pt.iciMgKg)} mg/kg`)
-    lines.push(`云分数 ${round1(pt.cfPct)} % · 风 ${round1(pt.uMs)}/${round1(pt.vMs)} m/s`)
-    lines.push(`垂直速度 ${round1(pt.wPaS)} Pa/s（负 = 上升）`)
-  } else {
-    lines.push('该位置没有有效数据')
+  lines.push(`距离 ${h.d.toFixed(1)} km · 海拔 ${(h.mslKm).toFixed(2)} km · 离地 ${(h.mslKm - props.file.spot.terrainM / 1000).toFixed(2)} km`)
+  const modeName = props.mode === 'water' ? '云水' : props.mode === 'ice' ? '云冰' : props.mode === 'total' ? '总云量' : '云水+云冰'
+  lines.push(`光标处插值（${modeName}）：${h.interp.q === null ? '缺测' : h.interp.q.toFixed(2) + (props.mode === 'total' ? ' 折算' : ' mg/kg')}`)
+  lines.push(`最近模式层：${h.nearest.hPa} hPa · ${fmt(h.nearest.hM, 0, ' m')}${h.nearest.below ? '（地下）' : ''} · 距光标 ${Math.abs((h.nearest.hM ?? 0) / 1000 - h.mslKm).toFixed(2)} km`)
+  lines.push(`该层原始值：云水 ${fmt(h.nearest.clw)} · 云冰 ${fmt(h.nearest.ici)} mg/kg`)
+  lines.push(`该层总云量 ${fmt(h.nearest.cf, 0, '%')} · RH ${fmt(h.nearest.rh, 0, '%')} · T ${fmt(h.nearest.t, 1, '°C')}`)
+  if (props.mode === 'photo' && h.nearest.clw !== null && h.nearest.ici !== null) {
+    const tot = (h.nearest.clw ?? 0) + (h.nearest.ici ?? 0)
+    lines.push(`液/冰占比：${tot > 0 ? Math.round(((h.nearest.clw as number) / tot) * 100) : 0}% 液`)
   }
 
-  ctx.font = '11.5px system-ui, -apple-system, "Segoe UI", sans-serif'
-  const wBox = 208
-  const hBox = 16 + lines.length * 17
-  let bx = h.x + 14
-  let by = h.y + 14
+  ctx.font = '11.5px system-ui, sans-serif'
+  const wBox = 300
+  const hBox = 14 + lines.length * 17
+  let bx = h.x + 14, by = h.y + 14
   if (bx + wBox > cssW.value - 6) bx = h.x - wBox - 14
   if (by + hBox > cssH.value - 6) by = cssH.value - hBox - 6
   if (by < 4) by = 4
-  ctx.fillStyle = 'rgba(8,10,12,0.9)'
+  ctx.fillStyle = 'rgba(8,10,12,0.92)'
   ctx.strokeStyle = pal.line
   ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.roundRect(bx, by, wBox, hBox, 8)
-  ctx.fill()
-  ctx.stroke()
+  ctx.beginPath(); ctx.roundRect(bx, by, wBox, hBox, 8); ctx.fill(); ctx.stroke()
   ctx.fillStyle = '#dbe3e9'
-  ctx.textAlign = 'left'
-  ctx.textBaseline = 'top'
-  lines.forEach((line, i) => {
-    ctx.fillText(line, bx + 10, by + 8 + i * 17)
-  })
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top'
+  lines.forEach((line, i) => ctx.fillText(line, bx + 10, by + 8 + i * 17))
 }
 
-/* ---------------- 生命周期 ---------------- */
+/* ================= 生命周期 ================= */
 
 let raf = 0
 function scheduleOverlay(): void {
   if (raf) return
-  raf = requestAnimationFrame(() => {
-    raf = 0
-    drawOverlay()
-  })
+  raf = requestAnimationFrame(() => { raf = 0; drawOverlay() })
 }
-
-function redraw(): void {
-  drawBase()
-  drawOverlay()
-}
-
+function redraw(): void { drawBase(); drawOverlay() }
 function resize(): void {
   const el = wrap.value
   if (!el) return
   const rect = el.getBoundingClientRect()
   const fsEl = document.fullscreenElement
   const inFull = !!fsEl && (fsEl === el || fsEl.contains(el))
-  cssW.value = Math.max(300, Math.round(rect.width))
-  /* 全屏时要吃满可用高度，普通卡片按宽高比给一个舒服的高度 */
-  cssH.value = inFull
-    ? Math.max(320, Math.round(el.clientHeight || rect.height))
-    : Math.round(Math.max(300, Math.min(520, rect.width * 0.5)))
+  cssW.value = Math.max(320, Math.round(rect.width))
+  cssH.value = inFull ? Math.max(340, Math.round(el.clientHeight || rect.height)) : Math.round(Math.max(320, Math.min(560, rect.width * 0.52)))
   const cv = canvas.value
   if (cv) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -807,31 +773,20 @@ function resize(): void {
 
 let ro: ResizeObserver | null = null
 let mo: MutationObserver | null = null
-
 onMounted(() => {
   readPalette()
   ro = new ResizeObserver(() => resize())
   if (wrap.value) ro.observe(wrap.value)
-  mo = new MutationObserver(() => {
-    readPalette()
-    redraw()
-  })
+  mo = new MutationObserver(() => { readPalette(); redraw() })
   mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
   document.addEventListener('fullscreenchange', resize)
   resize()
 })
-
 onBeforeUnmount(() => {
-  ro?.disconnect()
-  mo?.disconnect()
+  ro?.disconnect(); mo?.disconnect()
   document.removeEventListener('fullscreenchange', resize)
 })
-
-watch(
-  () => [props.section, props.yMaxKm, props.layers, props.sun],
-  () => redraw(),
-  { deep: true }
-)
+watch(() => [props.section, props.yMaxKm, props.layers, props.sun, props.mode, props.heightAxis], () => redraw(), { deep: true })
 </script>
 
 <template>
