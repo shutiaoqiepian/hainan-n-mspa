@@ -751,7 +751,8 @@ const SUNSET_TEXT = computed(() => {
               <template v-else>
                 云水/云冰是 GFS 预报变量而非观测。
               </template>
-              地形使用模式地形（非真实 DEM），地形以下的层已遮罩。
+              <template v-if="dem">地形为真实 DEM（{{ demSourceShort }}），地形以下的模式层已遮罩。</template>
+              <template v-else>DEM 缺测，地形退回 GFS 模式地形（平滑值，非真实 DEM），地形以下的层已遮罩。</template>
             </p>
             <p v-if="sunWarning" class="xsec-warn">⚠ {{ sunWarning }}</p>
             <p v-if="stale" class="xsec-warn">
