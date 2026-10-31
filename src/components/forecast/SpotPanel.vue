@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import CloudProfile from './CloudProfile.vue'
 import HourTable from './HourTable.vue'
+import { FACE_AZ } from '@/lib/forecast/sun'
 import { layerVerdict, sunPillarNote } from '@/lib/forecast/scoring'
 import { state } from '@/lib/forecast/state'
 import { dateText } from '@/lib/forecast/time'
@@ -22,6 +23,26 @@ const verdicts = computed(() =>
   Object.fromEntries(d.value.layers.map((l) => [l.level, layerVerdict(l)]))
 )
 const pillarNote = computed(() => sunPillarNote(d.value.layers, props.row.sunAz))
+
+/* 跳到大气剖面页：把这个机位的名字/坐标带过去，方位取机位朝向最近的可选方位。
+   注意 /cross 只覆盖 8 个代表机位，落到别的机位时那边会自动取最近的并说明。 */
+const CROSS_AZ = [240, 255, 265, 280, 295]
+const crossHref = computed(() => {
+  const faceAz = FACE_AZ[props.row.spot.face] ?? 270
+  let best = CROSS_AZ[0]
+  let bd = Infinity
+  for (const a of CROSS_AZ) {
+    const d = Math.abs(a - faceAz)
+    if (d < bd) { bd = d; best = a }
+  }
+  const q = new URLSearchParams({
+    name: props.row.spot.n,
+    lat: String(props.row.spot.lat),
+    lon: String(props.row.spot.lon),
+    az: String(best)
+  })
+  return `cross.html?${q.toString()}`
+})
 
 /* 云层剖面里点开某一层 */
 const openLayer = ref<number | null>(null)
@@ -111,6 +132,9 @@ onBeforeUnmount(() => { window.removeEventListener('fc:show-layers', expandAllLa
         {{ row.spot.n }} · {{ dateText(d.date, d.weekday) }} {{ kindWord }} {{ d.time }}
         · 太阳高度 {{ d.sunEl == null ? '—' : d.sunEl.toFixed(1) + '°' }} · {{ d.genusText }}
       </span>
+      <a class="fcd2-cross" :href="crossHref" title="沿这个机位的朝向切开 50 km 空气，看云在哪一层">
+        看大气剖面 →
+      </a>
     </div>
 
     <div class="fcd2-cols">

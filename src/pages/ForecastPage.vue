@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Controls from '@/components/forecast/Controls.vue'
 import DecisionHero from '@/components/forecast/DecisionHero.vue'
 import ModelTable from '@/components/forecast/ModelTable.vue'
@@ -56,6 +56,20 @@ const rank = computed(() => {
 })
 
 const showAll = ref(false)
+
+/* 窄屏默认折叠「专业判定与参考」里的三大块长内容（天象词库 60 条、云种剖面 8 层、
+   判定依据）。手机上这几块加起来要滚好几屏，但它们不是「今天要不要跑」的第一答案；
+   内容一条不删，默认收起、点开与宽屏行为完全一致。
+   用 matchMedia 判断而不是 CSS 隐藏：FoldPanel 的展开状态是组件状态，CSS 藏不住。
+   旋转屏幕跨过 560px 时同步默认值（用户手动点开的不会被动，见 FoldPanel 的 watch）。 */
+const NARROW_MQ = '(max-width: 560px)'
+/* 初始值在 setup 里同步读一次：若等到 onMounted 才读，首帧会先按宽屏把面板展开、
+   下一帧再收起（数据到位快时肉眼可见地闪一下）。 */
+const narrow = ref(window.matchMedia(NARROW_MQ).matches)
+let narrowMq: MediaQueryList | null = null
+function onNarrowChange(e: MediaQueryListEvent): void {
+  narrow.value = e.matches
+}
 
 /* 决策卡里展示的第 2–4 名（不含当前选中项） */
 const others = computed(() => {
@@ -136,7 +150,15 @@ function gotoPhenomena(): void {
 onMounted(() => {
   initStateFromUrl()
   picked.value = ''
+  /* 窄屏默认折叠：初始化时读一次，之后跟随窗口宽度变化 */
+  narrowMq = window.matchMedia(NARROW_MQ)
+  narrow.value = narrowMq.matches
+  narrowMq.addEventListener('change', onNarrowChange)
   load()
+})
+
+onBeforeUnmount(() => {
+  narrowMq?.removeEventListener('change', onNarrowChange)
 })
 </script>
 
@@ -219,7 +241,7 @@ onMounted(() => {
             <span class="sub">可同时展开多个 · 原有内容一条未删</span>
           </div>
           <div class="fc-folds">
-            <FoldPanel title="判定依据：这个分怎么来的" :count="selected ? selected.detail.interpret.pros.length + ' 加分 / ' + selected.detail.interpret.cons.length + ' 减分' : ''" open>
+            <FoldPanel title="判定依据：这个分怎么来的" :count="selected ? selected.detail.interpret.pros.length + ' 加分 / ' + selected.detail.interpret.cons.length + ' 减分' : ''" :open="!narrow">
               <div v-if="selected" class="fc-why">
                 <p>{{ selected.detail.interpret.headline }}</p>
                 <div class="fc-why-cols">
@@ -233,7 +255,7 @@ onMounted(() => {
                 <p><b>出发建议：</b>{{ selected.detail.interpret.advice }}</p>
               </div>
             </FoldPanel>
-            <FoldPanel title="云种剖面与每层判据" :count="selected ? selected.detail.layers.length + ' 层' : ''" open>
+            <FoldPanel title="云种剖面与每层判据" :count="selected ? selected.detail.layers.length + ' 层' : ''" :open="!narrow">
               <ul v-if="selected" class="fc-genus">
                 <li v-for="l in [...selected.detail.layers].reverse()" :key="l.level">
                   <b>{{ l.level }} hPa · {{ l.genus }}<template v-if="l.species && l.species !== l.genus">（{{ l.species }}）</template></b>
@@ -245,7 +267,7 @@ onMounted(() => {
             <FoldPanel title="方法说明：时间口径 / 四个机会 / 怎么算的 / 我们做不到的" count="8 节">
               <Explanations />
             </FoldPanel>
-            <FoldPanel title="摄影圈天象词库" count="60 条 · 6 组" open>
+            <FoldPanel title="摄影圈天象词库" count="60 条 · 6 组" :open="!narrow">
               <div id="fc-phenomena"><Phenomena /></div>
             </FoldPanel>
             <FoldPanel title="参考文献与方法来源" count="13 条">

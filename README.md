@@ -7,8 +7,12 @@
 **线上地址**：https://hainan-n-mspa.pages.dev
 
 技术栈：**Vue 3 + TypeScript + Vite**（多页应用），构建产物仍是纯静态文件，没有后端、没有数据库。
-七个页面各有自己的 HTML 入口，URL 与旧版完全一致（`index.html` / `about.html` / `gallery.html` /
-`forecast.html` / `members.html` / `join.html` / `404.html`）。
+每个页面都有自己的 HTML 入口，URL 与旧版完全一致（`index.html` / `about.html` / `gallery.html` /
+`forecast.html` / `members.html` / `join.html` / `404.html` / `cross.html`）。
+
+其中 `cross.html` 是 **2026-11-01 新增的大气水平—垂直剖面**：
+从 NOAA GFS 0.25° 取真实三维云水/云冰，画「沿镜头方向切开 50 km 的空气断面」。
+它是**解释层**，不参与霞光评分的计算。数据由 `.github/workflows/xsec-cache.yml` 每天 4 次构建。
 
 > 接手开发请看 **[交接文档.md](交接文档.md)**：目录职责、四条不能违反的硬规矩、
 > 回归比对工具、部署链路与踩坑记录都在里面。
@@ -50,7 +54,7 @@ Cloudflare Pages 的构建配置需要是：
 
 ```
 .
-├── index.html / about.html / gallery.html / forecast.html / members.html / join.html / 404.html
+├── index.html / about.html / gallery.html / forecast.html / members.html / join.html / 404.html / cross.html
 │                              # 七个入口：<head> 里保留全部 SEO / og 元信息，<body> 只有 #app 挂载点
 ├── src/
 │   ├── entries/               # 每个 HTML 一个入口，调用 createPage(页面组件)

@@ -193,3 +193,20 @@
   .login-card { padding: 22px 18px; }
   .login-side { padding: 20px 18px; }
 }
+
+/* 360px 手机上这两处行内链接只有 15~22px 高（实测「忘了密码？先加入社团」128×22、
+   「先看看成员和作品」103×15），手指不好戳。只扩命中区、不动排版：
+   · 保持行内盒（不改成块级，也不改成 inline-block —— 那会改变句中换行位置）；
+   · 行内元素的垂直 padding 不参与行高计算，上下撑开不推动文字；
+   · 水平 padding 会参与行宽，用等量负 margin 抵消，换行位置不变。
+   「忘了密码」是 flex 行里的子项：垂直 padding 会把它自身撑到 39.9px，
+   但负 margin 让它在这行里的外框高度仍是 21.9px，`align-items:center` 下
+   文字位置同样不动（flex 子项只能靠负 margin 抵消垂直 padding）。
+   改前/改后全页截图逐像素对比过。 */
+@media (max-width: 560px) {
+  .login-link,
+  .login-alt a {
+    padding: 9px 4px;
+    margin: -9px -4px;
+  }
+}

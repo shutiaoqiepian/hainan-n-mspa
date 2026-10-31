@@ -85,6 +85,15 @@ node tools/test-cache-format.mjs    # 缓存格式自洽 + 前端能吃下 + 机
 node tools/verify-cache-diff.mjs    # 读出来再写回去必须逐字节一致
 ```
 
+改了大气剖面（`tools/xsec/`、`src/lib/xsec/`、`src/components/xsec/`、`src/pages/CrossSectionPage.vue`）额外跑：
+
+```bash
+python tools/xsec/verify_cross.py   # 剖面缓存结构 / 数量 / 量级 / 地形遮罩 / 时间单调
+```
+
+> 剖面系统是**独立的解释层**：它不读 `data/forecast/`、不参与 `scoreOf()`、不改排名。
+> 任何把剖面云水接进评分公式的想法，按硬约束 1 处理（先立项、先 A 级证据）。
+
 动了算法还要跑 `tools/diff-scores.mjs` 对比改动前后的逐机位分数，
 **平均变化超过 ±1 分必须先解释清楚再提交**。
 
@@ -105,10 +114,12 @@ node tools/verify-cache-diff.mjs    # 读出来再写回去必须逐字节一致
 
 | 源 | 结论 |
 |---|---|
-| Open-Meteo（预报 + 空气质量） | ✅ 唯一在用的预报源 |
+| Open-Meteo（预报 + 空气质量） | ✅ 霞光评分的唯一预报源 |
+| NOAA GFS 0.25° pgrb2 | ✅ **只给大气剖面用**（CLWMR/ICMR 真三维云水云冰），不参与算分 |
 | 机场 METAR | ✅ 用作**校验真值**，不参与算分、不展示给用户 |
 | 中国 SYNOP | ❌ 死路：66 条报文里只有 2 条带云组 |
 | 卫星云顶温度 | ⏸ 暂缓，见 `satellite-ctt` |
+| ERA5 / CAMS | ⏸ 未接：前者等 CDS 账号做阈值对照，后者任务书明确「不必须」 |
 | 用户反馈表单 | ⚠ 后端未定，现在 `POST /` 返回 405 |
 
 ---

@@ -222,22 +222,31 @@
   overflow-wrap: anywhere;
 }
 
+/* 四个机会指数（通透 / 云隙光 / 光柱 / 彩虹）
+   ------------------------------------------------------------
+   它们是「参考」而不是「结论」：大多数用户只想知道值不值得跑，
+   四个指数和总分在视觉上原本接近，层级冲突（阶段一审查 §6）。
+   这里只降低视觉权重 —— 数字、档位词、注释、色条一根不删：
+     数字 22→17px、档位词 12.5→11.5px、注释 10→9.5px、
+     标题 11.5→10.5px 且降一档颜色、内边距 10/11→7/8、色条 5→4px、
+     分隔线从 --line 换成更弱的 --fill-2。
+   窄屏（≤560px）再收一档，见下方移动端块。 */
 .dh-opps {
   grid-area: opps;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
-  background: var(--fc-line);
+  background: var(--fill-2);
   border-top: 1px solid var(--fc-line);
 }
-.dh-opp { background: var(--bg); padding: 10px 14px 11px; display: flex; flex-direction: column; gap: 4px; }
+.dh-opp { background: var(--bg); padding: 7px 12px 8px; display: flex; flex-direction: column; gap: 3px; }
 .dh-opp .oh { display: flex; align-items: baseline; gap: 8px; }
-.dh-opp .oh b { font-size: 11.5px; letter-spacing: 0.1em; color: var(--muted); font-weight: 500; }
-.dh-opp .oh span { margin-left: auto; font-size: 22px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
-.dh-opp .ob { height: 5px; border-radius: 3px; background: var(--fill-2); overflow: hidden; }
-.dh-opp .ob i { display: block; height: 100%; border-radius: 3px; }
-.dh-opp .ow { font-size: 12.5px; font-weight: 600; letter-spacing: 0.04em; }
-.dh-opp .on { font-size: 10px; color: var(--muted-2); line-height: 1.3; }
+.dh-opp .oh b { font-size: 10.5px; letter-spacing: 0.1em; color: var(--muted-2); font-weight: 500; }
+.dh-opp .oh span { margin-left: auto; font-size: 17px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.dh-opp .ob { height: 4px; border-radius: 2px; background: var(--fill-2); overflow: hidden; }
+.dh-opp .ob i { display: block; height: 100%; border-radius: 2px; }
+.dh-opp .ow { font-size: 11.5px; font-weight: 500; letter-spacing: 0.04em; }
+.dh-opp .on { font-size: 9.5px; color: var(--muted-2); line-height: 1.3; }
 
 .dh-status {
   grid-area: status;
@@ -611,7 +620,10 @@ button.fcl-row.open { background: var(--fill-2); }
 .fh-note { margin: 8px 0 0; font-size: 10.5px; color: var(--muted-2); }
 
 /* ---------- 折叠面板 ---------- */
-.fc-folds { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* 两列并排，但各行按自己的内容高度排（align-items:start）。
+   默认的 stretch 会把收起的面板撑成和旁边展开面板一样高 —— 1920 下实测
+   「方法说明」收起时被拉成约 870px 高的空盒，只有边框没有内容。 */
+.fc-folds { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start; }
 .fc-fold {
   border: 1px solid var(--fc-line);
   border-radius: 10px;
@@ -674,7 +686,6 @@ button.fcl-row.open { background: var(--fill-2); }
   .dh-score { border-bottom: 1px solid var(--fc-line); }
   .dh-grid { grid-template-columns: repeat(2, 1fr); }
   .dh-opps { grid-template-columns: 1fr 1fr; }
-  .dh-opp .oh span { font-size: 19px; }
   .fr-row {
     grid-template-columns: 26px minmax(0, 1fr) 62px 60px 74px 56px;
     gap: 6px;
@@ -711,6 +722,13 @@ button.fcl-row.open { background: var(--fill-2); }
   .fc-why-cols { grid-template-columns: 1fr; }
   .fc-block-head { flex-wrap: wrap; }
   .fc-block-head .fc-btn { margin-left: 0; }
+
+  /* 四个机会指数在手机上再收一档（信息一条不删，只是更靠后） */
+  .dh-opp { padding: 6px 10px 7px; gap: 2px; }
+  .dh-opp .oh b { font-size: 10px; }
+  .dh-opp .oh span { font-size: 15px; }
+  .dh-opp .ow { font-size: 11px; }
+  .dh-opp .on { font-size: 9px; }
 
   /* 排行表：560px 宽下要摆 6 列，固定列吃掉 328px，机位名只剩 30px，
      截断后就是「海…」。这里改两行：第一行 名次/机位/分数/等级，

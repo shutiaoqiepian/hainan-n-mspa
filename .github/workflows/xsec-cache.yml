@@ -1,0 +1,74 @@
+name: 更新大气剖面缓存
+
+# 数据源：NOAA GFS 0.25° pgrb2（公有领域，无需 key）
+#
+# GFS 每天 4 次起报（UTC 00 / 06 / 12 / 18），起报后约 3.5–4.5 小时才出齐。
+# 这里按「起报 + 4 小时」排，保证抓的是最新一轮，而且赶在海南日落前：
+#
+#   UTC 04:40（北京 12:40）← 00Z 起报
+#   UTC 10:40（北京 18:40）← 06Z 起报（日落前最后一次）
+#   UTC 16:40（北京 00:40）← 12Z 起报
+#   UTC 22:40（北京 06:40）← 18Z 起报
+#
+# 失败处理：build_cross.py 内建 filter → Range 双下载路径与重试；
+# 任何一步失败都非零退出，**不会**生成半成品缓存，也就不会提交。
+# 上一轮可用缓存保持不动（站点继续用旧数据，页面会显示数据年龄）。
+on:
+  schedule:
+    - cron: "40 4,10,16,22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: xsec-cache
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 安装 GRIB2 解码依赖（eccodes）
+        run: |
+          python -m pip install --upgrade pip
+          pip install eccodes numpy
+          python -c "import eccodes, numpy; print('eccodes', eccodes.codes_get_api_version(), '| numpy', numpy.__version__)"
+
+      - name: 构建剖面缓存（GFS → data/cross/*.json）
+        run: python tools/xsec/build_cross.py
+
+      - name: 校验产物结构与物理量级
+        run: python tools/xsec/verify_cross.py
+
+      - name: 打印本轮数据体积与阈值标定摘要
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          q = json.loads(pathlib.Path('data/cross/quality.json').read_text(encoding='utf-8'))
+          print('下载方式:', [d['how'] for d in q['downloads']])
+          t = q['thresholds']
+          print('标定样本:', t['samples'], '模式有云点:', t['modelCloudPoints'])
+          for row in t['table']:
+              print(f"  qt>={row['thKgKg']:.0e}  POD={row['pod']}  FAR={row['far']}  一致率={row['agreement']}")
+          PY
+
+      - name: 有变化才提交
+        run: |
+          git config user.name "18N-MSPA Bot"
+          git config user.email "bot@users.noreply.github.com"
+          if [ -n "$(git status --porcelain data/cross/)" ]; then
+            git add data/cross/
+            git commit -m "chore: update cross-section cache"
+            git pull --rebase --autostash
+            git push
+          else
+            echo "no change"
+          fi

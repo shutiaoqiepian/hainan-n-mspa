@@ -1,0 +1,360 @@
+{
+ "generatedAt": "2026-10-31T18:49:12Z",
+ "cycle": "2026-10-31T12:00:00Z",
+ "downloads": [
+  {
+   "fh": 20,
+   "how": "filter",
+   "fields": 81
+  },
+  {
+   "fh": 21,
+   "how": "filter",
+   "fields": 81
+  },
+  {
+   "fh": 22,
+   "how": "filter",
+   "fields": 81
+  },
+  {
+   "fh": 23,
+   "how": "filter",
+   "fields": 81
+  }
+ ],
+ "physics": [
+  {
+   "spot": "hk-xihai",
+   "t": 0,
+   "lwpGm2": 23.8,
+   "iwpGm2": 48.0
+  },
+  {
+   "spot": "hk-xihai",
+   "t": 1,
+   "lwpGm2": 0.0,
+   "iwpGm2": 6.3
+  },
+  {
+   "spot": "hk-xihai",
+   "t": 2,
+   "lwpGm2": 0.0,
+   "iwpGm2": 4.8
+  },
+  {
+   "spot": "hk-xihai",
+   "t": 3,
+   "lwpGm2": 0.0,
+   "iwpGm2": 3.5
+  },
+  {
+   "spot": "cm-yingbin",
+   "t": 0,
+   "lwpGm2": 22.0,
+   "iwpGm2": 43.5
+  },
+  {
+   "spot": "cm-yingbin",
+   "t": 1,
+   "lwpGm2": 0.0,
+   "iwpGm2": 15.9
+  },
+  {
+   "spot": "cm-yingbin",
+   "t": 2,
+   "lwpGm2": 0.0,
+   "iwpGm2": 4.2
+  },
+  {
+   "spot": "cm-yingbin",
+   "t": 3,
+   "lwpGm2": 0.0,
+   "iwpGm2": 2.1
+  },
+  {
+   "spot": "lg-jiao",
+   "t": 0,
+   "lwpGm2": 10.4,
+   "iwpGm2": 8.8
+  },
+  {
+   "spot": "lg-jiao",
+   "t": 1,
+   "lwpGm2": 0.0,
+   "iwpGm2": 51.1
+  },
+  {
+   "spot": "lg-jiao",
+   "t": 2,
+   "lwpGm2": 0.0,
+   "iwpGm2": 35.1
+  },
+  {
+   "spot": "lg-jiao",
+   "t": 3,
+   "lwpGm2": 0.0,
+   "iwpGm2": 4.5
+  },
+  {
+   "spot": "cj-qizhiwan",
+   "t": 0,
+   "lwpGm2": 0.0,
+   "iwpGm2": 0.9
+  },
+  {
+   "spot": "cj-qizhiwan",
+   "t": 1,
+   "lwpGm2": 0.0,
+   "iwpGm2": 1.6
+  },
+  {
+   "spot": "cj-qizhiwan",
+   "t": 2,
+   "lwpGm2": 0.0,
+   "iwpGm2": 23.7
+  },
+  {
+   "spot": "cj-qizhiwan",
+   "t": 3,
+   "lwpGm2": 0.0,
+   "iwpGm2": 33.5
+  },
+  {
+   "spot": "df-yulinzhou",
+   "t": 0,
+   "lwpGm2": 0.0,
+   "iwpGm2": 0.2
+  },
+  {
+   "spot": "df-yulinzhou",
+   "t": 1,
+   "lwpGm2": 0.4,
+   "iwpGm2": 2.4
+  },
+  {
+   "spot": "df-yulinzhou",
+   "t": 2,
+   "lwpGm2": 0.7,
+   "iwpGm2": 20.1
+  },
+  {
+   "spot": "df-yulinzhou",
+   "t": 3,
+   "lwpGm2": 0.0,
+   "iwpGm2": 19.9
+  },
+  {
+   "spot": "ld-longmuwan",
+   "t": 0,
+   "lwpGm2": 0.0,
+   "iwpGm2": 0.0
+  },
+  {
+   "spot": "ld-longmuwan",
+   "t": 1,
+   "lwpGm2": 0.6,
+   "iwpGm2": 2.2
+  },
+  {
+   "spot": "ld-longmuwan",
+   "t": 2,
+   "lwpGm2": 0.0,
+   "iwpGm2": 2.9
+  },
+  {
+   "spot": "ld-longmuwan",
+   "t": 3,
+   "lwpGm2": 0.0,
+   "iwpGm2": 0.1
+  },
+  {
+   "spot": "sy-tianya",
+   "t": 0,
+   "lwpGm2": 0.0,
+   "iwpGm2": 3.8
+  },
+  {
+   "spot": "sy-tianya",
+   "t": 1,
+   "lwpGm2": 0.0,
+   "iwpGm2": 0.4
+  },
+  {
+   "spot": "sy-tianya",
+   "t": 2,
+   "lwpGm2": 0.0,
+   "iwpGm2": 0.0
+  },
+  {
+   "spot": "sy-tianya",
+   "t": 3,
+   "lwpGm2": 0.0,
+   "iwpGm2": 0.0
+  },
+  {
+   "spot": "wzs-main",
+   "t": 0,
+   "lwpGm2": 0.0,
+   "iwpGm2": 31.9
+  },
+  {
+   "spot": "wzs-main",
+   "t": 1,
+   "lwpGm2": 0.3,
+   "iwpGm2": 5.2
+  },
+  {
+   "spot": "wzs-main",
+   "t": 2,
+   "lwpGm2": 0.0,
+   "iwpGm2": 1.6
+  },
+  {
+   "spot": "wzs-main",
+   "t": 3,
+   "lwpGm2": 0.0,
+   "iwpGm2": 0.2
+  }
+ ],
+ "thresholds": {
+  "reference": "GFS TCDC (cloud fraction, %) ≥ 50% 视为模式认为有云",
+  "variable": "qt = CLWMR + ICMR (kg/kg)",
+  "table": [
+   {
+    "thKgKg": 1e-06,
+    "hit": 253,
+    "missed": 0,
+    "falseAlarm": 346,
+    "correctNegative": 13477,
+    "pod": 1.0,
+    "far": 0.02503,
+    "agreement": 0.9754
+   },
+   {
+    "thKgKg": 2e-06,
+    "hit": 246,
+    "missed": 7,
+    "falseAlarm": 133,
+    "correctNegative": 13690,
+    "pod": 0.9723,
+    "far": 0.00962,
+    "agreement": 0.9901
+   },
+   {
+    "thKgKg": 5e-06,
+    "hit": 199,
+    "missed": 54,
+    "falseAlarm": 74,
+    "correctNegative": 13749,
+    "pod": 0.7866,
+    "far": 0.00535,
+    "agreement": 0.9909
+   },
+   {
+    "thKgKg": 1e-05,
+    "hit": 99,
+    "missed": 154,
+    "falseAlarm": 44,
+    "correctNegative": 13779,
+    "pod": 0.3913,
+    "far": 0.00318,
+    "agreement": 0.9859
+   },
+   {
+    "thKgKg": 2e-05,
+    "hit": 60,
+    "missed": 193,
+    "falseAlarm": 24,
+    "correctNegative": 13799,
+    "pod": 0.2372,
+    "far": 0.00174,
+    "agreement": 0.9846
+   },
+   {
+    "thKgKg": 5e-05,
+    "hit": 30,
+    "missed": 223,
+    "falseAlarm": 2,
+    "correctNegative": 13821,
+    "pod": 0.1186,
+    "far": 0.00014,
+    "agreement": 0.984
+   },
+   {
+    "thKgKg": 0.0001,
+    "hit": 9,
+    "missed": 244,
+    "falseAlarm": 0,
+    "correctNegative": 13823,
+    "pod": 0.0356,
+    "far": 0.0,
+    "agreement": 0.9827
+   },
+   {
+    "thKgKg": 0.0002,
+    "hit": 0,
+    "missed": 253,
+    "falseAlarm": 0,
+    "correctNegative": 13823,
+    "pod": 0.0,
+    "far": 0.0,
+    "agreement": 0.982
+   }
+  ],
+  "phases": {
+   "cirrus": {
+    "samples": 1564,
+    "modelCloudPts": 155,
+    "qtPositivePts": 679,
+    "qtGe1e5Pts": 24,
+    "qtMeanAtCloud": 6.658451612903229e-06,
+    "tRangeC": [
+     -200,
+     -40
+    ]
+   },
+   "ice": {
+    "samples": 3128,
+    "modelCloudPts": 94,
+    "qtPositivePts": 349,
+    "qtGe1e5Pts": 100,
+    "qtMeanAtCloud": 3.576957446808512e-05,
+    "tRangeC": [
+     -40,
+     -10
+    ]
+   },
+   "mixed": {
+    "samples": 1564,
+    "modelCloudPts": 0,
+    "qtPositivePts": 0,
+    "qtGe1e5Pts": 0,
+    "qtMeanAtCloud": null,
+    "tRangeC": [
+     -10,
+     0
+    ]
+   },
+   "warm": {
+    "samples": 7820,
+    "modelCloudPts": 4,
+    "qtPositivePts": 62,
+    "qtGe1e5Pts": 19,
+    "qtMeanAtCloud": 0.00015553500000000002,
+    "tRangeC": [
+     0,
+     100
+    ]
+   }
+  },
+  "displayBandsKgKg": [
+   1e-06,
+   1e-05,
+   0.0001
+  ],
+  "samples": 14076,
+  "modelCloudPoints": 253,
+  "note": "格点总数含 TCDC≤10% 的晴空点；海南该时次云主要在高空冰云"
+ }
+}

@@ -51,3 +51,6 @@ desktop.ini
 
 # 由 tools/bundle-for-review.mjs 生成（源码副本，会随源码漂移，不入库）
 docs/给GPT-源码包-可粘贴.md
+
+# 数据管线临时下载缓存（GRIB2 原文件，绝不入库）
+.cache/
