@@ -15,10 +15,22 @@ name: 存档实况与预报快照（用于事后算误报率）
 #   node tools/check-accuracy.mjs --only-a     # 只看同址配对
 #
 # 体积：每天约 15 KB（METAR 5 KB + 快照 10 KB），一年约 5 MB。
+#
+# ★ 2026-10-28 踩过的坑（别再踩）：
+#   预报缓存每天 4 次，固定在 UTC 01:05 / 07:05 / 13:05 / 19:05。
+#   本任务原来只在 UTC 12:00 跑，那时最新缓存还是 UTC 07 那次（北京时间 15:00 生成），
+#   覆盖当天没问题；但 10-28 那天缓存停在 UTC 10-27 19:42，算出来的目标日期是 10-28，
+#   文件名也写成 10-28，实际用的却是前一天晚上的数据 —— 快照「看起来有」但是错的，
+#   那天 A 级样本直接丢了。
+#   现在两道保险：
+#     1) snapshot-forecast.mjs 校验「目标日期 == 北京时间今天」，对不上就跳过并 ::error::
+#     2) 多一次 UTC 12:25 的补跑机会
 on:
   schedule:
-    # 北京时间 20:00，日落后 1.5 小时，保证当天的日落时刻观测已经发报
+    # 北京时间 20:00（UTC 12:00），日落后 1.5 小时，当天日落观测已发报
     - cron: "0 12 * * *"
+    # 北京时间 20:25（UTC 12:25）补跑：第一次因缓存过旧而跳过时兜底
+    - cron: "25 12 * * *"
   workflow_dispatch:
 
 permissions:
@@ -78,6 +90,12 @@ jobs:
 
       - name: 一句话现状（写进 run summary，手机上也能看）
         run: node tools/accuracy-trend.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+        continue-on-error: true
+
+      # 数据缺口自检：2026-10-28 那天快照「看起来有、其实是旧数据」，
+      # 7 天后才被发现。这一步让机器每天自己发现缺口，而不是等人翻历史。
+      - name: 数据缺口自检
+        run: node tools/check-gaps.mjs | tee -a "$GITHUB_STEP_SUMMARY"
         continue-on-error: true
 
       - name: 有变化才提交

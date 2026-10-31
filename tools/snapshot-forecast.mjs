@@ -114,6 +114,7 @@ async function main() {
   const computeFor = await makeComputer()
   let ok = 0
   let skipped = 0
+  let stale = 0
   let totalRows = 0
 
   for (const prov of provs) {
@@ -130,7 +131,24 @@ async function main() {
     }
     if (!snap || !snap.rows || !snap.rows.length) { skipped++; continue }
 
-    const day = snap.targetDate || new Date().toISOString().slice(0, 10)
+    /* ★ 快照的「目标日期」必须是今天（北京时间），不能盲信缓存里的第一行日期。
+       2026-10-28 那次就是吃了这个亏：
+         预报缓存每天 4 次（UTC 01/07/13/19），本 workflow 在 UTC 12 跑。
+         UTC 10-28 12:00 时最新缓存还是 UTC 10-27 19:42 生成的那份，
+         它只覆盖 10-28~10-29 —— 算出来的目标日期是 10-28，文件名也是 10-28，
+         但用的其实是前一天晚上的数据，当天 01:55 生成的新缓存根本没赶上。
+         结果：10-28 的快照「看起来有」，实际是旧数据，还和 10-27 的重复。
+       现在强制用北京时间的今天；对不上就跳过并报错，不再静默写错文件。 */
+    const bjToday = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10)
+    const day = snap.targetDate || bjToday
+    if (day !== bjToday) {
+      console.error(
+        '[skip] ' + prov + ' → 目标日期 ' + day + ' ≠ 北京时间今天 ' + bjToday +
+        '（缓存太旧，等 forecast-cache 更新完再跑）'
+      )
+      stale++
+      continue
+    }
     const out = path.join(OUT_DIR, 'forecast-' + prov + '-' + day + '.json')
     const payload = {
       prov,
@@ -146,10 +164,15 @@ async function main() {
   }
 
   const sample = provs[0]
-  const sampleDay = new Date().toISOString().slice(0, 10)
-  console.log('写好了 ' + ok + ' 个省（跳过 ' + skipped + '），共 ' + totalRows + ' 行机位快照')
+  console.log('写好了 ' + ok + ' 个省（跳过 ' + skipped + '，缓存过旧 ' + stale + ' 个），共 ' + totalRows + ' 行机位快照')
   console.log('示例文件：data/obs/forecast-' + sample + '-<日期>.json')
-  void sampleDay
+  if (stale && !ok) {
+    console.error(
+      '::error::全部省份的缓存都早于北京时间今天，今天的快照没有生成。' +
+      '这会让当天的 A 级校验样本缺失 —— 检查 forecast-cache 定时任务是否成功。'
+    )
+    process.exit(1)
+  }
 }
 
 main().catch((e) => { console.error('失败：', e); process.exit(1) })

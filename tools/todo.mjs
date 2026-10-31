@@ -99,6 +99,47 @@ export const ITEMS = [
     files: []
   },
   {
+    id: 'a-level-coverage',
+    title: 'A 级样本「数量够了但不用上用场」：110 个样本里只有 1 个分数 ≥48',
+    state: 'open',
+    trigger: {
+      text: '每周复查一次：A 级可判定 ≥30 且其中 ≥48 分的样本 ≥20 个，才够判断误报率',
+      metric: null
+    },
+    why:
+      '2026-10-25~10-31 攒了 110 个 A 级样本，误报率 0%，但中位数 0 分、只有 1 个 ≥48 分 —— ' +
+      '绝大多数是「算法报 0、实况也确实阴天」，这种对是白给的。' +
+      '同期全国真正 ≥48 分的机位-天有 22 个，其中只有 7 个在机场观测点 45km 内，' +
+      '最好的拍霞机位（儋州/昌江/东方）离机场 70–100km，A 级根本覆盖不到。',
+    how: [
+      '不要用 110 这个数字下结论，要看「≥48 分的样本数」',
+      'node tools/check-accuracy.mjs --only-a 里筛 score>=48 的条目手动数',
+      '如果真的长期凑不够：才考虑 B 级加权，或接受「A 级只能验证偏乐观方向」',
+    ],
+    doc: '交接文档 26.7',
+    files: ['tools/check-accuracy.mjs']
+  },
+  {
+    id: 'data-gap-watch',
+    title: '数据链路每天的缺口（2026-10-28 丢了一天 A 级样本，7 天后才发现）',
+    state: 'open',
+    trigger: {
+      text: '已修：快照强制校验「目标日期==北京时间今天」+ 12:25 补跑 + 每日缺口自检',
+      metric: null
+    },
+    why:
+      '预报缓存每天 UTC 01/07/13/19 更新，本任务在 UTC 12 跑。' +
+      '10-28 那天缓存停在 UTC 10-27 19:42，算出的目标日期是 10-28、文件名也是 10-28，' +
+      '用的却是前一天晚上的数据 —— 快照「看起来有」但是错的，当天 A 级样本静默丢失。',
+    how: [
+      '已加 tools/check-gaps.mjs，每天在 Action 里跑，缺口会写进 run summary',
+      '若仍出现缺口：node tools/check-gaps.mjs 看是哪一类，再查那次 Action 日志',
+      '历史缺口不可补（快照是当天算出来的），只能保证以后不再漏',
+    ],
+    doc: '交接文档 26.7',
+    files: ['tools/check-gaps.mjs', 'tools/snapshot-forecast.mjs', '.github/workflows/metar-obs.yml']
+  },
+  {
     id: 'metar-west-hainan',
     title: '海南西岸没有可作为真值的观测（儋州/昌江/东方/乐东 离机场 70–100 km）',
     state: 'open',
