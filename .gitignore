@@ -54,3 +54,7 @@ docs/给GPT-源码包-可粘贴.md
 
 # 数据管线临时下载缓存（GRIB2 原文件，绝不入库）
 .cache/
+
+# Python 字节码缓存
+__pycache__/
+*.pyc
