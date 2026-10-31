@@ -10,7 +10,7 @@ import {
 } from './scoring'
 import { state } from './state'
 import { faceMatch, sunPosition } from './sun'
-import { nextUpdateMs, parseIso } from './time'
+import { localDateStr, nextUpdateMs, parseIso } from './time'
 import type {
   CacheData, CloudLayer, DataQuality, Detail, DetailHour, HorizonCols, Interpretation, KindKey, Measure, Phototip, RawData, RawPoint, RawSeries, Row, Spot, SpotDetail, StaticFile, SunPos
 } from './types'
@@ -113,8 +113,10 @@ export function buildUrl(host: string, params: string, models: string[] | null):
   const lats = coords.map((c) => c.lat).join(',')
   const lons = coords.map((c) => c.lon).join(',')
   const m = models && models.length ? '&models=' + models.join(',') : ''
+  /* forecast_days 必须与 tools/build-cache.mjs 的 TZ 保持一致（3 天）。
+     2 天时，跨过午夜而缓存未更新的那段窗口里「明天」会没有数据。 */
   return host + '?latitude=' + lats + '&longitude=' + lons + '&' + params + m +
-         '&timezone=Asia%2FShanghai&forecast_days=2'
+         '&timezone=Asia%2FShanghai&forecast_days=3'
 }
 
 export function modelsForRequest(): string[] {
@@ -651,7 +653,19 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
     }
     if (!dayList) return
 
-    const iso = String(dayList[Math.min(state.day, dayList.length - 1)])
+    /* ★ 目标日期必须按「日历上是不是今天」选，不能直接按下标。
+       缓存每天 4 次生成，daily 数组的下标 0 是**生成那天**，不是今天：
+         UTC 10-30 19:42 生成的缓存 → daily = [10-31, 11-01]
+         到了本地 11-01 00:20，下标 0 仍然是 10-31 —— 「今天」显示成昨天。
+       所以先把「已经过去的日期」剔掉，让下标 0 重新对到今天的窗口：
+         day=0 → 列表里第一个 ≥ 今天的那天
+         day=1 → 往后数第二天
+       这样即使缓存跨了天（只剩今天+明天两格）、或者刚好没覆盖到后天，
+       也不会把「明天」错显示成「今天」。 */
+    const wantDay = localDateStr(0)
+    const future = (dayList as unknown as string[]).filter((d) => String(d).slice(0, 10) >= wantDay)
+    const pool = future.length ? future : (dayList as unknown as string[])
+    const iso = String(pool[Math.min(state.day, pool.length - 1)])
     const times = hourTimes(w)
     const idx = hourIndex(times, iso)
     if (idx < 0) return

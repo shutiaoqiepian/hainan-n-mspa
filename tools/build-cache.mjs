@@ -37,7 +37,14 @@ const PROV_KEYS = [
 const PROVINCES = PROV_KEYS.map(([key, name]) => ({ key, name, out: `data/forecast/${key}.json` }));
 
 const MULTI = ["ecmwf_ifs025", "icon_seamless", "gfs_seamless"];
-const TZ = "timezone=Asia%2FShanghai&forecast_days=2";
+/* ★ 取 3 天而不是 2 天。
+   缓存每天只在 UTC 01:05 / 07:05 / 13:05 / 19:05 各更新一次，
+   而 forecast_days=2 只覆盖「生成当天 + 次日」。
+   本地时间一旦跨过午夜、又还没到下一次缓存更新，
+   生成那天就过期了 —— 页面上「明天」无数据可选（2026-10-31 23:31 实测复现）。
+   多取一天后，任何时刻都至少有「今天 + 明天」两格可用。
+   代价：每个省文件约 +50%，全国一次约 4.7MB → 7MB。 */
+const TZ = "timezone=Asia%2FShanghai&forecast_days=3";
 
 /* 气压层变量：云种识别与「大气截面图」的原料。
    必须与 src/lib/forecast/api.ts 的 PROFILE_VARS 保持一致。 */
@@ -167,7 +174,7 @@ function buildUrls(spots) {
       `&hourly=${PROFILE_VARS}&models=ecmwf_ifs025&${TZ}`,
     air:
       `https://air-quality-api.open-meteo.com/v1/air-quality?${LL}` +
-      `&hourly=aerosol_optical_depth,pm2_5&timezone=Asia%2FShanghai&forecast_days=2`
+      `&hourly=aerosol_optical_depth,pm2_5&timezone=Asia%2FShanghai&forecast_days=3`
   };
 }
 
@@ -212,7 +219,7 @@ function buildChunkUrls(coords) {
       `&hourly=${PROFILE_VARS}&models=ecmwf_ifs025&${TZ}`,
     air:
       `https://air-quality-api.open-meteo.com/v1/air-quality?${LL}` +
-      `&hourly=aerosol_optical_depth,pm2_5&timezone=Asia%2FShanghai&forecast_days=2`
+      `&hourly=aerosol_optical_depth,pm2_5&timezone=Asia%2FShanghai&forecast_days=3`
   };
 }
 

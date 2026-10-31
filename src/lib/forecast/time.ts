@@ -12,6 +12,22 @@ import type { KindKey } from './types'
 
 export const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 
+/**
+ * 北京时间「今天 / 明天」的 YYYY-MM-DD。
+ *
+ * ⚠ 不要用 `new Date().toISOString().slice(0,10)`：那是 UTC 日期，
+ *   北京时间 00:00–08:00 之间会退到昨天，凌晨打开页面就会显示成「昨天」。
+ * day：0 = 今天，1 = 明天。
+ */
+export function localDateStr(day = 0, nowMs = Date.now()): string {
+  /* 先把时间平移到 UTC+8，再用 UTC 方法取年月日，避免依赖运行环境的时区设置 */
+  const d = new Date(nowMs + 8 * 3600 * 1000)
+  d.setUTCDate(d.getUTCDate() + day)
+  const m = ('0' + (d.getUTCMonth() + 1)).slice(-2)
+  const dt = ('0' + d.getUTCDate()).slice(-2)
+  return d.getUTCFullYear() + '-' + m + '-' + dt
+}
+
 /** '2026-10-23T18:14' → { date, time, weekday } */
 export function parseIso(iso: string): { date: string; time: string; weekday: string } {
   const date = (iso || '').slice(0, 10)

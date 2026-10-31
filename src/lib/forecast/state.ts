@@ -53,12 +53,17 @@ export function toggleSpot(name: string): void {
 }
 
 export function nextUpcoming(): { day: number; kind: KindKey } {
-  /* 没得选的时候，默认给“最近的一个还没到的时刻”：
-     Hainan 日出大约 6:20–7:10，日落大约 18:00–19:20 */
+  /* 默认给「最近的一个还没到的时刻」：
+     Hainan 日出大约 6:20–7:10，日落大约 18:00–19:20。
+
+     ⚠ 23:30 之后最近的是「明天日出」，但那时时间戳已经翻到新的一天 ——
+       若仍按「明天」处理，页面会显示成后天。所以深夜一律退回「今天的日出」：
+       那一刻指向的仍是同一个清晨，标签也是「今天」，不会跳一天。 */
   const now = new Date()
   const h = now.getHours() + now.getMinutes() / 60
   if (h < 7.2) return { day: 0, kind: 'sunrise' }
   if (h < 18.2) return { day: 0, kind: 'sunset' }
+  if (h >= 23.5) return { day: 0, kind: 'sunrise' }
   return { day: 1, kind: 'sunrise' }
 }
 
