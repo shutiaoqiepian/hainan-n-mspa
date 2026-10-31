@@ -1,4 +1,9 @@
 <script setup lang="ts">
+/* ⚠️ 这个组件目前**没有被任何页面引用**（2026-11-01 全仓 grep 确认）。
+    真正的「预报对象 / 数据 / 来源 / 格点 / 完整度」状态条在
+    src/components/forecast/DecisionHero.vue 的 `.dh-status` 里。
+    要改时间信息请改那边；这里保留是因为删代码需要人工点头，
+    但**别在这里改** —— 改了页面上看不到任何变化。 */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { MODELS } from '@/data/forecast/models'
 import { ageText, clockText } from '@/lib/forecast/time'

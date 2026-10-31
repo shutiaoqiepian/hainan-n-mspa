@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { state } from '@/lib/forecast/state'
 import { openSpotCard } from '@/lib/forecast/card-ui'
 import { clarityLabel, pillarLabel, rainbowLabel, raysLabel } from '@/lib/forecast/scoring'
-import { dateText } from '@/lib/forecast/time'
+import { clockText, dateText } from '@/lib/forecast/time'
 import type { Row } from '@/lib/forecast/types'
 
 /** 首屏决策卡：分数 + 等级 + 结论 + 两个峰值时刻 + 六格指标 + 四个机会指数
@@ -16,6 +16,13 @@ const emit = defineEmits<{ (e: 'select', name: string): void; (e: 'gotoRank'): v
 /* 决策卡只讲一个机位，很容易被当成「今天只有一个点」。
    这里把第 2–4 名做成三颗可点的胶囊，并给一个跳到完整排行的入口。 */
 const rivals = computed(() => props.others.slice(0, 3))
+
+/* 「下次约几点更新」——让用户知道手上的数据有多新、什么时候会变。
+   时刻表在 lib/forecast/time.ts 的 CACHE_SLOTS 里，跟着 ECMWF/GFS 的发布走。
+   只在读的是预生成缓存时才显示：实时请求没有「下次」这回事。 */
+const nextText = computed(() =>
+  state.fromStatic && state.nextUpdateAt ? clockText(state.nextUpdateAt) : ''
+)
 
 /* ---------- 云层剖面速览 ----------
    「能不能烧」的答案基本就写在 8 个气压层那几行里，
@@ -259,7 +266,7 @@ function onShare(): void {
     <!-- 数据状态（替代原来 179px 的时间条） -->
     <div class="dh-status">
       <span>预报对象 <b>{{ dateText(d.date, d.weekday) }} {{ kindWord }} {{ d.time }}</b></span>
-      <span>数据 <b>{{ state.updatedAt ? new Date(state.updatedAt).toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '读取中' }}</b></span>
+      <span>数据 <b>{{ state.updatedAt ? new Date(state.updatedAt).toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '读取中' }}</b><template v-if="nextText"><em>下次约 {{ nextText }}</em></template></span>
       <span>来源 <b>{{ state.model === 'multi' ? '8 模式（ECMWF/ICON/GFS 计分）' : state.model + ' 单模式' }}</b></span>
       <span>格点 <b>{{ d.grid || '—' }}</b><em>同格点共享一份气象数据</em></span>
       <span class="q" :class="{ bad: r.quality.status !== 'ok' }">
