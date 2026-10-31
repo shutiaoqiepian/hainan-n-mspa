@@ -78,8 +78,18 @@ node tools/test-boundaries.mjs                      # 32 项边界
 node tools/test-physics.mjs                         # 23 项物理
 ```
 
+改了 `data/forecast/*.json` 的读写、机位表、或缓存格式，额外跑：
+
+```bash
+node tools/test-cache-format.mjs    # 缓存格式自洽 + 前端能吃下 + 机位对不上会报错
+node tools/verify-cache-diff.mjs    # 读出来再写回去必须逐字节一致
+```
+
 动了算法还要跑 `tools/diff-scores.mjs` 对比改动前后的逐机位分数，
 **平均变化超过 ±1 分必须先解释清楚再提交**。
+
+想重新量「缓存更新一次仓库涨多少」：`node tools/measure-cache-git.mjs`
+（结论：每天 8 次约 70~85 KB，一年 0.03 GB，不构成问题）。
 
 自测基准（改了算法必须对上，对不上就是错了）：
 

@@ -362,7 +362,11 @@ export interface ForecastState {
 export interface StaticFile {
   generatedAt?: string
   models?: string[]
+  prov?: string
   spots?: number
+  /** 机位清单（与下面几个数组逐行对齐）。
+      前端只用来做长度校验：两者对不上说明缓存是旧的，宁可当过期也别错位。 */
+  place?: Array<Pick<Spot, 'n' | 'area' | 'lat' | 'lon' | 'face'> & { obs?: string }>
   weather?: RawData
   air?: RawData | null
   prof?: RawData | null

@@ -74,18 +74,37 @@ export function ageText(fromMs: number, now = Date.now()): string {
   return Math.round(h) + ' 小时前'
 }
 
-/** 预生成缓存的更新节奏：每 6 小时一次（01/07/13/19 点 05 分，北京时间 09/15/21/03） */
-export const CACHE_HOURS = [1, 7, 13, 19]
+/** 预生成缓存的更新节奏：北京时间每天 8 次。
+ *
+ *  为什么是这几个点：不按整点拍脑袋定，而是**跟着两个气象模式的发布时间走**。
+ *    ECMWF（欧洲中心）  北京 04:00 / 10:00 / 16:00 / 22:00
+ *    GFS（美国）大更新  北京 07:30–08:30 / 19:30–20:30
+ *    GFS 小更新        北京 01:30 / 13:30（仅中东部、东北）
+ *  每个点都留 40~70 分钟余量，等模式跑完、Open-Meteo 把数据接上。
+ *  最关键的是 20:50 这次：它是「当晚日落」最后一次用上 GFS 19:30 大更新的机会。
+ *
+ *  ⚠ 改这里必须同步改 .github/workflows/forecast-cache.yml 的两条 cron。
+ *    那边是 UTC（北京 = UTC+8），这边是北京时刻 —— 两边对不上，
+ *    「下次约几点」就会给出一个错的承诺。
+ */
+export const CACHE_SLOTS: Array<[number, number]> = [
+  [5, 20], [9, 20], [11, 20], [14, 50], [17, 20], [20, 50], [22, 50], [2, 20]
+]
 
 /** 下一次缓存更新的时间（ms） */
 export function nextUpdateMs(now = Date.now()): number {
   const d = new Date(now)
-  for (const h of CACHE_HOURS) {
-    const t = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, 5, 0, 0)
-    if (t.getTime() > now) return t.getTime()
+  const cands: number[] = []
+  /* 跨两天找：凌晨 2:20 这种点，今天已经过了就得看明天 */
+  for (const dayOff of [0, 1]) {
+    for (const [h, min] of CACHE_SLOTS) {
+      cands.push(
+        new Date(d.getFullYear(), d.getMonth(), d.getDate() + dayOff, h, min, 0, 0).getTime()
+      )
+    }
   }
-  const t = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, CACHE_HOURS[0], 5, 0, 0)
-  return t.getTime()
+  const future = cands.filter((t) => t > now).sort((a, b) => a - b)
+  return future.length ? future[0] : now + 3 * 3600000
 }
 
 /** 目标时刻（按日期的日出/日落）早已过去多久 */

@@ -1,0 +1,11 @@
+# git 属性
+#
+# data/forecast/*.json 是脚本生成、一行一个机位的缓存文件：
+#   - **必须锁死 LF**：一旦被 CRLF 化，每次「没变化」的提交都会整份文件算作改动
+#   - 不做 -diff：这些文件正是为了能读 diff 才排成一行一机位的（6.6 MB 一行读不了）
+#
+# 顺带说明：曾担心「每 3 小时整份重写会让 git 历史爆炸」，实测不成立 ——
+# git 的 delta 压缩对「结构不变、数值微调」的文件非常有效。
+# 每天 8 次约 70~85 KB，一年 0.03 GB。脚本：tools/measure-cache-git.mjs
+
+data/forecast/*.json text eol=lf

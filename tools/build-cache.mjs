@@ -2,7 +2,8 @@
 /* ============================================================
    预生成预报缓存（按省份分文件）
    ------------------------------------------------------------
-   每 4 小时由 GitHub Actions 跑一次（一天 6 次）：
+   每天 8 次由 GitHub Actions 跑（跟着 ECMWF / GFS 的发布时间，见
+   .github/workflows/forecast-cache.yml）：
    把 Open-Meteo 的结果按省存成 data/forecast/<省份>.json（共 34 个省级单元）。
    访客只读自己那个省的文件，
    不现场调接口，加载快、也不消耗接口额度。
@@ -11,13 +12,15 @@
    不再各存一份靠名字对账）。
 
    用法：
-     node tools/build-cache.mjs            # 生成全部省份
-     node tools/build-cache.mjs gd         # 只生成广东（调试用）
+     node tools/build-cache.mjs                # 生成全部省份
+     node tools/build-cache.mjs hn             # 只生成海南（调试用）
+     node tools/build-cache.mjs --pick hn,gx   # 只重抓海南+广西，其余省沿用存档里的数据
    ============================================================ */
 
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { writeCacheFile, readCacheFile, adoptLegacy } from "./shared/json-io.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SPOT_FILE = resolve(ROOT, "src/data/forecast/spots.json");
@@ -38,12 +41,11 @@ const PROVINCES = PROV_KEYS.map(([key, name]) => ({ key, name, out: `data/foreca
 
 const MULTI = ["ecmwf_ifs025", "icon_seamless", "gfs_seamless"];
 /* ★ 取 3 天而不是 2 天。
-   缓存每天只在 UTC 01:05 / 07:05 / 13:05 / 19:05 各更新一次，
-   而 forecast_days=2 只覆盖「生成当天 + 次日」。
-   本地时间一旦跨过午夜、又还没到下一次缓存更新，
+   缓存每天更新 8 次（北京 05:20 起，见 workflow），但**任何一次更新都可能失败**；
+   forecast_days=2 只覆盖「生成当天 + 次日」，一旦某次没跑成或跨过午夜，
    生成那天就过期了 —— 页面上「明天」无数据可选（2026-10-31 23:31 实测复现）。
    多取一天后，任何时刻都至少有「今天 + 明天」两格可用。
-   代价：每个省文件约 +50%，全国一次约 4.7MB → 7MB。 */
+   代价：每个省文件约 +50%。 */
 const TZ = "timezone=Asia%2FShanghai&forecast_days=3";
 
 /* 气压层变量：云种识别与「大气截面图」的原料。
@@ -203,6 +205,9 @@ async function get(url, label, tries = 3) {
    分批 + 每批之间停 ~1.5 秒，把峰值压到限速以下。 */
 
 const CHUNK = 8;
+/* 默认按「第几批」错开启动时刻（0 / 1.5 / 0 / 1.5 … 秒）。
+   这样整体只比原来多等 0~1.5 秒，但峰值从「每 1.5 秒开 3 个并发」摊成 6 个。
+   workflow 已改成每 3 小时一次，若和别的任务撞车再调这里。 */
 const GAP_MS = 1500;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -373,33 +378,56 @@ async function fetchHorizon(spots) {
 }
 
 
-async function writeProvince(prov, spots, data, horizon) {
+/* ---------- 写文件 ----------
+   前端读 data/forecast/<省>.json，一行一个机位。格式见 tools/shared/json-io.mjs。 */
+
+const placeOf = (s) => ({
+  n: s.n,
+  area: s.area,
+  lat: s.lat,
+  lon: s.lon,
+  face: s.face,
+  ...(s.obs ? { obs: s.obs } : {})
+});
+
+/** 写一个省。没抓到的机位一律填 null，**绝不拿 prev 顶替**（除非是 --pick 明确要求沿用）。
+   为什么：填 null 会让前端显示「缺测」、分数下调，这是诚实的；
+   拿旧数据顶替则会让页面显示一个「看起来正常、其实过期」的分数。 */
+async function writeProvince(prov, spots, data, horizon, prev, reusePrev) {
+  const align = (key, getter) =>
+    spots.map((s, i) => {
+      const fresh = getter(s);
+      if (fresh !== undefined) return fresh;
+      return reusePrev ? prev?.[key]?.[i] ?? null : null;
+    });
+
   const payload = {
     generatedAt: new Date().toISOString(),
     models: MULTI,
     prov: prov.key,
     spots: spots.length,
-    weather: spots.map((s) => data.get(s.n)?.weather),
-    prof: spots.map((s) => data.get(s.n)?.prof),
-    air: spots.map((s) => data.get(s.n)?.air),
+    /* 机位清单：前端用它校验「数据条数 = 机位数」，对不上就当缓存过期。
+       这也是硬约束 3（加机位必须重建缓存）的机器化检查。 */
+    place: spots.map(placeOf),
+    weather: align("weather", (s) => data.get(s.n)?.weather),
+    prof: align("prof", (s) => data.get(s.n)?.prof),
+    air: align("air", (s) => data.get(s.n)?.air),
     /* 每个机位朝西/朝东各一根「地平线柱」（只有三层云量） */
-    horizon: spots.map((s) => {
+    horizon: spots.map((s, i) => {
       const h = horizon.get(s.n);
-      if (!h) return null;
-      /* 只要三层云量，取整到百分比即可（省一半字节） */
-      return { west: roundDeep(h.west), east: roundDeep(h.east) };
+      if (h) return { west: roundDeep(h.west), east: roundDeep(h.east) };
+      return reusePrev ? prev?.horizon?.[i] ?? null : null;
     })
   };
 
-  const out = resolve(ROOT, prov.out);
-  await mkdir(dirname(out), { recursive: true });
-  const text = JSON.stringify(payload);
-  await writeFile(out, text, "utf8");
-
-  const kb = Math.round(Buffer.byteLength(text) / 1024);
-  console.log(`  ${prov.name} → ${prov.out}（${spots.length} 个机位，${kb} KB）`);
-
+  const r = await writeCacheFile(prov.key, payload);
+  console.log(`  ${prov.name} → ${prov.out}（${r.spots} 个机位，${r.kb} KB）`);
+  return r;
 }
+
+/* --pick hn,gz：只重抓这几个省，其余省**保持原有文件不动**。
+   用途：机位表改动后（加机位、改坐标），不必把全国 224 个机位再请求一遍。
+   没被 pick 的省连 generatedAt 都不变 —— 页面顶部显示的时间也就还是真实的。 */
 
 const main = async () => {
   const all = JSON.parse(await readFile(SPOT_FILE, "utf8"));
@@ -409,20 +437,65 @@ const main = async () => {
   const dup = names.filter((n, i) => names.indexOf(n) !== i);
   if (dup.length) throw new Error("机位重名：" + dup.join("、"));
 
-  const only = process.argv[2];
-  const target = only ? all.filter((s) => s.prov === only) : all;
-  if (!target.length) throw new Error("没有匹配的省份/机位：" + only);
+  const argv = process.argv.slice(2);
+  const pickIdx = argv.indexOf("--pick");
+  const pick = pickIdx >= 0 ? (argv[pickIdx + 1] || "").split(",").filter(Boolean) : null;
+  const only = pick ? null : argv.find((a) => !a.startsWith("--"));
 
-  const data = await fetchAll(target);
-  const horizon = await fetchHorizon(target);
+  const target = only ? all.filter((s) => s.prov === only) : all;
+  if (!target.length) throw new Error("没有匹配的省份/机位：" + (only || String(pick)));
+
+  /* 要重抓的机位集合 */
+  const toFetch = pick ? all.filter((s) => pick.includes(s.prov)) : target;
+  if (pick) {
+    const provs = [...new Set(toFetch.map((s) => s.prov))];
+    console.log(`--pick：只重抓 [${provs.join(", ")}] 的 ${toFetch.length} 个机位，其余省的文件不动`);
+  }
+
+  const data = new Map();
+  const horizon = new Map();
+  if (toFetch.length) {
+    const d = await fetchAll(toFetch);
+    const h = await fetchHorizon(toFetch);
+    for (const [k, v] of d) data.set(k, v);
+    for (const [k, v] of h) horizon.set(k, v);
+  }
 
   console.log("\n按省写文件：");
+  let wrote = 0;
   for (const prov of PROVINCES) {
-    const spots = target.filter((s) => s.prov === prov.key);
+    const spots = all.filter((s) => s.prov === prov.key);
     if (!spots.length) continue;
-    await writeProvince(prov, spots, data, horizon);
+
+    /* pick 模式：这个省一个机位都没被 pick 到 → 文件原样不动 */
+    if (pick && !spots.some((s) => pick.includes(s.prov))) continue;
+
+    const prev = await readCacheFile(prov.key);
+    /* 被 pick 的省里，也可能有少数机位没抓到（接口抽风）—— 这时沿用本省旧值 */
+    await writeProvince(prov, spots, data, horizon, prev, !!pick);
+    wrote++;
   }
-  console.log(`\n完成 · ${new Date().toISOString()}`);
+
+  /* 兜底：如果某个省的文件还是老格式（没有 place），趁这次补上。
+     条数对得上就补，对不上就明确报出来，让人知道那个省必须重抓。 */
+  let stale = 0;
+  for (const prov of PROVINCES) {
+    const spots = all.filter((s) => s.prov === prov.key);
+    if (!spots.length) continue;
+    const cur = await readCacheFile(prov.key);
+    if (cur && Array.isArray(cur.place) && cur.place.length === cur.weather?.length) continue;
+    const fixed = adoptLegacy(cur, spots);
+    if (fixed) {
+      await writeCacheFile(prov.key, fixed);
+      stale++;
+    } else if (cur) {
+      console.warn(`  ⚠ ${prov.key} 的缓存条数和机位表对不上，且本轮没重抓 —— 这个省下次必须整省重抓`);
+      stale++;
+    }
+  }
+  if (stale) console.log(`  另有 ${stale} 个省补上/报告了机位清单`);
+
+  console.log(`\n完成 · 写了 ${wrote} 个省 · ${new Date().toISOString()}`);
 };
 
 main().catch((e) => {

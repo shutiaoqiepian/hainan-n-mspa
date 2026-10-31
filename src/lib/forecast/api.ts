@@ -342,7 +342,7 @@ export function load(force = false): void {
   loadLive(token)
 }
 
-/* 优先读预生成的静态缓存（一天更新 6 次），读不到再现场请求 */
+/* 优先读预生成的静态缓存（每 3 小时一次），读不到再现场请求 */
 function loadStatic(token: number): void {
   state.loading = true
   state.error = null
@@ -361,6 +361,14 @@ function loadStatic(token: number): void {
       if (!j || !j.weather || !j.weather.length) throw new Error('缓存为空')
       const at = j.generatedAt ? Date.parse(j.generatedAt) : NaN
       if (!isNaN(at) && Date.now() - at > 14 * 3600 * 1000) throw new Error('缓存过期')
+      /* ★ 机位清单必须和下面几个数组逐行对齐。
+         2026-11-01 之前缓存里没有 place，一旦机位表加了新机位而缓存还没重建，
+         weather[] 就会整体错位一格 —— 而且**不会报错**，只是悄悄落到 weather[0]。
+         现在长度对不上就当作缓存过期，回退到实时请求。 */
+      const placeN = Array.isArray(j.place) ? j.place.length : -1
+      if (placeN >= 0 && placeN !== j.weather.length) {
+        throw new Error('缓存与机位表不同步（' + j.weather.length + ' 条数据 / ' + placeN + ' 个机位）')
+      }
 
       noteGrid(j.weather)
       CACHE = {

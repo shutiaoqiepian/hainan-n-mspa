@@ -11,6 +11,10 @@
  * 用法：
  *   node tools/snapshot-forecast.mjs            # 所有有缓存的省份
  *   node tools/snapshot-forecast.mjs hn gd      # 只做这几个
+ *   node tools/snapshot-forecast.mjs --date 2026-10-31   # 补跑某一天（缓存目录需指向那天的缓存）
+ *
+ * 补跑某天时的规矩：缓存必须是**那天日落之前**生成的，否则等于用事后数据冒充事前预报。
+ * 脚本会检查 generatedAt，晚了就拒绝。
  *
  * 依赖 esbuild 打包 src/ 里的评分代码（算法不在这里抄第二遍）。
  */
@@ -98,8 +102,13 @@ export async function computeFor(prov: string, fixture: string) {
 }
 
 async function main() {
-  const args = process.argv.slice(2).filter((a) => !a.startsWith('-'))
-  let provs = args
+  const argv = process.argv.slice(2)
+  const dateIdx = argv.indexOf('--date')
+  const backfillDate = dateIdx >= 0 ? argv[dateIdx + 1] : null
+  if (backfillDate && !/^\d{4}-\d{2}-\d{2}$/.test(backfillDate)) {
+    throw new Error('--date 格式应为 YYYY-MM-DD，收到：' + backfillDate)
+  }
+  const provs = argv.filter((a, i) => !a.startsWith('-') && !(dateIdx >= 0 && i === dateIdx + 1))
 
   if (!provs.length) {
     if (!existsSync(SRC_DIR)) throw new Error('找不到 data/forecast/')
@@ -115,7 +124,11 @@ async function main() {
   let ok = 0
   let skipped = 0
   let stale = 0
+  let late = 0
   let totalRows = 0
+
+  const today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10)
+  const wantDay = backfillDate || today
 
   for (const prov of provs) {
     const file = path.join(SRC_DIR, prov + '.json')
@@ -131,19 +144,32 @@ async function main() {
     }
     if (!snap || !snap.rows || !snap.rows.length) { skipped++; continue }
 
-    /* ★ 快照的「目标日期」必须是今天（北京时间），不能盲信缓存里的第一行日期。
-       2026-10-28 那次就是吃了这个亏：
-         预报缓存每天 4 次（UTC 01/07/13/19），本 workflow 在 UTC 12 跑。
-         UTC 10-28 12:00 时最新缓存还是 UTC 10-27 19:42 生成的那份，
-         它只覆盖 10-28~10-29 —— 算出来的目标日期是 10-28，文件名也是 10-28，
-         但用的其实是前一天晚上的数据，当天 01:55 生成的新缓存根本没赶上。
-         结果：10-28 的快照「看起来有」，实际是旧数据，还和 10-27 的重复。
-       现在强制用北京时间的今天；对不上就跳过并报错，不再静默写错文件。 */
-    const bjToday = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10)
-    const day = snap.targetDate || bjToday
-    if (day !== bjToday) {
+    const day = snap.targetDate || wantDay
+    if (backfillDate) {
+      /* 补跑：缓存必须真的是「那天」的预报，且必须在日落之前生成 */
+      if (day !== backfillDate) {
+        console.error('[skip] ' + prov + ' → 缓存的目标日期是 ' + day + '，不是要补的 ' + backfillDate)
+        stale++
+        continue
+      }
+      const gen = Date.parse(JSON.parse(await readFile(file, 'utf8')).generatedAt || '')
+      const sunset = Date.parse(backfillDate + 'T' + (snap.targetTime || '18:00') + ':00+08:00')
+      if (!isNaN(gen) && !isNaN(sunset) && gen > sunset) {
+        console.error(
+          '[skip] ' + prov + ' → 缓存生成于 ' + new Date(gen).toISOString().slice(11, 16) + 'Z，' +
+          '晚于当地日落（' + snap.targetTime + '）——那是事后数据，不能当预报用'
+        )
+        late++
+        continue
+      }
+    } else if (day !== today) {
+      /* 正常模式：快照的「目标日期」必须是今天（北京时间）。
+         2026-10-28 那次就是吃了这个亏：缓存只覆盖当天+次日，
+         UTC 12:00 跑的时候最新缓存是前一晚 19:42 生成的，
+         算出来的目标日期是旧的，文件名却是当天 —— 静默写出脏数据。
+         现在强制对齐，对不上就跳过并报错。 */
       console.error(
-        '[skip] ' + prov + ' → 目标日期 ' + day + ' ≠ 北京时间今天 ' + bjToday +
+        '[skip] ' + prov + ' → 目标日期 ' + day + ' ≠ 北京时间今天 ' + today +
         '（缓存太旧，等 forecast-cache 更新完再跑）'
       )
       stale++
@@ -164,15 +190,19 @@ async function main() {
   }
 
   const sample = provs[0]
-  console.log('写好了 ' + ok + ' 个省（跳过 ' + skipped + '，缓存过旧 ' + stale + ' 个），共 ' + totalRows + ' 行机位快照')
-  console.log('示例文件：data/obs/forecast-' + sample + '-<日期>.json')
-  if (stale && !ok) {
+  console.log(
+    '写好了 ' + ok + ' 个省（跳过 ' + skipped + '，缓存过旧 ' + stale + ' 个' +
+    (late ? '，生成晚于日落 ' + late + ' 个' : '') + '），共 ' + totalRows + ' 行机位快照'
+  )
+  console.log('示例文件：data/obs/forecast-' + sample + '-' + wantDay + '.json')
+  if (!backfillDate && stale && !ok) {
     console.error(
       '::error::全部省份的缓存都早于北京时间今天，今天的快照没有生成。' +
       '这会让当天的 A 级校验样本缺失 —— 检查 forecast-cache 定时任务是否成功。'
     )
     process.exit(1)
   }
+
 }
 
 main().catch((e) => { console.error('失败：', e); process.exit(1) })

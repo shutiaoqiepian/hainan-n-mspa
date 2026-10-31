@@ -1,14 +1,48 @@
 name: 更新霞光预报缓存
 
-# 一天 4 次（每 6 小时）：全国 34 个省的数据一次约 3 MB，
-# 6 次/天会让仓库历史涨得太快；页面顶部会显示数据更新时间，6 小时时效对霞光预报够用。
+# 每天 8 次，**跟着两个气象模式的发布时间走**，不是按整点拍脑袋定的：
+#
+#   ECMWF（欧洲中心）  北京 04:00 / 10:00 / 16:00 / 22:00
+#   GFS（美国）大更新  北京 07:30–08:30 / 19:30–20:30
+#   GFS 小更新        北京 01:30 / 13:30（仅中东部、东北）
+#
+# 每个时间点都留 40~70 分钟余量，等模式跑完、Open-Meteo 把数据接上：
+#
+#   北京 05:20 ← ECMWF 04:00        UTC 21:20  ┐
+#   北京 09:20 ← GFS 07:30–08:30    UTC 01:20  │
+#   北京 11:20 ← ECMWF 10:00        UTC 03:20  ├ 分钟 = 20
+#   北京 17:20 ← ECMWF 16:00        UTC 09:20  │
+#   北京 02:20 ← GFS 01:30          UTC 18:20  ┘
+#
+#   北京 14:50 ← GFS 13:30          UTC 06:50  ┐
+#   北京 20:50 ← GFS 19:30–20:30    UTC 12:50  ├ 分钟 = 50  ★ 当晚日落最关键
+#   北京 22:50 ← ECMWF 22:00        UTC 14:50  ┘
+#
+# （cron 的分钟字段只能填一个值，所以拆成两条表达式。）
+#
+# ★ 20:50 那次为什么最重要：GFS 每天只有 07:30 和 19:30 两次大更新，
+#   19:30 那次是「当晚日落」最后一次能用上的新数据。
+#   以前 21:05 才抓，等于等大多数人拍完了才更新。
+#
+# 仓库体积：实测每天约 70~85 KB（git 的 delta 压缩对这类「结构不变、数值微调」
+# 的文件非常有效），一年约 0.03 GB —— 8 次/天完全负担得起。
+# 实测脚本：node tools/measure-cache-git.mjs
+#
+# ⚠ 改这里的 cron 必须同步改 src/lib/forecast/time.ts 的 CACHE_SLOTS，
+#   否则页面上「下次约几点」就是假话。
 on:
   schedule:
-    - cron: "5 1,7,13,19 * * *"
+    - cron: "20 21,1,3,9,18 * * *"
+    - cron: "50 6,12,14 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  # 上一轮还没跑完就别开第二轮（跑一次约 2 分钟，正常不会撞）
+  group: forecast-cache
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -23,6 +57,9 @@ jobs:
       - name: 抓取并写入 data/forecast/*.json
         run: node tools/build-cache.mjs
 
+      - name: 检查缓存格式与机位对齐
+        run: node tools/verify-cache-diff.mjs
+
       - name: 有变化才提交
         run: |
           git config user.name "18N-MSPA Bot"
@@ -30,6 +67,7 @@ jobs:
           if [ -n "$(git status --porcelain data/)" ]; then
             git add data/
             git commit -m "chore: update forecast cache"
+            git pull --rebase --autostash
             git push
           else
             echo "no change"

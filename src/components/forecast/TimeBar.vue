@@ -77,7 +77,7 @@ const headWord = computed(() => kindWord.value + (state.kind === 'sunrise' ? '�
         <span class="fct-label">数据更新</span>
         <b class="fct-value">{{ updated }}</b>
         <span class="fct-note">
-          {{ age }}<template v-if="next"> · 下次约 {{ next }}（每 6 小时一次）</template>
+          {{ age }}<template v-if="next"> · 下次约 {{ next }}（每 3 小时一次）</template>
         </span>
       </div>
       <div class="fct-cell">
@@ -93,7 +93,7 @@ const headWord = computed(() => kindWord.value + (state.kind === 'sunrise' ? '�
       <summary>这三个时间分别是什么意思？</summary>
       <ul>
         <li><b>预报对象</b>：这一页所有分数，说的都是「{{ headWord }}那一刻」（{{ target }}）的情况，不是现在。</li>
-        <li><b>数据更新</b>：气象模式什么时候算出来的这份预报。越新越准；超过 12 小时就参考价值下降。</li>
+        <li><b>数据更新</b>：气象模式什么时候算出来的这份预报。越新越准；超过 12 小时就参考价值下降。我们每天按模式的发布时刻自动重算 8 次（北京 05:20 / 09:20 / 11:20 / 14:50 / 17:20 / 20:50 / 22:50 / 02:20），所以傍晚那次日落一定用的是当天最新的模式数据。</li>
         <li><b>数据来源</b>：模式名与格点大小。格点是把地球切成方格来算天气的，同一格里的机位只能共享一份数据——所以挨得近的机位数值相同是正常的，不代表算错了。</li>
         <li><b>为什么各机位数值不同</b>：每个机位所在格子不同，云量也就不同；分数还额外乘了「太阳方位与机位朝向是否对得上」的系数。</li>
       </ul>
