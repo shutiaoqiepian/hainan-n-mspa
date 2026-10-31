@@ -16,6 +16,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   distanceAxis, expandPoints, fieldIndex, heightProfile, liquidShare, regularGrid, terrainProfile
 } from '@/lib/xsec/model'
+import { boundaryHeightKm, litAt, transmittance } from '@/lib/xsec/light'
 import type { SunInPlane } from '@/lib/xsec/sun'
 import type { XsecPoint, XsecSection, XsecSpotFile } from '@/lib/xsec/types'
 
@@ -32,8 +33,14 @@ const props = withDefaults(
     mode: XsecMode
     /** 纵轴：msl 海拔 / agl 离地（以机位地面为基准） */
     heightAxis: 'msl' | 'agl'
+    /** 真实 DEM 地形序列（沿当前剖面方位，等间距）；null = 缺测，退回模式地形 */
+    dem?: Array<number | null> | null
+    /** DEM 序列的步长（km） */
+    demStepKm?: number
+    /** 该时次 AOD（550 nm 柱总量）；null = 缺测 */
+    aod?: number | null
   }>(),
-  { yMaxKm: 16, mode: 'photo', heightAxis: 'msl' }
+  { yMaxKm: 16, mode: 'photo', heightAxis: 'msl', dem: null, demStepKm: 1.25, aod: null }
 )
 
 /* ================= 数据 ================= */
@@ -41,9 +48,21 @@ const props = withDefaults(
 const points = computed<XsecPoint[][]>(() => expandPoints(props.file, props.section))
 const distances = computed(() => distanceAxis(props.section))
 const terrain = computed(() => terrainProfile(props.section))
+
+/** DEM 地形（真实起伏）；缺测点跳过，不插值、不补 0 */
+const demPoints = computed<Array<[number, number]>>(() => {
+  const dem = props.dem
+  if (!dem || dem.length < 2) return []
+  const pts: Array<[number, number]> = []
+  dem.forEach((e, i) => { if (typeof e === 'number' && Number.isFinite(e)) pts.push([i * props.demStepKm, e]) })
+  return pts.length >= 2 ? pts : []
+})
+const hasDem = computed(() => demPoints.value.length >= 2)
+/** 机位地面海拔：DEM 优先（模式地形是平滑值） */
+const groundM = computed(() => (hasDem.value ? demPoints.value[0][1] : (terrain.value[0] ?? 0)))
 const totalKm = computed(() => distances.value[distances.value.length - 1] || 50)
 const fieldIdx = computed(() => fieldIndex(props.file.levelFields))
-const obsTerrainM = computed(() => terrain.value[0] ?? 0)
+const obsTerrainM = computed(() => groundM.value)
 
 /** 层数组：每层把需要的字段取出来（null 保留 null，不当 0） */
 interface Level {
@@ -239,6 +258,68 @@ function contour(grid: Grid, level: number, nx: number, ny: number): Array<[numb
 
 /* ================= 主绘制 ================= */
 
+/** 点 (剖面距离 d, 海拔 h) 此刻是否处于几何直射光中（太阳方位按 cosΔ 投影到剖面） */
+function litNowAt(dKm: number, hM: number): boolean {
+  const sun = props.sun
+  if (!Number.isFinite(sun.el)) return false
+  const dSun = dKm * Math.cos((sun.deviationDeg * Math.PI) / 180)
+  return litAt(hM, dSun, sun.el)
+}
+
+/**
+ * 夕阳照明边界（地球阴影上缘）。
+ * 边界高度 = light.boundaryHeightKm(l, 太阳高度角, 太阳方位−剖面方位)；
+ * 边界以下 = 几何上处于地球阴影中。这是**球面几何**结果，不含云遮挡与辐射传输。
+ */
+function drawShadowRegion(ctx: CanvasRenderingContext2D): void {
+  const sun = props.sun
+  if (!Number.isFinite(sun.el) || !Number.isFinite(sun.deviationDeg)) return
+  const p = plot.value
+  const topKm = props.yMaxKm
+  const CURVE_MAX = topKm * 1.6
+  const pts: Array<[number, number]> = []
+  const steps = 200
+  for (let k = 0; k <= steps; k++) {
+    const d = (k / steps) * totalKm.value
+    const hb = boundaryHeightKm(d, sun.el, sun.deviationDeg)
+    if (hb > 0 && hb <= CURVE_MAX) pts.push([d, hb])
+  }
+  if (pts.length < 2) return
+  ctx.save()
+  ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip()
+  /* 阴影区填充：底部 → 边界曲线 */
+  ctx.beginPath()
+  ctx.moveTo(x2px(pts[0][0]), p.y + p.h)
+  for (const [d, hb] of pts) ctx.lineTo(x2px(d), y2px(toAxis(hb)))
+  ctx.lineTo(x2px(pts[pts.length - 1][0]), p.y + p.h)
+  ctx.closePath()
+  ctx.fillStyle = 'rgba(10,16,28,0.34)'
+  ctx.fill()
+  /* 边界虚线 */
+  ctx.beginPath()
+  pts.forEach(([d, hb], i) => {
+    const xx = x2px(d)
+    const yy = y2px(toAxis(hb))
+    if (i === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy)
+  })
+  ctx.strokeStyle = 'rgba(255,178,112,0.9)'
+  ctx.lineWidth = 1.4
+  ctx.setLineDash([5, 3])
+  ctx.stroke()
+  ctx.setLineDash([])
+  /* 标签：放在曲线中段上方 */
+  const mid = pts[Math.floor(pts.length * 0.55)]
+  const lx = Math.min(p.x + p.w - 8, x2px(mid[0]) + 8)
+  const ly = Math.max(p.y + 12, y2px(toAxis(mid[1])) - 6)
+  ctx.font = '10.5px system-ui, sans-serif'
+  ctx.fillStyle = 'rgba(255,196,140,0.95)'
+  ctx.textAlign = 'left'
+  ctx.fillText('夕阳照明边界', lx, ly)
+  ctx.fillStyle = 'rgba(255,196,140,0.6)'
+  ctx.fillText('（边界以下在地球阴影里）', lx, ly + 12)
+  ctx.restore()
+}
+
 function drawBase(): void {
   const ctx = base.getContext('2d')
   if (!ctx) return
@@ -258,6 +339,9 @@ function drawBase(): void {
   sky.addColorStop(1, pal.skyBottom)
   ctx.fillStyle = sky
   ctx.fillRect(p.x, p.y, p.w, p.h)
+
+  /* 地球阴影 / 夕阳照明边界：必须在云之前画（云落在阴影里也仍然可见） */
+  drawShadowRegion(ctx)
 
   /* ---- 云场：按模式层真实厚度逐列绘制（横向线性插值，纵向不平滑）---- */
   ctx.save()
@@ -296,6 +380,11 @@ function drawBase(): void {
       if (y1 - y0 < 0.4) continue
       ctx.fillStyle = `rgba(${r},${g},${bl},${alpha.toFixed(3)})`
       ctx.fillRect(p.x + px, y0, 1, y1 - y0)
+      /* 几何受光：只加一层很淡的暖色，不改变云的变量颜色（图例里说明） */
+      if (litNowAt(d, (edge.loM + edge.hiM) / 2)) {
+        ctx.fillStyle = 'rgba(255,196,128,0.085)'
+        ctx.fillRect(p.x + px, y0, 1, y1 - y0)
+      }
     }
   }
   ctx.restore()
@@ -444,37 +533,39 @@ function drawW(ctx: CanvasRenderingContext2D): void {
 function drawTerrain(ctx: CanvasRenderingContext2D): void {
   const p = plot.value
   const pal = palette.value
+  /* 优先用真实 DEM（沿当前方位 41 点）；没有就退回 GFS 模式地形的 5 个采样点并注明 */
+  const pts: Array<[number, number]> = hasDem.value
+    ? demPoints.value.map(([d, m]) => [x2px(d), y2px(toAxis(m / 1000))] as [number, number])
+    : distances.value.map((d, i) => [x2px(d), y2px(toAxis((terrain.value[i] ?? 0) / 1000))] as [number, number])
+  if (pts.length < 2) return
+  const baseY = y2px(toAxis(0))
   ctx.save(); ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip()
   ctx.beginPath()
-  ctx.moveTo(x2px(0), y2px(toAxis(terrain.value[0] / 1000)))
-  for (let i = 1; i < distances.value.length; i++) {
-    ctx.lineTo(x2px(distances.value[i]), y2px(toAxis(terrain.value[i] / 1000)))
-  }
-  ctx.lineTo(x2px(totalKm.value), y2px(toAxis(0)))
-  ctx.lineTo(x2px(0), y2px(toAxis(0)))
+  ctx.moveTo(pts[0][0], pts[0][1])
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1])
+  ctx.lineTo(pts[pts.length - 1][0], baseY)
+  ctx.lineTo(pts[0][0], baseY)
   ctx.closePath()
   ctx.fillStyle = pal.terrain
   ctx.fill()
   ctx.strokeStyle = pal.terrainEdge
   ctx.lineWidth = 1.5
   ctx.beginPath()
-  ctx.moveTo(x2px(0), y2px(toAxis(terrain.value[0] / 1000)))
-  for (let i = 1; i < distances.value.length; i++) {
-    ctx.lineTo(x2px(distances.value[i]), y2px(toAxis(terrain.value[i] / 1000)))
-  }
+  ctx.moveTo(pts[0][0], pts[0][1])
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1])
   ctx.stroke()
   ctx.restore()
 
   /* 观察者 */
   const ox = x2px(0)
-  const oy = y2px(toAxis(terrain.value[0] / 1000))
+  const oy = y2px(toAxis(groundM.value / 1000))
   ctx.save()
   ctx.fillStyle = palette.value.text
   ctx.beginPath(); ctx.moveTo(ox + 3, oy); ctx.lineTo(ox + 10, oy - 5); ctx.lineTo(ox + 10, oy + 5); ctx.closePath(); ctx.fill()
   ctx.font = '10px system-ui, sans-serif'
   ctx.fillStyle = palette.value.muted
   ctx.textAlign = 'left'
-  ctx.fillText(`机位 · 地面 ${terrain.value[0]} m`, ox + 13, oy + 3)
+  ctx.fillText(`机位 · ${hasDem.value ? 'DEM 地面' : '模式地形'} ${Math.round(groundM.value)} m`, ox + 13, oy + 3)
   ctx.restore()
 }
 
@@ -489,7 +580,9 @@ function drawSun(ctx: CanvasRenderingContext2D): void {
   const obsAxis = toAxis(terrain.value[0] / 1000)
   const tTop = (axisTopKm - obsAxis) / ty
   const topX = tx * tTop
-  const alpha = sun.inFront ? 0.95 : 0.3
+  const T = transmittance(props.aod, props.sun.el)
+  const dim = T === null ? 1 : Math.min(1, 0.4 + 0.6 * T)
+  const alpha = (sun.inFront ? 0.95 : 0.3) * dim
   ctx.save(); ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip()
   ctx.setLineDash([5, 4]); ctx.lineWidth = 1.2
   for (const off of [0, 1]) {
@@ -516,9 +609,10 @@ function drawSun(ctx: CanvasRenderingContext2D): void {
   ctx.fillStyle = pal.muted
   ctx.textAlign = 'center'
   const noteX = Math.max(p.x + 140, Math.min(p.x + p.w - 140, sx))
+  const trText = T === null ? 'AOD 缺测' : `直射透过率 ${Math.round(T * 100)}%`
   const note = sun.inFront
-    ? `${props.sunDown ? '太阳已落下' : '太阳'} 方位 ${sun.az.toFixed(0)}° · 高度角 ${sun.el.toFixed(1)}° · 剖面内投影 ${sun.inPlaneEl.toFixed(0)}°`
-    : `太阳在剖面背后（偏 ${Math.abs(sun.deviationDeg).toFixed(0)}°）— 光线仅为投影`
+    ? `${props.sunDown ? '太阳已落下' : '太阳'} 方位 ${sun.az.toFixed(0)}° · 高度角 ${sun.el.toFixed(1)}° · 剖面内投影 ${sun.inPlaneEl.toFixed(0)}° · ${trText}`
+    : `太阳在剖面背后（偏 ${Math.abs(sun.deviationDeg).toFixed(0)}°）— 光线仅为投影 · ${trText}`
   ctx.fillText(note, noteX, sy + 34)
   ctx.restore()
 }
@@ -723,6 +817,9 @@ function drawOverlay(): void {
   lines.push(`最近模式层：${h.nearest.hPa} hPa · ${fmt(h.nearest.hM, 0, ' m')}${h.nearest.below ? '（地下）' : ''} · 距光标 ${Math.abs((h.nearest.hM ?? 0) / 1000 - h.mslKm).toFixed(2)} km`)
   lines.push(`该层原始值：云水 ${fmt(h.nearest.clw)} · 云冰 ${fmt(h.nearest.ici)} mg/kg`)
   lines.push(`该层总云量 ${fmt(h.nearest.cf, 0, '%')} · RH ${fmt(h.nearest.rh, 0, '%')} · T ${fmt(h.nearest.t, 1, '°C')}`)
+  const cosDev = Math.cos((props.sun.deviationDeg * Math.PI) / 180)
+  const litHere = litAt(h.mslKm * 1000, h.d * cosDev, props.sun.el)
+  lines.push(`光照几何：${litHere ? '在太阳直射光中（几何）' : '在地球阴影内（几何）'}`)
   if (props.mode === 'photo' && h.nearest.clw !== null && h.nearest.ici !== null) {
     const tot = (h.nearest.clw ?? 0) + (h.nearest.ici ?? 0)
     lines.push(`液/冰占比：${tot > 0 ? Math.round(((h.nearest.clw as number) / tot) * 100) : 0}% 液`)
@@ -786,7 +883,7 @@ onBeforeUnmount(() => {
   ro?.disconnect(); mo?.disconnect()
   document.removeEventListener('fullscreenchange', resize)
 })
-watch(() => [props.section, props.yMaxKm, props.layers, props.sun, props.mode, props.heightAxis], () => redraw(), { deep: true })
+watch(() => [props.section, props.yMaxKm, props.layers, props.sun, props.mode, props.heightAxis, props.dem, props.aod], () => redraw(), { deep: true })
 </script>
 
 <template>

@@ -48,6 +48,14 @@ jobs:
       - name: 校验产物结构与物理量级
         run: python tools/xsec/verify_cross.py
 
+      # 环境上下文（真实 DEM 地形 + AOD）。数据源是 Open-Meteo 的两个接口，
+      # 免费额度在同一出口 IP 上比较紧（实测约 10 次/分钟），所以：
+      #   · 单独一个文件 data/cross/context.json，失败不影响 GFS 剖面缓存；
+      #   · --allow-partial：单机位失败只记 errors[]，页面显示"缺测"。
+      - name: 构建环境上下文（DEM 地形 + AOD，失败不阻塞 GFS 缓存）
+        continue-on-error: true
+        run: python tools/xsec/build_context.py --allow-partial
+
       - name: 打印本轮数据体积与阈值标定摘要
         run: |
           python - <<'PY'

@@ -11,11 +11,16 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CrossSectionChart from '@/components/xsec/CrossSectionChart.vue'
-import { ageHours, loadXsecIndex, loadXsecSpot } from '@/lib/xsec/api'
+import { ageHours, loadXsecContext, loadXsecIndex, loadXsecSpot } from '@/lib/xsec/api'
 import { Y_RANGES, beijingDateTime, beijingTime, cloudBands, expandPoints, sectionAt } from '@/lib/xsec/model'
 import { fetchOpenMeteoSection } from '@/lib/xsec/openmeteo'
 import { sunInPlane, sunsetMs } from '@/lib/xsec/sun'
-import type { XsecIndex, XsecSpotFile } from '@/lib/xsec/types'
+import {
+  airmass, bandLightWindow, boundaryHeightKm, describeMin, terminatorKm,
+  terminatorSpeedKmMin, terrainHorizonDeg, transmittance
+} from '@/lib/xsec/light'
+import type { BandLight } from '@/lib/xsec/light'
+import type { XsecContext, XsecIndex, XsecSpotFile } from '@/lib/xsec/types'
 
 const index = ref<XsecIndex | null>(null)
 /** GFS 缓存（主数据源，4 个时次 × 5 个方位） */
@@ -41,6 +46,9 @@ const card = ref<HTMLElement | null>(null)
 /** 从预报页点进来时带的机位（可能不在 8 个代表机位里） */
 const fromName = ref('')
 const fromNote = ref('')
+/** 环境上下文：真实 DEM 地形 + AOD（独立缓存，失败不影响云场） */
+const xctx = ref<XsecContext | null>(null)
+const ctxWarn = ref('')
 
 const AZ_CHOICES = [240, 255, 265, 280, 295]
 const LAYER_ITEMS = [
@@ -79,10 +87,25 @@ const validIso = computed(() => {
 
 const validMs = computed(() => new Date(validIso.value).getTime())
 
+/**
+ * 太阳时间偏移（分钟，相对当地地面日落）。
+ * 为什么单独一个滑杆：太阳位置可以逐分钟算，但气象场只有逐小时 ——
+ * 拿"分钟级太阳位置 + 小时级云场"做动画是合理的，但必须标明云场没跟着变。
+ */
+const sunOffsetMin = ref(0)
+/** URL 带的太阳时间偏移（等机位加载完再应用，避免被 syncSunOffset 覆盖） */
+const pendingSunOffset = ref<number | null>(null)
+/** 太阳时刻：日落 + 偏移；没有日落时刻时退回所选时次 */
+const sunTimeMs = computed(() => {
+  const setMs = sunsetAt.value
+  if (!Number.isFinite(setMs)) return validMs.value
+  return setMs + sunOffsetMin.value * 60000
+})
+
 const sun = computed(() => {
   const f = activeFile.value
   if (!f) return null
-  return sunInPlane(validMs.value, f.spot.lat, f.spot.lon, az.value)
+  return sunInPlane(sunTimeMs.value, f.spot.lat, f.spot.lon, az.value)
 })
 
 const sunsetAt = computed(() => {
@@ -91,7 +114,7 @@ const sunsetAt = computed(() => {
   return sunsetMs(f.spot.lat, f.spot.lon, validIso.value)
 })
 
-const sunDown = computed(() => Number.isFinite(sunsetAt.value) && validMs.value >= sunsetAt.value)
+const sunDown = computed(() => Number.isFinite(sunsetAt.value) && sunTimeMs.value >= sunsetAt.value)
 
 const dataAge = computed(() => {
   const idx = index.value
@@ -122,6 +145,121 @@ const bandList = computed(() => {
   const mid = pts[Math.floor(pts.length / 2)]
   return mid ? cloudBands(mid, 10) : []
 })
+
+/* ---------------- 光照几何（阶段七 P1：真实 DEM + AOD + 球面几何） ---------------- */
+
+/** 当前机位的环境上下文（DEM 地形 + AOD） */
+const spotCtx = computed(() => xctx.value?.spots[spotId.value] ?? null)
+/** 当前剖面的 DEM 地形序列（缺测时图表退回模式地形并注明） */
+const dem = computed(() => spotCtx.value?.profiles?.[String(az.value)] ?? null)
+const demStepKm = computed(() => xctx.value?.sectionStepKm ?? 1.25)
+/** 本机位实际使用的 DEM 来源（主源 Copernicus GLO-30，限额时回退 SRTM 90m） */
+const demSourceLabel = computed(
+  () => spotCtx.value?.demSource ?? xctx.value?.sources?.terrainUsed ?? 'DEM 来源未知'
+)
+/** 图例用短标签（去掉括号里的实现说明） */
+const demSourceShort = computed(() => demSourceLabel.value.split('（')[0])
+/** 当前时次的 AOD（GFS 模式与 Open-Meteo 对照都用同一份 CAMS 柱总量） */
+const aodEntry = computed(() => spotCtx.value?.aod?.[isOm.value ? 0 : tIdx.value] ?? null)
+const aod = computed(() => aodEntry.value?.v ?? null)
+/** 沿「该时次日落方位」的 DEM 序列（光路被地形遮挡的判定用） */
+const sunTerrain = computed(() => spotCtx.value?.sunProfiles?.[isOm.value ? 0 : tIdx.value] ?? null)
+const sunStepKm = computed(() => xctx.value?.sunStepKm ?? 2.5)
+
+/** 剖面方向最高地形仰角（°，含曲率修正） */
+const sectionHorizonDeg = computed(() =>
+  dem.value ? terrainHorizonDeg(dem.value, demStepKm.value) : null
+)
+/** 太阳方向最高地形仰角（°） */
+const sunHorizonDeg = computed(() =>
+  sunTerrain.value ? terrainHorizonDeg(sunTerrain.value.elev, sunStepKm.value) : null
+)
+/** 太阳是否低于「太阳方向的地形视线」——低于就说明低空被山挡住 */
+const sunBlockedByTerrain = computed(() => {
+  const s = sun.value
+  if (!s || sunHorizonDeg.value === null) return null
+  return s.el < sunHorizonDeg.value
+})
+
+/** 直射光透过率 exp(−AOD·大气质量) */
+const trans = computed(() => (sun.value ? transmittance(aod.value, sun.value.el) : null))
+const airmassNow = computed(() => (sun.value ? airmass(sun.value.el) : null))
+/** 地面日落线在剖面方向上的位置（km，正 = 前方） */
+const terminator = computed(() =>
+  sun.value ? terminatorKm(sun.value.el, sun.value.deviationDeg) : null
+)
+/** 照明边界沿剖面的移动速度（km/min） */
+const termSpeed = computed(() => {
+  const f = activeFile.value
+  const s = sun.value
+  if (!f || !s) return null
+  return terminatorSpeedKmMin(validMs.value, f.spot.lat, f.spot.lon, s.deviationDeg)
+})
+/** 剖面 0 km 处的阴影上缘高度（km；0 = 无阴影） */
+const boundaryAtOrigin = computed(() =>
+  sun.value ? boundaryHeightKm(0, sun.value.el, sun.value.deviationDeg) : 0
+)
+/** 参考时刻相对当地地面日落的分钟数（负 = 日落前） */
+const minutesFromSunset = computed(() => {
+  const t = sunsetAt.value
+  if (!Number.isFinite(t) || !Number.isFinite(validMs.value)) return null
+  return (validMs.value - t) / 60000
+})
+
+/** 受光判断专用的云带：判据 ≥1 mg/kg（与图上着色起点一致；结构卡仍用 ≥10） */
+const lightBands = computed(() => {
+  const f = activeFile.value
+  const sec = section.value
+  if (!f || !sec) return []
+  const pts = expandPoints(f, sec)
+  const mid = pts[Math.floor(pts.length / 2)]
+  return mid ? cloudBands(mid, 1) : []
+})
+
+/** 每段云（取路径中点）的几何受光窗口：云底高度 + 云中心距太阳方位投影距离 */
+const bandLightList = computed<
+  Array<{ band: (typeof bandList.value)[number]; light: BandLight }>
+>(() => {
+  const f = activeFile.value
+  const s = section.value
+  const sunV = sun.value
+  if (!f || !s || !sunV) return []
+  const mid = s.samples[Math.floor(s.samples.length / 2)]
+  const midD = mid?.d ?? 25
+  const dSun = midD * Math.cos((sunV.deviationDeg * Math.PI) / 180)
+  return lightBands.value.map((b) => ({
+    band: b,
+    light: bandLightWindow({
+      hM: b.fromKm * 1000,
+      dSunKm: dSun,
+      lat: f.spot.lat,
+      lon: f.spot.lon,
+      sunsetMs: sunsetAt.value,
+      refMs: sunTimeMs.value,
+      elevProfile: sunTerrain.value?.elev,
+      stepKm: sunStepKm.value
+    })
+  }))
+})
+
+function fmtClock(ms: number): string {
+  return Number.isFinite(ms) ? beijingTime(new Date(ms).toISOString()) : '—'
+}
+
+/** 一条云带的受光结论（中文短句，前台可读） */
+function bandLightText(b: BandLight): string {
+  if (b.lit === null) return '受光：无法判定'
+  if (b.terrainBlocked === true) return '受光：被地形遮挡'
+  const parts: string[] = []
+  if (b.endMin !== null) {
+    parts.push(`受光至 ${describeMin(b.endMin)}${Number.isFinite(sunsetAt.value) ? `（北京时间 ${fmtClock(sunsetAt.value + b.endMin * 60000)}）` : ''}`)
+  } else {
+    parts.push('扫描窗口内没有失去直射光')
+  }
+  if (b.durationMin !== null) parts.push(`时长 ${b.durationMin.toFixed(1)} 分`)
+  if (!b.lit) parts.push('此刻已在阴影中')
+  return parts.join(' · ')
+}
 
 /** 太阳偏离剖面方向太多时，图上要明确说「不在剖面平面内」 */
 const sunWarning = computed(() => {
@@ -176,12 +314,18 @@ function resolveIncoming(q: URLSearchParams): { id: string; note: string } {
 
 /* ---------------- 加载 ---------------- */
 
-function readUrl(): { spot: string; t: number; az: number } {
+function readUrl(): { spot: string; t: number; az: number; sun: number | null } {
   const q = new URLSearchParams(location.search)
   const spot = q.get('spot') ?? ''
   const t = Number(q.get('t'))
   const a = Number(q.get('az'))
-  return { spot, t: Number.isFinite(t) ? t : 0, az: Number.isFinite(a) && a >= 0 ? a : 265 }
+  const sun = Number(q.get('sun'))
+  return {
+    spot,
+    t: Number.isFinite(t) ? t : 0,
+    az: Number.isFinite(a) && a >= 0 ? a : 265,
+    sun: q.has('sun') && Number.isFinite(sun) ? Math.round(sun) : null
+  }
 }
 
 function writeUrl(): void {
@@ -189,7 +333,15 @@ function writeUrl(): void {
   q.set('spot', spotId.value)
   q.set('t', String(tIdx.value))
   q.set('az', String(az.value))
+  const m = minutesFromSunset.value
+  const def = m !== null && Number.isFinite(m) ? Math.round(m) : 0
+  if (sunOffsetMin.value !== def) q.set('sun', String(sunOffsetMin.value))
   history.replaceState(null, '', `${location.pathname}?${q.toString()}`)
+}
+
+function syncSunOffset(): void {
+  const m = minutesFromSunset.value
+  sunOffsetMin.value = m !== null && Number.isFinite(m) ? Math.round(m) : 0
 }
 
 async function pickSpot(id: string): Promise<void> {
@@ -208,6 +360,7 @@ async function pickSpot(id: string): Promise<void> {
       tIdx.value = nearestSunsetIdx.value >= 0 ? nearestSunsetIdx.value : 0
     }
     if (isOm.value) await loadOm()
+    syncSunOffset()
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
     gfsFile.value = null
@@ -240,15 +393,23 @@ async function loadOm(): Promise<void> {
 }
 
 async function init(): Promise<void> {
+  loadXsecContext()
+    .then((c) => { xctx.value = c })
+    .catch((e) => { ctxWarn.value = e instanceof Error ? e.message : String(e) })
   try {
     index.value = await loadXsecIndex()
     const u = readUrl()
     tIdx.value = u.t
     az.value = u.az
+    pendingSunOffset.value = u.sun
     const q = new URLSearchParams(location.search)
     const incoming = resolveIncoming(q)
     if (incoming.note) fromNote.value = incoming.note
     await pickSpot(u.spot || incoming.id || (index.value.spots[0]?.id ?? ''))
+    if (pendingSunOffset.value !== null) {
+      sunOffsetMin.value = pendingSunOffset.value
+      pendingSunOffset.value = null
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
     loading.value = false
@@ -267,6 +428,15 @@ onBeforeUnmount(() => {
 watch([spotId, tIdx, az], () => {
   if (spotId.value) writeUrl()
   if (isOm.value) void loadOm()
+  /* 换时次时把太阳时间滑杆同步到该时次相对日落的分钟数 */
+  const m = minutesFromSunset.value
+  if (m !== null && Number.isFinite(m)) {
+    sunOffsetMin.value = Math.round(m)
+  }
+})
+
+watch(sunOffsetMin, () => {
+  if (spotId.value) writeUrl()
 })
 
 watch(source, (v) => {
@@ -404,6 +574,23 @@ const SUNSET_TEXT = computed(() => {
           </div>
 
           <div class="xsec-group">
+            <span class="xsec-group-label">太阳时间</span>
+            <div class="xsec-sunslider">
+              <input
+                v-model.number="sunOffsetMin"
+                type="range"
+                min="-20"
+                max="20"
+                step="1"
+                aria-label="太阳时间相对日落的分钟数"
+              />
+              <span class="xsec-hint">
+                日落{{ sunOffsetMin >= 0 ? '后' : '前' }} {{ Math.abs(sunOffsetMin) }} 分
+              </span>
+            </div>
+          </div>
+
+          <div class="xsec-group">
             <span class="xsec-group-label">方位</span>
             <div class="xsec-seg">
               <button
@@ -514,6 +701,9 @@ const SUNSET_TEXT = computed(() => {
                 :sun-down="sunDown"
                 :mode="mode"
                 :height-axis="heightAxis"
+                :dem="dem"
+                :dem-step-km="demStepKm"
+                :aod="aod"
               />
             </div>
 
@@ -537,6 +727,10 @@ const SUNSET_TEXT = computed(() => {
               <span class="xsec-lg"><i class="xsec-sw xsec-sw-terrain" />模式地形</span>
               <span class="xsec-lg"><i class="xsec-sw xsec-sw-grid" />真实格点</span>
               <span class="xsec-lg"><i class="xsec-sw xsec-sw-sun" />太阳投影</span>
+              <span class="xsec-lg"><i class="xsec-sw xsec-sw-boundary" />夕阳照明边界（虚线以下在地球阴影里）</span>
+              <span class="xsec-lg"><i class="xsec-sw xsec-sw-lit" />暖色叠加 = 几何受光</span>
+              <span v-if="dem" class="xsec-lg"><i class="xsec-sw xsec-sw-terrain" />地形 = {{ demSourceShort }}</span>
+              <span v-else class="xsec-lg"><i class="xsec-sw xsec-sw-terrain" />地形 = GFS 模式地形（DEM 缺测）</span>
               <span class="xsec-lg xsec-lg-note">
                 {{ isOm ? 'Open-Meteo 气压层 · ECMWF IFS 0.25°' : `GFS 0.25°` }} ·
                 水平网格约 {{ index.gridApproxKm }} km · 采样 {{ index.sampleIntervalKm }} km ·
@@ -546,6 +740,10 @@ const SUNSET_TEXT = computed(() => {
 
             <p class="xsec-disclaimer">
               本图展示太阳几何关系与模式云场，<b>未进行完整辐射传输计算</b>。
+              地形为 {{ demSourceLabel }} 真实高程，不再是 GFS 平滑模式地形；
+              太阳光线只按球面几何传播，并按 AOD 做了 Beer-Lambert 直射削弱（虚线以下 = 地球阴影）。
+              「太阳时间」滑杆只移动太阳/照明边界（分钟级几何），<b>不会</b>改变云场时次——
+              云场仍是所选 GFS 逐小时时次，图上不会把分钟级变化伪装成分钟级预报。
               <template v-if="isOm">
                 Open-Meteo 的云量由相对湿度诊断估算，<b>不是模式原生云水/云冰</b>，
                 高湿无云时可能误判，不能用来证明真实云体微物理结构。
@@ -558,6 +756,78 @@ const SUNSET_TEXT = computed(() => {
             <p v-if="sunWarning" class="xsec-warn">⚠ {{ sunWarning }}</p>
             <p v-if="stale" class="xsec-warn">
               ⚠ 这份剖面数据已经 {{ Math.round(dataAge) }} 小时没有更新，可能不是最新起报。
+            </p>
+          </div>
+
+          <!-- 太阳与照明几何（阶段七 P1） -->
+          <div class="card xsec-panel xsec-panel-sun">
+            <h2 class="xsec-panel-title">太阳与照明几何</h2>
+            <p class="xsec-panel-sub">
+              真实太阳位置 + DEM 地形 + AOD 的球面几何结果，<b>只判「能否被直射光照到」与直射削弱</b>，
+              不做辐射传输、不预测火烧云。
+            </p>
+            <dl class="xsec-dl">
+              <dt>此刻太阳</dt>
+              <dd>
+                高度角 {{ sun.el.toFixed(1) }}° · 方位 {{ sun.az.toFixed(0) }}° ·
+                与剖面相差 {{ sun.deviationDeg.toFixed(0) }}°（剖面内投影 {{ sun.inPlaneEl.toFixed(0) }}°）
+              </dd>
+              <dt>距日落</dt>
+              <dd>
+                日落 {{ SUNSET_TEXT }}（北京）·
+                太阳时间 {{ sunOffsetMin >= 0 ? '日落后' : '日落前' }} {{ Math.abs(sunOffsetMin) }} 分
+                <span class="xsec-dim">（太阳位置按分钟计算，云场仍取所选时次）</span>
+              </dd>
+              <dt>地形视线</dt>
+              <dd>
+                剖面方向 {{ sectionHorizonDeg === null ? '缺测' : sectionHorizonDeg.toFixed(1) + '°' }} ·
+                太阳方向 {{ sunHorizonDeg === null ? '缺测' : sunHorizonDeg.toFixed(1) + '°' }}
+                <template v-if="sun.el <= 0">→ 太阳已落到地平线下（此刻没有直射光）</template>
+                <template v-else-if="sunBlockedByTerrain === true">
+                  → <b>太阳低于地形视线，低空被山体遮挡</b>
+                </template>
+                <template v-else-if="sunBlockedByTerrain === false">→ 太阳在地形视线之上</template>
+              </dd>
+              <dt>气溶胶削弱</dt>
+              <dd>
+                <template v-if="aod !== null">
+                  AOD {{ aod.toFixed(2) }}（CAMS 550 nm 柱总量，
+                  {{ (aodEntry?.utc ?? '').slice(11, 16) }}Z）→ 直射透过率
+                  <b>{{ trans === null ? '缺测' : trans < 0.01 ? '＜1' : Math.round(trans * 100) }}%</b>（大气质量 {{ (airmassNow ?? 0).toFixed(1) }}）
+                </template>
+                <template v-else>缺测（不推测，也不用默认值代替）</template>
+              </dd>
+              <dt>夕阳照明边界</dt>
+              <dd>
+                <template v-if="terminator === null">
+                  太阳方位与剖面近乎垂直，边界位置在二维图里不可判
+                </template>
+                <template v-else>
+                  地面日落线在剖面方向 <b>{{ terminator.toFixed(0) }} km</b>{{ terminator >= 0 ? '（前方）' : '（后方）' }}；
+                  剖面内 0 km 处阴影上缘 {{ boundaryAtOrigin.toFixed(1) }} km
+                  <template v-if="termSpeed !== null">
+                    · 边界沿剖面移动约 {{ Math.abs(termSpeed).toFixed(1) }} km/min
+                  </template>
+                </template>
+              </dd>
+              <dt>受光的云带</dt>
+              <dd>
+                <ul v-if="bandLightList.length" class="xsec-known">
+                  <li v-for="(it, i) in bandLightList" :key="i">
+                    云底 {{ it.band.fromKm.toFixed(1) }} km（{{ it.band.toHpa }}–{{ it.band.fromHpa }} hPa）：
+                    {{ bandLightText(it.light) }}
+                  </li>
+                </ul>
+                <span v-else>这一时刻路径中段没有达到 1 mg/kg 的云层。</span>
+                <p class="xsec-known xsec-known-p">
+                  判据 ≥1 mg/kg（与图中着色起点一致）；上方「云层结构」卡用 ≥10 mg/kg，两处数字不同是阈值不同，不是数据矛盾。
+                </p>
+              </dd>
+            </dl>
+            <p class="xsec-known xsec-known-p">
+              剖面只有 {{ activeFile.lengthKm }} km，而夕阳照明边界通常在数十到数百 km 外，
+              图上只画进入视野的那一段；地形序列 0–50 km 每 {{ demStepKm }} km 一个 DEM 点，
+              光路遮挡用沿太阳方位的 0–200 km 地形序列近似。
             </p>
           </div>
 
@@ -585,6 +855,15 @@ const SUNSET_TEXT = computed(() => {
                   <span v-if="!b.estimated" class="xsec-band-peak">
                     峰值 {{ Math.round(b.peakMgKg) }} mg/kg
                   </span>
+                  <span
+                    v-if="bandLightList[i]"
+                    class="xsec-band-light"
+                    :class="{
+                      'is-lit': bandLightList[i].light.lit === true,
+                      'is-dark': bandLightList[i].light.lit === false,
+                      'is-blocked': bandLightList[i].light.terrainBlocked === true
+                    }"
+                  >{{ bandLightText(bandLightList[i].light) }}</span>
                 </li>
               </ul>
             </div>
@@ -617,6 +896,23 @@ const SUNSET_TEXT = computed(() => {
                 <dd>
                   <template v-if="isOm">Open-Meteo 原生 m/s，已按 ω = −ρg·w 换算为 Pa/s（保留换算说明）</template>
                   <template v-else>GFS 原生 Pa/s，未换算成 m/s</template>
+                </dd>
+                <dt>地形</dt>
+                <dd>
+                  <template v-if="dem">
+                    {{ demSourceLabel }}，沿剖面 0–{{ activeFile.lengthKm }} km 每
+                    {{ demStepKm }} km 一个真实高程点；
+                    <b>与 GFS 模式地形不同</b>（模式 orog 是 0.25° 平滑值，会削平小山与谷地）
+                  </template>
+                  <template v-else>DEM 缺测，退回 GFS 模式地形（平滑值，仅作轮廓参考）</template>
+                </dd>
+                <dt>气溶胶</dt>
+                <dd>
+                  <template v-if="aod !== null">
+                    AOD {{ aod.toFixed(2) }}（CAMS global，550 nm 柱总量，{{ aodEntry?.utc }}）
+                    → 仅用于 exp(−AOD·m) 的直射削弱估算，不区分波长、不含云与水汽
+                  </template>
+                  <template v-else>缺测：图上不画透过率，卡片写「缺测」</template>
                 </dd>
                 <dt>缺测</dt><dd>显示为缺测 / 遮罩，绝不按 0 处理</dd>
               </dl>

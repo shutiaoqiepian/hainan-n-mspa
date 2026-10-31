@@ -89,7 +89,12 @@ node tools/verify-cache-diff.mjs    # 读出来再写回去必须逐字节一致
 
 ```bash
 python tools/xsec/verify_cross.py   # 剖面缓存结构 / 数量 / 量级 / 地形遮罩 / 时间单调
+node tools/xsec/test-light.mjs      # 光照几何 52 项（曲率/受光判据/边界/AOD/地形遮挡/受光窗口）
+python tools/xsec/build_context.py --allow-partial  # 重建 DEM 地形 + AOD（Open-Meteo 限额时自动回退 SRTM）
 ```
+
+> `data/cross/context.json` 与 GFS 剖面缓存**分开**：它是 DEM（Copernicus/SRTM）与 CAMS AOD，
+> 失败不会影响剖面；页面缺它就显示"地形缺测"，绝不伪造地形。
 
 > 剖面系统是**独立的解释层**：它不读 `data/forecast/`、不参与 `scoreOf()`、不改排名。
 > 任何把剖面云水接进评分公式的想法，按硬约束 1 处理（先立项、先 A 级证据）。

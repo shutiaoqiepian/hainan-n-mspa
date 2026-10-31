@@ -4,11 +4,12 @@
  * 缓存策略：索引常驻内存；机位文件按需拉取并缓存（8 个机位一共约 340 KB，
  * 一页只看一个机位，没必要全下）。
  */
-import type { XsecIndex, XsecSpotFile } from './types'
+import type { XsecContext, XsecIndex, XsecSpotFile } from './types'
 
 const BASE = 'data/cross'
 
 let indexPromise: Promise<XsecIndex> | null = null
+let contextPromise: Promise<XsecContext> | null = null
 const spotCache = new Map<string, Promise<XsecSpotFile>>()
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -46,6 +47,17 @@ export function loadXsecSpot(file: string): Promise<XsecSpotFile> {
     spotCache.set(file, p)
   }
   return p
+}
+
+/** 环境上下文（DEM 地形 + AOD）。缺失时页面降级为「地形=AOD=缺测」，不影响云场。 */
+export function loadXsecContext(): Promise<XsecContext> {
+  if (!contextPromise) {
+    contextPromise = fetchJson<XsecContext>(`${BASE}/context.json`).catch((e) => {
+      contextPromise = null
+      throw e
+    })
+  }
+  return contextPromise
 }
 
 /** 数据有多旧（小时）。页面上的「数据年龄」提示用它，超过 6 小时要明说。 */

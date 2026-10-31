@@ -444,6 +444,48 @@
   color: var(--muted-2);
 }
 
+/* ---------- 太阳与照明几何（阶段七 P1 新增） ---------- */
+
+.xsec-panel-sun {
+  margin-top: 16px;
+}
+
+.xsec-panel-sun .xsec-dl {
+  grid-template-columns: 100px 1fr;
+}
+
+.xsec-known-p {
+  padding-left: 0;
+  list-style: none;
+  margin-top: 10px;
+}
+
+.xsec-sw-boundary {
+  height: 10px;
+  background: transparent;
+  border-bottom: 2px dashed rgba(255, 178, 112, 0.9);
+  border-radius: 0;
+}
+
+.xsec-sw-lit {
+  background: rgba(255, 196, 128, 0.38);
+}
+
+.xsec-band-light {
+  flex-basis: 100%;
+  font-size: 11.5px;
+  color: var(--muted-2);
+  line-height: 1.6;
+}
+
+.xsec-band-light.is-lit {
+  color: #ffc078;
+}
+
+.xsec-band-light.is-blocked {
+  color: var(--warn);
+}
+
 /* ---------- 窄屏 ---------- */
 
 @media (max-width: 900px) {
@@ -537,4 +579,22 @@
     margin-left: 0;
     padding: 10px 14px;
   }
+}
+
+/* ---------- 太阳时间滑杆 ---------- */
+
+.xsec-sunslider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.xsec-sunslider input[type='range'] {
+  width: 108px;
+  accent-color: var(--accent-a, #4fb3e8);
+}
+
+.xsec-dim {
+  color: var(--muted-2);
+  font-size: 12px;
 }

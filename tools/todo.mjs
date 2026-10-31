@@ -165,7 +165,7 @@ export const ITEMS = [
     title: '/cross 全国 224 机位尚未铺开（现在只有 8 个试点）',
     state: 'open',
     trigger: {
-      text: '阶段 D/E 信息卡完成后开工；需先补 224 个机位的海拔（当前全缺）',
+      text: '阶段七-01 的 DEM/AOD 流程可复用（按机位 id 组织）；仍需先补 224 个机位海拔，并分批跑高程请求',
       metric: null
     },
     why:
@@ -184,23 +184,43 @@ export const ITEMS = [
   },
   {
     id: 'cross-sun-geometry-card',
-    title: '/cross 的太阳几何卡与摄影价值卡还没做（公式已核实）',
-    state: 'open',
+    title: '/cross 的太阳几何卡（已做）+ 摄影价值卡（未做）',
+    state: 'done',
     trigger: {
-      text: '现在就能做：几何公式已在阶段六-03 用三个案例验证',
+      text: '2026-11-01 完成：src/lib/xsec/light.ts + 太阳与照明几何卡 + 太阳时间滑杆',
       metric: null
     },
     why:
-      '任务书要求「太阳能否照亮这些云」「对日落摄影有什么意义」。' +
-      '公式（2√(2Rh)、时间窗、边界高度角）已验证，但还没接进界面。',
+      '已完成：受光判据、阴影边界、地面日落线位置/速度、地形视线与遮挡、AOD 透过率、' +
+      '逐云带受光起止时间（52 项单测）。仍未做：把「几何受光 + 云量/厚度 + AOD」' +
+      '合成一句可读的摄影价值结论（归因卡）。',
     how: [
-      '按 docs/阶段六-01 实现 src/lib/litgeo/ 纯函数（earth/sunlight/timing/aerosol）',
-      '把阶段六-03 的 76 项检查转成正式单测',
-      '在 /cross 加「太阳几何卡」：能否照到、开始/结束时间、边界高度角、方位差',
-      '摄影价值卡只做解释，不产生分数、不写回 forecast',
+      '已完成：src/lib/xsec/light.ts 纯函数 + docs/阶段七-01 的公式与假设表',
+      '已完成：tools/xsec/test-light.mjs（52 项），接进 /cross 的「太阳与照明几何」卡',
+      '待做：摄影价值卡（只说条件与归因，不产生分数、不写回 forecast）',
     ],
-    doc: 'docs/阶段七-00 §6、docs/阶段六-01',
-    files: []
+    doc: 'docs/阶段七-01-太阳几何与照明引擎-实现报告.md',
+    files: ['src/lib/xsec/light.ts', 'tools/xsec/test-light.mjs']
+  },
+  {
+    id: 'cross-far-field-sunpath',
+    title: '/cross 只有 50 km 剖面，夕阳照明边界大多在视野外',
+    state: 'open',
+    trigger: {
+      text: '阶段七-01 已把边界位置/速度做成数字，但边界很少落进 0–50 km 图内',
+      metric: null
+    },
+    why:
+      '照明边界常在数十到数百 km 外：以海口 2026-11-01 为例，日落后 4 分钟时地面日落线在 210 km，' +
+      '0 km 处阴影上缘 3.3 km；50 km 剖面里只露出一小段。要让边界在图上"动起来"，' +
+      '必须扩大采样几何或增加远场光路带。',
+    how: [
+      '方案 A：build_cross.py 增补 9 个采样点覆盖 0–320 km（GFS 约 11 个真实格点，反而信息更多）',
+      '方案 B：主图下方加 0–400 km 的「光路带」条带（纯几何，不需要新气象数据），标注云场只到 50 km',
+      '两者都要重跑 verify_cross.py 并检查缓存体积（9 采样点约 +75%）',
+    ],
+    doc: 'docs/阶段七-01 §5、docs/阶段七-00 §9',
+    files: ['tools/xsec/build_cross.py', 'src/components/xsec/CrossSectionChart.vue']
   },
   {
     id: 'xsec-era5-validate',

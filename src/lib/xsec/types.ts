@@ -140,3 +140,38 @@ export interface XsecPoint {
   belowGround: boolean
   pressureHpa: number
 }
+
+/* ================= 环境上下文（DEM 地形 + AOD，独立于 GFS 剖面缓存） ================= */
+
+/** 一段 DEM 地形序列：从机位沿某方位等间距取的高程（m）；null = 该点缺测 */
+export type XsecDemSeries = Array<number | null>
+
+export interface XsecSunTerrainProfile {
+  /** 该时次的日落方位（°） */
+  az: number
+  /** 0, sunStepKm, 2·sunStepKm, … 的 DEM 高程（m） */
+  elev: XsecDemSeries
+}
+
+export interface XsecSpotContext {
+  /** 机位 DEM 海拔（m）；null = 缺测 */
+  elevationM: number | null
+  /** 实际使用的 DEM 来源（Copernicus GLO-30 / SRTM 90m 回退等） */
+  demSource?: string
+  /** 沿剖面各方位（key 为方位角字符串）的地形序列，步长 sectionStepKm */
+  profiles: Record<string, XsecDemSeries>
+  /** 各时次沿日落方位的地形序列（用于光路被地形遮挡的判定） */
+  sunProfiles: XsecSunTerrainProfile[]
+  /** 各时次的 AOD（550 nm 柱总量，无量纲）；null = 缺测 */
+  aod: Array<{ utc: string; v: number; nearest?: boolean } | null>
+}
+
+export interface XsecContext {
+  version: number
+  generatedAt: string
+  sources: Record<string, string>
+  sectionStepKm: number
+  sunStepKm: number
+  spots: Record<string, XsecSpotContext>
+  errors: string[]
+}
