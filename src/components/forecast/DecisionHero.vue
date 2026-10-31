@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { state } from '@/lib/forecast/state'
 import { openSpotCard } from '@/lib/forecast/card-ui'
 import { clarityLabel, pillarLabel, rainbowLabel, raysLabel } from '@/lib/forecast/scoring'
@@ -117,6 +117,28 @@ const cells = computed(() => {
 })
 
 const peakBetter = computed(() => r.value.peakScore > r.value.score + 4)
+
+/* ---------- 窄屏渐进式披露 ----------
+   「四个机会指数」是参考项，不是「今天去不去」的结论。手机上 4 格色条要吃掉
+   约 145px，而结论句 / 等级 / 数据状态已经在上面讲清楚了。这里窄屏默认收成
+   一行摘要（数值一条不删，DOM 里始终存在），点开与宽屏完全一致。
+   桌面（>560px）不渲染摘要行、网格照旧，布局零变化。 */
+const NARROW_MQ = '(max-width: 560px)'
+const narrow = ref(window.matchMedia(NARROW_MQ).matches)
+let narrowMq: MediaQueryList | null = null
+const oppsOpen = ref(false)
+function onNarrowChange(e: MediaQueryListEvent): void {
+  narrow.value = e.matches
+  if (e.matches) oppsOpen.value = false
+}
+onMounted(() => {
+  narrowMq = window.matchMedia(NARROW_MQ)
+  narrow.value = narrowMq.matches
+  narrowMq.addEventListener('change', onNarrowChange)
+})
+onBeforeUnmount(() => {
+  narrowMq?.removeEventListener('change', onNarrowChange)
+})
 
 /* 单机位名片：图里带二维码，链接可以在弹窗里单独复制 */
 function onShare(): void {
@@ -253,13 +275,26 @@ function onShare(): void {
       </div>
     </div>
 
-    <!-- 四个机会指数 -->
-    <div class="dh-opps">
-      <div v-for="o in opps" :key="o.k" class="dh-opp">
-        <div class="oh"><b>{{ o.k }}</b><span :style="{ color: o.c }">{{ o.v }}</span></div>
-        <div class="ob"><i :style="{ width: Math.max(0, Math.min(100, o.v)) + '%', background: o.c }"></i></div>
-        <div class="ow" :style="{ color: o.c }">{{ o.w }}</div>
-        <div class="on">{{ o.note }}</div>
+    <!-- 四个机会指数：窄屏默认收起为一行摘要（内容零删除，展开后与宽屏一致） -->
+    <div class="dh-opps-wrap">
+      <button
+        v-if="narrow"
+        class="dh-opps-sum s2b-toggle"
+        type="button"
+        :aria-expanded="oppsOpen ? 'true' : 'false'"
+        @click="oppsOpen = !oppsOpen"
+      >
+        <b>四机会指数</b>
+        <span>通透 {{ opps[0].v }} · 云隙光 {{ opps[1].v }} · 光柱 {{ opps[2].v }} · 彩虹 {{ opps[3].v }}</span>
+        <i aria-hidden="true">{{ oppsOpen ? '收起判据' : '展开判据' }}</i>
+      </button>
+      <div v-show="!narrow || oppsOpen" class="dh-opps">
+        <div v-for="o in opps" :key="o.k" class="dh-opp">
+          <div class="oh"><b>{{ o.k }}</b><span :style="{ color: o.c }">{{ o.v }}</span></div>
+          <div class="ob"><i :style="{ width: Math.max(0, Math.min(100, o.v)) + '%', background: o.c }"></i></div>
+          <div class="ow" :style="{ color: o.c }">{{ o.w }}</div>
+          <div class="on">{{ o.note }}</div>
+        </div>
       </div>
     </div>
 

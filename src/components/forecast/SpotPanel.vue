@@ -102,6 +102,8 @@ const allOpen = ref(false)
 async function expandAllLayers(): Promise<void> {
   const el = layerBox.value
   if (!el) return
+  /* 窄屏下云层卡默认收着：先把卡展开，再滚过去 */
+  layersOpen.value = true
   el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   /* 等滚动落位再展开，否则展开瞬间高度变化会把滚动位置带偏 */
   await new Promise((r) => setTimeout(r, 320))
@@ -120,8 +122,73 @@ function isLayerOpen(level: number): boolean {
 }
 
 /* 决策卡上的「云层剖面」按钮会派发这个事件（见 ForecastPage.showLayers） */
-onMounted(() => { window.addEventListener('fc:show-layers', expandAllLayers) })
-onBeforeUnmount(() => { window.removeEventListener('fc:show-layers', expandAllLayers) })
+onMounted(() => {
+  window.addEventListener('fc:show-layers', expandAllLayers)
+  narrowMq = window.matchMedia(NARROW_MQ)
+  narrow.value = narrowMq.matches
+  narrowMq.addEventListener('change', onNarrowChange)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('fc:show-layers', expandAllLayers)
+  narrowMq?.removeEventListener('change', onNarrowChange)
+})
+
+/* ---------- 窄屏渐进式披露（360px） ----------
+   气象分析这一块在 360 下实测 1812px：8 层云层表、模型可信度、大气与降水、
+   天文与拍摄、逐时表各占一大段，但它们回答的是「为什么」（第二层问题），
+   首屏的决策卡已经回答了「去不去」。窄屏默认只留每张卡的一行摘要 + 展开按钮，
+   内容一条不删（DOM 始终渲染），展开后与宽屏逐字一致。
+   桌面（>560px）不渲染展开按钮、内容全部照旧显示。 */
+const NARROW_MQ = '(max-width: 560px)'
+const narrow = ref(window.matchMedia(NARROW_MQ).matches)
+let narrowMq: MediaQueryList | null = null
+const layersOpen = ref(false)
+const modelOpen = ref(false)
+const airOpen = ref(false)
+const sunOpen = ref(false)
+const hoursOpen = ref(false)
+const FOLD_ALL = [layersOpen, modelOpen, airOpen, sunOpen, hoursOpen]
+function onNarrowChange(e: MediaQueryListEvent): void {
+  narrow.value = e.matches
+  /* 跟随断点复位：从宽屏转窄屏时回到「默认收起」，
+     避免用户在宽屏展开的状态被带到窄屏后布局瞬间拉长。 */
+  if (e.matches) for (const f of FOLD_ALL) f.value = false
+}
+
+/* 收起状态的一行摘要素材 */
+const topLayer = computed(() => {
+  const hit = layers.value.find((l) => l.cover > 0)
+  return hit || null
+})
+function km(v: number): string {
+  return v >= 1000 ? (v / 1000).toFixed(1) + ' km' : Math.round(v) + ' m'
+}
+const layerSummary = computed(() => {
+  const t = topLayer.value
+  if (!t) return '8 层均无云'
+  return '最高有云：' + t.genus + ' ' + t.cover + '% · ' + km(t.height) + ' / ' + t.level + ' hPa'
+})
+const modelSummary = computed(
+  () => '一致度 ' + consistency.value + '% · 分歧 ±' + props.row.spread + ' 分 · 完整度 ' + props.row.quality.completeness + '%'
+)
+const airSummary = computed(() => {
+  const c = airCells.value
+  const u = (x: { k: string; v: string; u: string }) => (x.v === '—' ? '—' : x.v + x.u)
+  return c[0].k + ' ' + u(c[0]) + ' · ' + c[2].k + ' ' + u(c[2]) + ' · AOD ' + c[4].v + ' · 降水 ' + u(c[3])
+})
+const sunSummary = computed(() => {
+  const x = d.value
+  const r = props.row
+  return x.time + ' · 太阳方位 ' + (r.sunAz == null ? '—' : r.sunAz + '°') + ' · 黄金 ' + x.golden
+})
+const hoursSummary = computed(() => {
+  const hs = d.value.hourly
+  if (!hs.length) return '暂无逐时数据'
+  let bi = 0
+  hs.forEach((h, i) => { if (h.score > hs[bi].score) bi = i })
+  return hs.length + ' 个时次 · 最佳 ' + hs[bi].t + '（' + hs[bi].score + ' 分）'
+})
+
 </script>
 
 <template>
@@ -153,7 +220,18 @@ onBeforeUnmount(() => { window.removeEventListener('fc:show-layers', expandAllLa
             >收起全部判据</button>
           </div>
 
-          <div class="fcl">
+          <button
+            v-if="narrow"
+            class="s2b-toggle fcd2-toggle"
+            type="button"
+            :aria-expanded="layersOpen ? 'true' : 'false'"
+            @click="layersOpen = !layersOpen"
+          >
+            <span class="s2b-tx"><b>8 层云层逐层判据</b><em>{{ layerSummary }}</em></span>
+            <span class="s2b-ic" aria-hidden="true">{{ layersOpen ? '收起' : '展开' }}</span>
+          </button>
+
+          <div v-show="!narrow || layersOpen" class="fcl">
             <div class="fcl-row fcl-hd">
               <span>高度</span><span>云量</span><span>云属 · 云种</span><span>湿度</span><span>气温</span><span class="r">底/顶</span>
             </div>
@@ -193,7 +271,7 @@ onBeforeUnmount(() => { window.removeEventListener('fc:show-layers', expandAllLa
             </template>
           </div>
 
-          <p class="fcl-legend">
+          <p v-show="!narrow || layersOpen" class="fcl-legend">
             低云 &lt;2 km · 中云 2–6 km · 高云 &gt;6 km ·「可被照亮」= 薄到夕阳能从底下透过并染色。云属由「云量 + 湿度 + 温度 + 降水」推得，不是实测。
           </p>
 
@@ -207,32 +285,44 @@ onBeforeUnmount(() => { window.removeEventListener('fc:show-layers', expandAllLa
         <!-- 模型与可信度：分数是怎么从原始分变成最终分的（放在左栏底部，补满云层卡下方的空档） -->
         <div class="fcd2-card">
           <div class="fcd2-ch"><h3>模型与可信度</h3><s>原始分 → 最终分</s></div>
-          <div class="fcchain">
-            <span class="st">原始分</span><b>{{ row.rawScore }}</b>
-            <span class="arw">→</span><span class="st">逐时平滑</span><span class="arw">→</span>
-            <span class="st">朝向 / 云层结构</span><span class="arw">→</span>
-            <b :style="{ color: row.level.color }">{{ row.score }}</b><span class="st">最终分</span>
+          <button
+            v-if="narrow"
+            class="s2b-toggle fcd2-toggle"
+            type="button"
+            :aria-expanded="modelOpen ? 'true' : 'false'"
+            @click="modelOpen = !modelOpen"
+          >
+            <span class="s2b-tx"><b>逐项可信度</b><em>{{ modelSummary }}</em></span>
+            <span class="s2b-ic" aria-hidden="true">{{ modelOpen ? '收起' : '展开' }}</span>
+          </button>
+          <div v-show="!narrow || modelOpen">
+            <div class="fcchain">
+              <span class="st">原始分</span><b>{{ row.rawScore }}</b>
+              <span class="arw">→</span><span class="st">逐时平滑</span><span class="arw">→</span>
+              <span class="st">朝向 / 云层结构</span><span class="arw">→</span>
+              <b :style="{ color: row.level.color }">{{ row.score }}</b><span class="st">最终分</span>
+            </div>
+            <div class="fcbox">
+              <span class="nm">8 模式一致度</span>
+              <span class="bar"><i :style="{ width: consistency + '%' }"></i></span>
+              <span class="sg">{{ consistency }}%</span>
+            </div>
+            <div class="fcbox">
+              <span class="nm">模式分歧</span>
+              <span class="bar">
+                <i
+                  :style="{ width: Math.min(100, row.spread * 2) + '%', background: row.spread >= 18 ? 'var(--warn)' : 'var(--muted)' }"
+                ></i>
+              </span>
+              <span class="sg">±{{ row.spread }} 分{{ row.spread >= 18 ? '（已打折）' : '' }}</span>
+            </div>
+            <div class="fcbox">
+              <span class="nm">数据完整度</span>
+              <span class="bar"><i :style="{ width: row.quality.completeness + '%; background: var(--good)' }"></i></span>
+              <span class="sg">{{ row.quality.completeness }}%</span>
+            </div>
+            <p class="fcd2-note">光柱这一路：{{ pillarNote }}</p>
           </div>
-          <div class="fcbox">
-            <span class="nm">8 模式一致度</span>
-            <span class="bar"><i :style="{ width: consistency + '%' }"></i></span>
-            <span class="sg">{{ consistency }}%</span>
-          </div>
-          <div class="fcbox">
-            <span class="nm">模式分歧</span>
-            <span class="bar">
-              <i
-                :style="{ width: Math.min(100, row.spread * 2) + '%', background: row.spread >= 18 ? 'var(--warn)' : 'var(--muted)' }"
-              ></i>
-            </span>
-            <span class="sg">±{{ row.spread }} 分{{ row.spread >= 18 ? '（已打折）' : '' }}</span>
-          </div>
-          <div class="fcbox">
-            <span class="nm">数据完整度</span>
-            <span class="bar"><i :style="{ width: row.quality.completeness + '%; background: var(--good)' }"></i></span>
-            <span class="sg">{{ row.quality.completeness }}%</span>
-          </div>
-          <p class="fcd2-note">光柱这一路：{{ pillarNote }}</p>
         </div>
       </div>
 
@@ -240,7 +330,17 @@ onBeforeUnmount(() => { window.removeEventListener('fc:show-layers', expandAllLa
       <div class="fcd2-col fcd2-col-r">
         <div class="fcd2-card">
           <div class="fcd2-ch"><h3>大气与降水</h3></div>
-          <div class="fcmg">
+          <button
+            v-if="narrow"
+            class="s2b-toggle fcd2-toggle"
+            type="button"
+            :aria-expanded="airOpen ? 'true' : 'false'"
+            @click="airOpen = !airOpen"
+          >
+            <span class="s2b-tx"><b>8 项指标</b><em>{{ airSummary }}</em></span>
+            <span class="s2b-ic" aria-hidden="true">{{ airOpen ? '收起' : '展开' }}</span>
+          </button>
+          <div v-show="!narrow || airOpen" class="fcmg">
             <div v-for="c in airCells" :key="c.k" class="fcmc" :class="{ miss: c.v === '—' }">
               <span class="k">{{ c.k }}</span>
               <span class="v">{{ c.v }}<em v-if="c.v !== '—'">{{ c.u }}</em></span>
@@ -250,7 +350,17 @@ onBeforeUnmount(() => { window.removeEventListener('fc:show-layers', expandAllLa
 
         <div class="fcd2-card">
           <div class="fcd2-ch"><h3>天文与拍摄</h3></div>
-          <div class="fckv">
+          <button
+            v-if="narrow"
+            class="s2b-toggle fcd2-toggle"
+            type="button"
+            :aria-expanded="sunOpen ? 'true' : 'false'"
+            @click="sunOpen = !sunOpen"
+          >
+            <span class="s2b-tx"><b>7 项天文时刻</b><em>{{ sunSummary }}</em></span>
+            <span class="s2b-ic" aria-hidden="true">{{ sunOpen ? '收起' : '展开' }}</span>
+          </button>
+          <div v-show="!narrow || sunOpen" class="fckv">
             <div v-for="x in sunRows" :key="x.k" class="fckv-r">
               <span class="k">{{ x.k }}</span><span class="v">{{ x.v }}</span>
               <span v-if="x.n" class="n">{{ x.n }}</span>
@@ -260,6 +370,19 @@ onBeforeUnmount(() => { window.removeEventListener('fc:show-layers', expandAllLa
       </div>
     </div>
 
-    <HourTable :row="row" />
+    <!-- 逐时表：窄屏默认收起，一行摘要可展开 -->
+    <div class="fcd2-hours">
+      <button
+        v-if="narrow"
+        class="s2b-toggle fcd2-toggle"
+        type="button"
+        :aria-expanded="hoursOpen ? 'true' : 'false'"
+        @click="hoursOpen = !hoursOpen"
+      >
+        <span class="s2b-tx"><b>逐时表</b><em>{{ hoursSummary }}</em></span>
+        <span class="s2b-ic" aria-hidden="true">{{ hoursOpen ? '收起' : '展开' }}</span>
+      </button>
+      <HourTable v-show="!narrow || hoursOpen" :row="row" />
+    </div>
   </div>
 </template>

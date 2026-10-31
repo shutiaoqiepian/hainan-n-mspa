@@ -167,7 +167,18 @@ onBeforeUnmount(() => {
     <div class="wrap">
       <p class="eyebrow">Sunset Forecast · {{ prov }}</p>
       <h1 class="fc-h1">这两天，<b>{{ prov }}</b>哪里值得跑一趟</h1>
-      <p class="fc-lede">
+      <!-- 页头说明：窄屏收成一行摘要（全文仍在 DOM 里，点开与宽屏逐字一致） -->
+      <details v-if="narrow" class="fc-lede-fold">
+        <summary>
+          根据云层高度、云种、气溶胶与降水，估算{{ prov }}各机位今天、明天的朝霞与晚霞条件。
+          <i aria-hidden="true"></i>
+        </summary>
+        <p class="fc-lede">
+          根据云层高度、云种、气溶胶与降水，估算{{ prov }}各机位今天、明天的朝霞与晚霞条件。
+          数值越高，越有可能出现火烧云。点每个机位的「详情」可以看到逐高度云种、气象解读和拍摄题材。
+        </p>
+      </details>
+      <p v-else class="fc-lede">
         根据云层高度、云种、气溶胶与降水，估算{{ prov }}各机位今天、明天的朝霞与晚霞条件。
         数值越高，越有可能出现火烧云。点每个机位的「详情」可以看到逐高度云种、气象解读和拍摄题材。
       </p>

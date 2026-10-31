@@ -231,6 +231,8 @@
      标题 11.5→10.5px 且降一档颜色、内边距 10/11→7/8、色条 5→4px、
      分隔线从 --line 换成更弱的 --fill-2。
    窄屏（≤560px）再收一档，见下方移动端块。 */
+/* 窄屏收起时，摘要行与网格共用一个网格区域（结构见 DecisionHero.vue） */
+.dh-opps-wrap { grid-area: opps; }
 .dh-opps {
   grid-area: opps;
   display: grid;
@@ -1172,3 +1174,91 @@ button.fcl-row.open { background: var(--fill-2); }
 @media (prefers-reduced-motion: reduce) {
   .fc-img-viewer { animation: none; }
 }
+
+/* ============================================================
+   阶段2b：360px 渐进式披露（只作用于 ≤560px）
+   原则：不删内容、不缩字号尺寸、不缩行距、不缩触控区。
+   次要信息默认收起成「一行摘要 + 展开按钮」，展开后与宽屏逐字一致。
+   桌面（>560px）完全不进入这个媒体查询，布局与视觉保持原状。
+   ============================================================ */
+@media (max-width: 560px) {
+  /* ---- 决策卡：六格指标全部保留可见，改 3 列 × 2 行紧凑网格 ---- */
+  .dh-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dh-cell { padding: 8px 10px; }
+
+  /* ---- 通用「一行摘要 + 展开」按钮 ----
+     放在卡片标题下方；min-height 44px（≥32 命中区下限），整行可点。 */
+  .s2b-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    margin: 2px 0 10px;
+    padding: 7px 12px;
+    border: 1px dashed var(--line-strong);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-2);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .s2b-toggle:hover { border-color: var(--accent-a-line); background: var(--fill-1); color: var(--text); }
+  .s2b-toggle:focus-visible { outline: 2px solid var(--accent-a); outline-offset: 2px; }
+  .s2b-toggle .s2b-tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .s2b-toggle .s2b-tx b { font-size: 12.5px; font-weight: 600; color: var(--text-2); letter-spacing: 0.02em; }
+  .s2b-toggle .s2b-tx em {
+    font-style: normal;
+    font-size: 11px;
+    color: var(--muted-2);
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+  .s2b-toggle .s2b-ic { margin-left: auto; flex: none; font-size: 11.5px; color: var(--accent-b); letter-spacing: 0.04em; white-space: nowrap; }
+
+  /* ---- 决策卡 · 四个机会指数收成一行摘要 ---- */
+  .dh-opps-sum {
+    min-height: 44px;
+    margin: 0;
+    padding: 9px 14px;
+    border: 0;
+    border-top: 1px solid var(--fc-line);
+    border-radius: 0;
+    background: var(--bg);
+    flex-wrap: wrap;
+    gap: 2px 8px;
+  }
+  .dh-opps-sum b { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; color: var(--muted-2); flex: none; }
+  .dh-opps-sum span { font-size: 11.5px; color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 0; }
+  .dh-opps-sum i { margin-left: auto; font-style: normal; font-size: 11px; color: var(--accent-b); flex: none; white-space: nowrap; }
+  .dh-opps-sum:hover { background: var(--fill-1); }
+
+  /* ---- 页头说明折叠：摘要一行，全文在 DOM 里 ---- */
+  .fc-lede-fold { margin: 5px 0 0; }
+  .fc-lede-fold > summary {
+    list-style: none;
+    cursor: pointer;
+    min-height: 32px;
+    padding: 2px 0;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+  .fc-lede-fold > summary::-webkit-details-marker { display: none; }
+  .fc-lede-fold > summary i { font-style: normal; color: var(--accent-b); margin-left: 2px; white-space: nowrap; }
+  .fc-lede-fold > summary i::before { content: '展开 ＋'; }
+  .fc-lede-fold[open] > summary i::before { content: '收起 －'; }
+  .fc-lede-fold .fc-lede { margin: 2px 0 0; }
+  .fc-lede-fold[open] > summary { color: var(--text-2); }
+
+  /* ---- 气象分析：每张卡默认收起，只留摘要行 ---- */
+  .fcd2-toggle { margin: 0 0 10px; }
+  .fcd2-hours .s2b-toggle { margin-bottom: 0; }
+  .fcd2-hours .fc-hours2 { margin-top: 12px; }
+  /* 云层表头第 6 列（底/顶）在窄屏数据行早已隐藏，表头也一并收起，
+     否则「底/顶」会单独掉到下一行（旧版一直如此，顺手对齐） */
+  .fcl-row.fcl-hd > span:nth-child(6) { display: none; }
+}
+

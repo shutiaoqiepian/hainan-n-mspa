@@ -99,32 +99,32 @@ export const ITEMS = [
     files: []
   },
   {
-    id: 'litgeo-verify',
-    title: '光线几何引擎的 4 个关键公式只在原文图片里，写码前必须先核对',
-    state: 'open',
+    id: 'tcdc-multiseason',
+    title: 'GFS 云阈值只在 1 天、冰云样本上标定过，暖云/混合相与季节适用性未知',
+    state: 'pending',
     trigger: {
-      text: '现在就能做：把原文插图抓下来读公式，再用 3 个案例数值回归',
+      text: '累积 ≥30 天剖面缓存，或需要把云判据用于评分/统计时',
       metric: null
     },
     why:
-      '章节一的几何公式、火烧云三角边界、中云云洞最小长度、卷云透过率判据都是 imageNNN.png，' +
-      'HTML 里只有占位符。文字只给了结果数值（表 1.3 / 表 1.4 / 表 4.1 与三个案例）。' +
-      '直接凭数值反推公式属于"猜"，违反项目「不编造」的规矩。',
+      '阶段六-03 专项审查实测：所有"有云点"都在 −20°C 以下的冰云，暖云/混合相样本为 0；' +
+      '同轮 PPV 0.58–0.69、跨轮 0.39–0.42；有效独立样本仅约 439–878。' +
+      '现在这套阈值只能用于"画图区分有没有云"，不能当物理阈值或统计依据。',
     how: [
-      '用图片读取能力读 https://www.sunsetbot.top/halo/images/科学/火烧云/火烧云预报教程章节一/ 下的对应插图',
-      '核对 docs/阶段六-00 §6 的 W1–W4，把公式写进 docs/阶段六-01 §3 并去掉"待核实"标记',
-      '用 docs/阶段六-01 §5.2 的深圳/伊春/上海三个案例做回归（误差 ≤10% 或 ≤1 分钟）',
-      '核对不通过就不进入代码；结论写回文档',
+      '用 tools/xsec/review_tcdc.py 的多轮次/分相审查跑满一个季节（至少 30 天、4 个起报/天）',
+      '液态/冰晶分开标定：暖云用 CLWMR、冰云用 ICMR，各自给自己的阈值与 PPV',
+      '若有 CDS 账号，再与 ERA5 的 clwc/ciwc 做量级对照（台账 xsec-era5-validate）',
+      '结论回写 docs/阶段六-03 §7 与 docs/阶段五-02 §3，达到"可引用"标准前继续保持经验性表述',
     ],
-    doc: 'docs/阶段六-00参考资料原文整理.md §6、docs/阶段六-01光线几何引擎-技术设计.md §3',
-    files: []
+    doc: 'docs/阶段六-03litgeo-verify-验证报告.md §7',
+    files: ['tools/xsec/review_tcdc.py']
   },
   {
     id: 'litgeo-engine',
     title: '火烧云光线几何引擎（独立解释层，不参与评分）',
     state: 'pending',
     trigger: {
-      text: 'litgeo-verify 通过后再开工；公式口径需主人确认',
+      text: '阶段六-03 验证报告已提交（2026-11-01），**等主人确认后**才开工',
       metric: null
     },
     why:
@@ -132,6 +132,7 @@ export const ITEMS = [
       '现有评分不回答"什么时候烧、在天空哪儿烧、为什么翻车"，这正是几何引擎要补的。',
     how: [
       '按 docs/阶段六-01 的模块划分实现纯函数（earth/sunlight/timing/aerosol/viewing）',
+      '把 docs/阶段六-03 的 51 项检查改写成正式单测（node --test 或现有 test-*.mjs 风格）',
       '全部纯函数 + 单测；不 import scoring、不写 forecast state',
       '先只做 /cross 的只读叠加图层（V1），再评估独立 0–500 km 光照图（V2）',
       '输出必须带 confidence/flags，页面明示哪些是估算',
