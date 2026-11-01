@@ -11,7 +11,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CrossSectionChart from '@/components/xsec/CrossSectionChart.vue'
-import { ageHours, loadXsecContext, loadXsecIndex, loadXsecSpot } from '@/lib/xsec/api'
+import { ageHours, loadNationalIndex, loadXsecContext, loadXsecIndex, loadXsecSpot } from '@/lib/xsec/api'
 import { Y_RANGES, beijingDateTime, beijingTime, cloudBands, expandPoints, sectionAt } from '@/lib/xsec/model'
 import { fetchOpenMeteoSection } from '@/lib/xsec/openmeteo'
 import { sunInPlane, sunsetMs } from '@/lib/xsec/sun'
@@ -20,9 +20,13 @@ import {
   terminatorSpeedKmMin, terrainHorizonDeg, transmittance
 } from '@/lib/xsec/light'
 import type { BandLight } from '@/lib/xsec/light'
-import type { XsecContext, XsecIndex, XsecSpotFile } from '@/lib/xsec/types'
+import type { XsecContext, XsecIndex, XsecNationalIndex, XsecSpotFile } from '@/lib/xsec/types'
 
 const index = ref<XsecIndex | null>(null)
+/** 全国 224 机位索引（3 时次 × 1 方位）；缺测时页面仍可用海南试点 */
+const national = ref<XsecNationalIndex | null>(null)
+/** 当前选的是全国机位而不是海南试点 */
+const nationalSpotId = ref('')
 /** GFS 缓存（主数据源，4 个时次 × 5 个方位） */
 const gfsFile = ref<XsecSpotFile | null>(null)
 /** Open-Meteo 实时结果（对照数据源，单个时次） */
@@ -70,6 +74,19 @@ const spotMeta = computed(() => {
   if (!idx) return null
   return idx.spots.find((s) => s.id === spotId.value) ?? idx.spots[0] ?? null
 })
+
+/** 全国索引里按机位 id 查文件；没有返回 null */
+function nationalFile(id: string): string | null {
+  if (!id) return null
+  return national.value?.spots.find((s) => s.id === id)?.file ?? null
+}
+
+function pickNational(id: string): void {
+  const f = nationalFile(id)
+  if (!f) return
+  nationalSpotId.value = id
+  void pickSpotById(id, f)
+}
 
 const isOm = computed(() => source.value === 'om')
 const activeFile = computed<XsecSpotFile | null>(() => (isOm.value ? omFile.value : gfsFile.value))
@@ -349,6 +366,26 @@ function syncSunOffset(): void {
   sunOffsetMin.value = m !== null && Number.isFinite(m) ? Math.round(m) : 0
 }
 
+async function pickSpotById(id: string, file: string): Promise<void> {
+  spotId.value = id
+  loading.value = true
+  error.value = ''
+  try {
+    const f = await loadXsecSpot(file)
+    gfsFile.value = f
+    if (!f.azimuths.includes(az.value)) az.value = f.spot.defaultAzimuth
+    if (!f.times.some((t) => t.t === tIdx.value)) {
+      tIdx.value = nearestSunsetIdx.value >= 0 ? nearestSunsetIdx.value : 0
+    }
+    syncSunOffset()
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : String(e)
+    gfsFile.value = null
+  } finally {
+    loading.value = false
+  }
+}
+
 async function pickSpot(id: string): Promise<void> {
   const idx = index.value
   if (!idx) return
@@ -398,6 +435,9 @@ async function loadOm(): Promise<void> {
 }
 
 async function init(): Promise<void> {
+  loadNationalIndex()
+    .then((n) => { national.value = n })
+    .catch(() => { /* 全国索引缺失：保持海南试点，页面已注明 */ })
   loadXsecContext()
     .then((c) => { xctx.value = c })
     .catch((e) => { ctxWarn.value = e instanceof Error ? e.message : String(e) })
@@ -504,8 +544,9 @@ const SUNSET_TEXT = computed(() => {
       <p class="eyebrow">Cross Section · 大气剖面</p>
       <h1 class="xsec-h1">云在哪一层，<b>光从哪里来</b></h1>
       <p class="xsec-lede">
-        沿你镜头朝向切开 50 km 的空气：横轴是距离，纵轴是海拔，颜色是模式算出来的云水与云冰。
-        这张图解释的是「云层结构」，不参与霞光评分的计算，也不比评分更准。
+        沿你镜头朝向切开大气：横轴是距离（试点机位 0–320 km，全国机位同样几何），纵轴是海拔，
+        颜色是模式算出来的云水与云冰。这张图解释的是「云层结构」，
+        不参与霞光评分的计算，也不比评分更准。
       </p>
     </div>
   </section>
@@ -535,6 +576,32 @@ const SUNSET_TEXT = computed(() => {
             <span class="xsec-spot-name">{{ s.name }}</span>
             <span class="xsec-spot-tag">{{ s.tag }}</span>
           </button>
+        </div>
+
+        <!-- 全国 224 机位（3 时次 × 1 方位；口径与试点不同，单独一段） -->
+        <div v-if="national" class="xsec-national">
+          <div class="xsec-national-head">
+            <span class="xsec-group-label">全国机位</span>
+            <span class="xsec-hint">
+              {{ national.spots.length }} 个 · 按当天日落方位生成 1 个剖面 ·
+              {{ national.times.length }} 个时次 · 起报 {{ beijingDateTime(national.cycle) }}
+            </span>
+          </div>
+          <div class="xsec-spots xsec-spots-national" role="tablist" aria-label="全国机位">
+            <button
+              v-for="s in national.spots"
+              :key="s.id"
+              type="button"
+              class="xsec-spot xsec-spot-small"
+              :class="{ 'is-on': s.id === nationalSpotId }"
+              role="tab"
+              :aria-selected="s.id === nationalSpotId"
+              @click="pickNational(s.id)"
+            >
+              <span class="xsec-spot-name">{{ s.name }}</span>
+              <span class="xsec-spot-tag">{{ s.prov }} · {{ s.azimuth.toFixed(0) }}°</span>
+            </button>
+          </div>
         </div>
 
         <!-- 工具条 -->
@@ -867,7 +934,7 @@ const SUNSET_TEXT = computed(() => {
             </dl>
             <p class="xsec-known xsec-known-p">
               剖面只有 {{ activeFile.lengthKm }} km，而夕阳照明边界通常在数十到数百 km 外，
-              图上只画进入视野的那一段；地形序列 0–50 km 每 {{ demStepKm }} km 一个 DEM 点，
+              图上只画进入视野的那一段；地形序列 0–{{ activeFile.lengthKm }} km 每 {{ demStepKm }} km 一个 DEM 点，
               光路遮挡用沿太阳方位的 0–200 km 地形序列近似。
             </p>
           </div>
@@ -931,7 +998,7 @@ const SUNSET_TEXT = computed(() => {
                   <dt>云量性质</dt>
                   <dd>由相对湿度诊断估算，无云水/云冰字段；不能与 GFS 云水直接比较数值</dd>
                 </template>
-                <dt>水平分辨率</dt><dd>{{ activeFile.gridKm }} km（0.25°，50 km 内只有 2–4 个真实格点）</dd>
+                <dt>水平分辨率</dt><dd>{{ activeFile.gridKm }} km（0.25°，{{ activeFile.lengthKm }} km 内只有 {{ Math.max(1, Math.round(activeFile.lengthKm / activeFile.gridKm)) }} 个左右真实格点）</dd>
                 <dt>垂直坐标</dt><dd>逐格点逐层位势高度（不是固定压高表换算）</dd>
                 <dt>垂直速度</dt>
                 <dd>

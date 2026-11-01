@@ -145,6 +145,32 @@ export interface XsecPoint {
   pressureHpa: number
 }
 
+/** 全国机位索引（data/cross/national-index.json），与海南 8 机位索引分开 */
+export interface XsecNationalIndex {
+  version: number
+  source: string
+  model: string
+  cycle: string
+  generatedAt: string
+  lengthKm: number
+  sampleIntervalKm: number
+  levelsHpa: number[]
+  levelFields: XsecField[]
+  azimuthPolicy: string
+  times: XsecTime[]
+  spots: Array<{
+    prov: string
+    id: string
+    name: string
+    /** 相对 data/cross/ 的路径，如 "hn/hn-000.json" */
+    file: string
+    bytes: number
+    azimuth: number
+  }>
+  errors: Array<Record<string, string>>
+  note: string
+}
+
 /* ================= 环境上下文（DEM 地形 + AOD，独立于 GFS 剖面缓存） ================= */
 
 /** 一段 DEM 地形序列：从机位沿某方位等间距取的高程（m）；null = 该点缺测 */

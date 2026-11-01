@@ -320,7 +320,10 @@ def fetch_via_filter(date, hh, fh, var_level_pairs):
         params.append((f"lev_{lv}_mb", "on"))
     params.extend(bbox_params())
     url = FILTER + "?" + urllib.parse.urlencode(params)
-    cache = CACHE_DIR / f"filter_{date}_{hh}_f{fh:03d}.grib2"
+    # ⚠ 缓存键必须包含裁剪窗口：全国批量会给不同 tile 用不同 DOMAIN，
+    #   只按 cycle+小时命名会把海南窗口的文件当成别处窗口的缓存用（实测踩过）。
+    win = f"{DOMAIN['latMin']:g}_{DOMAIN['latMax']:g}_{DOMAIN['lonMin']:g}_{DOMAIN['lonMax']:g}"
+    cache = CACHE_DIR / f"filter_{date}_{hh}_f{fh:03d}_{win}.grib2"
     if cache.exists() and cache.stat().st_size > 1000:
         buf = cache.read_bytes()
         if buf[:4] == b"GRIB":
@@ -385,7 +388,8 @@ def fetch_orog(date, hh, fh):
     params = [("file", f"gfs.t{hh}z.pgrb2.0p25.f{fh:03d}"), ("subregion", ""),
               ("dir", f"/gfs.{date}/{hh}/atmos"), ("var_HGT", "on"), ("lev_surface", "on")]
     params.extend(bbox_params())
-    cache = CACHE_DIR / f"orog_{date}_{hh}_f{fh:03d}.grib2"
+    win = f"{DOMAIN['latMin']:g}_{DOMAIN['latMax']:g}_{DOMAIN['lonMin']:g}_{DOMAIN['lonMax']:g}"
+    cache = CACHE_DIR / f"orog_{date}_{hh}_f{fh:03d}_{win}.grib2"
     if cache.exists() and cache.stat().st_size > 200:
         buf = cache.read_bytes()
         if buf[:4] == b"GRIB":

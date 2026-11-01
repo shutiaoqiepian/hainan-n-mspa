@@ -93,6 +93,8 @@ node tools/xsec/test-light.mjs      # 光照几何 52 项（曲率/受光判据/
 node tools/test-rain.mjs            # 降水字段契约：缺测必须是 null，不能变 0
 node tools/test-shadow.mjs          # 影子分数 14 项（含「不得高于基线」封顶规则扫描）
 python tools/xsec/build_context.py --allow-partial  # 重建 DEM 地形 + AOD（Open-Meteo 限额时自动回退 SRTM）
+python tools/xsec/build_cross_national.py     # 全国 224 机位剖面（约 25 分钟，4 MB）
+python tools/xsec/quality_national.py         # 全国质量报告（覆盖/结构/真实性/逐省）
 ```
 
 > `data/cross/context.json` 与 GFS 剖面缓存**分开**：它是 DEM（Copernicus/SRTM）与 CAMS AOD，

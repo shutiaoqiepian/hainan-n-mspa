@@ -189,10 +189,10 @@ export const ITEMS = [
   },
   {
     id: 'cross-224-national',
-    title: '/cross 全国 224 机位尚未铺开（现在只有 8 个试点）',
-    state: 'open',
+    title: '/cross 全国 224 机位已铺开（224/224 落盘，质量报告 0 不合格）',
+    state: 'done',
     trigger: {
-      text: '阶段七-01 的 DEM/AOD 流程可复用（按机位 id 组织）；仍需先补 224 个机位海拔，并分批跑高程请求',
+      text: '2026-11-01 完成：build_cross_national.py 生成 224 个机位（4.04 MB），quality_national.py 0 不合格',
       metric: null
     },
     why:
