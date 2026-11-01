@@ -59,4 +59,5 @@ docs/给GPT-源码包-可粘贴.md
 __pycache__/
 *.pyc
 
+# 不要把vite产物放进仓库！
 dist/
