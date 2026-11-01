@@ -13,6 +13,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CrossSectionChart from '@/components/xsec/CrossSectionChart.vue'
 import { ageHours, loadNationalContext, loadNationalIndex, loadXsecContext, loadXsecIndex, loadXsecSpot } from '@/lib/xsec/api'
 import { Y_RANGES, beijingDateTime, beijingTime, cloudBands, expandPoints, sectionAt } from '@/lib/xsec/model'
+import { CHART_GUIDE, QUICK_STEPS, TOOLBAR_GUIDE } from '@/lib/xsec/guide'
 import { fetchOpenMeteoSection } from '@/lib/xsec/openmeteo'
 import { sunInPlane, sunsetMs } from '@/lib/xsec/sun'
 import {
@@ -21,7 +22,6 @@ import {
 } from '@/lib/xsec/light'
 import type { BandLight } from '@/lib/xsec/light'
 import type { XsecContext, XsecIndex, XsecNationalIndex, XsecSpotFile } from '@/lib/xsec/types'
-
 const index = ref<XsecIndex | null>(null)
 /** 全国 224 机位索引（3 时次 × 1 方位）；缺测时页面仍可用海南试点 */
 const national = ref<XsecNationalIndex | null>(null)
@@ -59,7 +59,14 @@ const fromName = ref('')
 const fromNote = ref('')
 /** 环境上下文：真实 DEM 地形 + AOD（独立缓存，失败不影响云场） */
 const xctx = ref<XsecContext | null>(null)
+/** 环境上下文（DEM/AOD）加载失败时的提示 */
 const ctxWarn = ref('')
+
+/* ---- 「怎么看」说明 ----
+ * 为什么用按钮而不是纯 title：title 只有桌面端悬浮才出现，手机完全没有；
+ * 摄影爱好者第一眼看到这一排按钮不知道点哪个，需要能主动展开、能一次看全。
+ */
+const showGuide = ref(false)
 
 const AZ_CHOICES = [240, 255, 265, 280, 295]
 const LAYER_ITEMS = [
@@ -617,6 +624,59 @@ const SUNSET_TEXT = computed(() => {
           </div>
         </div>
 
+        <!-- 怎么看：一排按钮的摄影师向解释（点开才展开，不打断默认浏览） -->
+        <div class="xsec-guide">
+          <button
+            type="button"
+            class="xsec-guide-toggle"
+            :aria-expanded="showGuide"
+            @click="showGuide = !showGuide"
+          >
+            <span class="xsec-guide-icon" aria-hidden="true">{{ showGuide ? '▾' : '▸' }}</span>
+            怎么看这张图 · 每个按钮是干嘛的
+            <span class="xsec-guide-meta">给摄影师的白话版 · 约 2 分钟读完</span>
+          </button>
+
+          <div v-if="showGuide" class="xsec-guide-body">
+            <div class="xsec-guide-quick">
+              <strong>三十秒上手</strong>
+              <ol>
+                <li v-for="(s, i) in QUICK_STEPS" :key="i">{{ s }}</li>
+              </ol>
+            </div>
+
+            <div v-for="g in TOOLBAR_GUIDE" :key="g.title" class="xsec-guide-block">
+              <h3 class="xsec-guide-title">{{ g.title }}</h3>
+              <p class="xsec-guide-lead">{{ g.lead }}</p>
+              <dl class="xsec-guide-dl">
+                <template v-for="it in g.items" :key="it.name">
+                  <dt>{{ it.name }}</dt>
+                  <dd>
+                    {{ it.what }}
+                    <span class="xsec-guide-use">怎么用：{{ it.use }}</span>
+                    <span v-if="it.caution" class="xsec-guide-caution">别误读：{{ it.caution }}</span>
+                  </dd>
+                </template>
+              </dl>
+            </div>
+
+            <div class="xsec-guide-block">
+              <h3 class="xsec-guide-title">图上那些东西是什么</h3>
+              <p class="xsec-guide-lead">颜色和线条各自代表的量不同，认错颜色就会读错结论。</p>
+              <dl class="xsec-guide-dl">
+                <template v-for="it in CHART_GUIDE" :key="it.name">
+                  <dt>{{ it.name }}</dt>
+                  <dd>
+                    {{ it.what }}
+                    <span class="xsec-guide-use">怎么用：{{ it.use }}</span>
+                    <span v-if="it.caution" class="xsec-guide-caution">别误读：{{ it.caution }}</span>
+                  </dd>
+                </template>
+              </dl>
+            </div>
+          </div>
+        </div>
+
         <!-- 工具条 -->
         <div class="xsec-toolbar">
           <div class="xsec-group">
@@ -740,7 +800,7 @@ const SUNSET_TEXT = computed(() => {
               type="button"
               class="xsec-chip"
               :class="{ 'is-on': layers[l.key] }"
-              :title="l.hint"
+              :title="l.hint + '｜详细解释见上方「怎么看这张图」'"
               @click="toggleLayer(l.key)"
             >
               {{ l.name }}

@@ -84,6 +84,155 @@
   color: var(--muted-2);
 }
 
+/* ---------- 「怎么看」说明面板 ---------- */
+
+.xsec-guide {
+  margin-bottom: 14px;
+}
+
+.xsec-guide-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  padding: 11px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--glass);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.xsec-guide-toggle:hover {
+  border-color: var(--accent-a-line);
+  background: var(--glass-hover);
+}
+
+.xsec-guide-icon {
+  color: var(--accent-a);
+  font-size: 12px;
+}
+
+.xsec-guide-meta {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted-2);
+  white-space: nowrap;
+}
+
+.xsec-guide-body {
+  margin-top: 10px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--glass);
+}
+
+.xsec-guide-quick {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--accent-a-soft);
+  border: 1px solid var(--accent-a-line);
+  margin-bottom: 22px;
+}
+
+.xsec-guide-quick strong {
+  display: block;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--accent-a);
+  margin-bottom: 8px;
+}
+
+.xsec-guide-quick ol {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+}
+
+.xsec-guide-quick li {
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--text-2);
+}
+
+.xsec-guide-block + .xsec-guide-block {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.xsec-guide-block {
+  padding: 4px 0 2px;
+}
+
+.xsec-guide-title {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.xsec-guide-lead {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.xsec-guide-dl {
+  margin: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.xsec-guide-dl dt {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--accent-a);
+  margin-bottom: 6px;
+  padding: 3px 10px;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 6px;
+  background: var(--accent-a-soft);
+  border: 1px solid var(--accent-a-line);
+}
+
+.xsec-guide-dl dd {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: var(--text-2);
+}
+
+.xsec-guide-use,
+.xsec-guide-caution {
+  display: block;
+  margin-top: 5px;
+  padding-left: 10px;
+  border-left: 2px solid var(--line-strong);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.xsec-guide-use {
+  border-left-color: var(--accent-a-line);
+}
+
+.xsec-guide-caution {
+  border-left-color: var(--warn);
+  color: var(--muted);
+}
+
 /* ---------- 工具条 ---------- */
 
 .xsec-toolbar {
