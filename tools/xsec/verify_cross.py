@@ -78,10 +78,13 @@ def main():
                 check((t, az) in seen, f"{meta['file']} 缺 section t={t} az={az}")
 
         for sec in d["sections"]:
-            check(len(sec["samples"]) == 5, f"{meta['file']} t={sec['t']} az={sec['az']} 采样点不是 5 个")
+            check(len(sec["samples"]) == 9,
+                  f"{meta['file']} t={sec['t']} az={sec['az']} 采样点不是 9 个（0–320 km 远场几何）")
             check(0 <= sec["az"] <= 360, "方位角越界")
             ds = [s["d"] for s in sec["samples"]]
-            check(ds == [0.0, 12.5, 25.0, 37.5, 50.0], f"{meta['file']} 采样距离不对：{ds}")
+            expect = [0.0, 12.5, 25.0, 37.5, 50.0, 100.0, 160.0, 240.0, 320.0]
+            check(ds == expect, f"{meta['file']} 采样距离不对：{ds}")
+            check(len(ds) == len(expect), f"{meta['file']} 采样点数量应为 {len(expect)}：{len(ds)}")
             for smp in sec["samples"]:
                 check(len(smp["levels"]) == len(LEVELS), "层数不对")
                 check(smp["terrainM"] >= 0, "地形高度为负")

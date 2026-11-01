@@ -16,7 +16,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   distanceAxis, expandPoints, fieldIndex, heightProfile, liquidShare, regularGrid, terrainProfile
 } from '@/lib/xsec/model'
-import { boundaryHeightKm, litAt, transmittance } from '@/lib/xsec/light'
+import { boundaryHeightKm, farFieldLit, litAt, transmittance } from '@/lib/xsec/light'
 import type { SunInPlane } from '@/lib/xsec/sun'
 import type { XsecPoint, XsecSection, XsecSpotFile } from '@/lib/xsec/types'
 
@@ -163,7 +163,8 @@ const canvas = ref<HTMLCanvasElement | null>(null)
 const base = document.createElement('canvas')
 const cssW = ref(820)
 const cssH = ref(430)
-const PAD = { l: 56, r: 46, t: 30, b: 46 }
+/* b 给底部留出远场光路带（14 px 带 + 刻度 + 标题） */
+const PAD = { l: 56, r: 46, t: 30, b: 82 }
 const plot = computed(() => ({
   x: PAD.l, y: PAD.t,
   w: Math.max(80, cssW.value - PAD.l - PAD.r),
@@ -527,6 +528,7 @@ function drawBase(): void {
   drawAxes(ctx)
 
   /* ---- 色标 ---- */
+  drawFarField(ctx)
   drawScale(ctx)
 
   /* ---- 图内固定说明 ---- */
@@ -708,8 +710,10 @@ function drawAxes(ctx: CanvasRenderingContext2D): void {
     ctx.beginPath(); ctx.moveTo(p.x + p.w, y); ctx.lineTo(p.x + p.w + 4, y); ctx.stroke()
     ctx.fillText(`${l.hPa}`, p.x + p.w + 7, y)
   }
+  /* 底部距离刻度：短剖面每 10 km，320 km 远场每 40 km（否则 32 个标签会挤成一团） */
+  const dStep = totalKm.value > 120 ? 40 : 10
   ctx.textAlign = 'center'
-  for (let d = 0; d <= totalKm.value + 0.01; d += 10) {
+  for (let d = 0; d <= totalKm.value + 0.01; d += dStep) {
     const x = x2px(d)
     ctx.strokeStyle = pal.lineSoft
     ctx.beginPath(); ctx.moveTo(x, p.y + p.h); ctx.lineTo(x, p.y + p.h + 4); ctx.stroke()
@@ -717,11 +721,104 @@ function drawAxes(ctx: CanvasRenderingContext2D): void {
   }
   ctx.fillStyle = pal.muted
   ctx.textAlign = 'right'
-  ctx.fillText('沿剖面方向距离 km →', p.x + p.w, p.y + p.h + 28)
+  ctx.fillText('沿剖面方向距离 km →', p.x + p.w, p.y + p.h + 18)
   ctx.restore()
 }
 
 /** 图内色标：说明"什么数值开始着色" */
+/**
+ * 远场光路带（主图底部一条 0–FAR_KM 的横条）。
+ *
+ * 为什么需要：主剖面最多到 320 km，而夕阳照明边界常在数十到数百 km 外，
+ * 经常整条边界都在画面之外。这条带子用**纯几何**（不需要任何气象数据）
+ * 把「从这个距离起，地面已经进入地球阴影」画出来，边界会随时间在带子里滑动。
+ *
+ * 画法：
+ *   · 底色 = 受光（暖）；阴影段 = 冷色并加斜纹；
+ *   · 竖线标出当前的日落线位置；刻度 0 / 100 / 200 / 400 / 600 / 800 km。
+ */
+const FAR_KM = 800
+const FAR_STEP = 10
+
+function farField() {
+  return farFieldLit(FAR_KM, FAR_STEP, props.sun.el)
+}
+
+function drawFarField(ctx: CanvasRenderingContext2D): void {
+  const p = plot.value
+  const pal = palette.value
+  const bandH = 14
+  const y0 = p.y + p.h + 34
+  const segs = farField()
+  if (!segs.length) return
+  const xOf = (d: number) => p.x + (d / FAR_KM) * p.w
+
+  ctx.save()
+  ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip()
+  /* 受光段：暖色；阴影段：冷色 + 斜纹 */
+  let start = 0
+  let cur = segs[0].lit
+  const flush = (endKm: number, lit: boolean) => {
+    ctx.fillStyle = lit ? 'rgba(255,190,120,0.34)' : 'rgba(96,140,190,0.26)'
+    ctx.fillRect(xOf(start), y0, Math.max(1, xOf(endKm) - xOf(start)), bandH)
+    if (!lit) {
+      ctx.strokeStyle = 'rgba(150,190,235,0.45)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      for (let x = xOf(start) - bandH; x < xOf(endKm); x += 6) {
+        const x1 = Math.max(xOf(start), x)
+        const x2 = Math.min(xOf(endKm), x + bandH)
+        if (x2 <= x1) continue
+        ctx.moveTo(x1, y0 + bandH)
+        ctx.lineTo(x2, y0)
+      }
+      ctx.stroke()
+    }
+  }
+  for (const seg of segs) {
+    if (seg.lit !== cur) { flush(seg.d, cur); start = seg.d; cur = seg.lit }
+  }
+  flush(FAR_KM, cur)
+  ctx.restore()
+
+  /* 边框与刻度 */
+  ctx.strokeStyle = pal.line
+  ctx.lineWidth = 1
+  ctx.beginPath(); ctx.rect(xOf(0), y0, xOf(FAR_KM) - xOf(0), bandH); ctx.stroke()
+  ctx.font = '9.5px system-ui, sans-serif'
+  ctx.fillStyle = pal.muted
+  ctx.textAlign = 'center'
+  for (const d of [0, 100, 200, 400, 600, 800]) {
+    const x = xOf(d)
+    ctx.beginPath(); ctx.moveTo(x, y0 + bandH); ctx.lineTo(x, y0 + bandH + 3); ctx.stroke()
+    ctx.fillText(String(d), x, y0 + bandH + 13)
+  }
+  ctx.textAlign = 'left'
+  ctx.fillStyle = 'rgba(255,196,140,0.85)'
+  ctx.fillText('远场：地面是否受直射', p.x, y0 - 4)
+  ctx.fillStyle = pal.muted
+  ctx.fillText('km', xOf(FAR_KM) + 4, y0 + bandH + 13)
+
+  /* 日落线位置 */
+  const lineD = terminatorD()
+  if (lineD !== null && Math.abs(lineD) <= FAR_KM) {
+    const x = xOf(lineD)
+    ctx.strokeStyle = 'rgba(255,178,112,0.95)'
+    ctx.lineWidth = 1.5
+    ctx.setLineDash([3, 2])
+    ctx.beginPath(); ctx.moveTo(x, y0 - 3); ctx.lineTo(x, y0 + bandH + 3); ctx.stroke()
+    ctx.setLineDash([])
+  }
+}
+
+/** 地面日落线在剖面方向上的距离（km），与页面上写的是同一个量 */
+function terminatorD(): number | null {
+  const el = props.sun.el
+  const c = Math.cos((props.sun.deviationDeg * Math.PI) / 180)
+  if (!Number.isFinite(el) || Math.abs(c) < 0.15) return null
+  return (-el * (Math.PI / 180) * 6371.0088) / c
+}
+
 function drawScale(ctx: CanvasRenderingContext2D): void {
   const p = plot.value
   const pal = palette.value

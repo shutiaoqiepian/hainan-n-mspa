@@ -197,6 +197,25 @@ export interface BandLight {
  * @param refMs 剖面时次的时刻（用来给"现在是否受光"）
  * 判据见文件头；扫描步长 15 s，边界不确定性 ≤15 s。
  */
+/**
+ * 远场光路：主图只到 320 km，但照明边界常在更远处。
+ * 这里算「从机位沿太阳方位、0 到 maxKm，哪些距离段被直射光照到」，
+ * 用作主图底部的「光路带」（纯几何，不依赖气象数据，因此远处也有值）。
+ * 返回按 stepKm 采样的数组，true = 该距离处的**地面/云底**受光。
+ */
+export function farFieldLit(
+  maxKm: number,
+  stepKm: number,
+  elObsDeg: number
+): Array<{ d: number; lit: boolean }> {
+  const out: Array<{ d: number; lit: boolean }> = []
+  for (let d = 0; d <= maxKm + 1e-9; d += stepKm) {
+    /* 地面（h=0）在该距离是否受光：dip(0)=0，判据变成 el + d/R > 0 */
+    out.push({ d, lit: litAt(0, d, elObsDeg) })
+  }
+  return out
+}
+
 export function bandLightWindow(opts: {
   hM: number
   dSunKm: number
