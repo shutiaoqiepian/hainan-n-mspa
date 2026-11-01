@@ -39,6 +39,8 @@ import json
 import math
 import sys
 import time
+import gzip
+import struct
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -87,7 +89,7 @@ def log(msg):
     print(f"[ctx] {msg}", flush=True)
 
 
-def http_json(url, timeout=45, retries=4):
+def http_json(url, timeout=45, retries=4, retry_429=True):
     """带 429 退避的 JSON 请求。Open-Meteo 免费额度按分钟计，连续突发会被限流。"""
     last = None
     for k in range(retries):
@@ -98,10 +100,27 @@ def http_json(url, timeout=45, retries=4):
             return json.loads(raw.decode("utf-8"))
         except urllib.error.HTTPError as e:
             last = e
+            if e.code in (401, 403):
+                log(f"   … 主源拒绝访问（{e.code}），本批改用备源")
+                raise
+            if e.code == 429 and not retry_429:
+                raise
             if e.code == 429:
                 # 429 是**小时级**限额（实测 reason="Hourly API request limit exceeded"），
                 # 等 10–40 s 再试没有意义，只会把剩下的额度更快耗掉 → 立即抛错交给上层回退。
-                log("   … 触发限流（429，小时级），本批立即改用备源")
+                body = ""
+                try:
+                    body = e.read().decode("utf-8", "replace")[:120]
+                except Exception:  # noqa: BLE001
+                    pass
+                if "Daily" in body or "daily" in body:
+                    globals()["_LAST_DAILY"] = True
+                    globals()["_LAST_429"] = time.time()
+                    DEM_SOURCE = {"provider": "opentopo",
+                                  "label": "SRTM 90m（OpenTopoData，Open-Meteo 日额度用尽回退）"}
+                    log("   … 主源日额度已用尽（Daily limit），本机位改用 SRTM 备源")
+                else:
+                    log("   … 触发限流（429），本批立即改用备源")
                 raise
             time.sleep(1.5 * (k + 1))
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:  # noqa: PERF203
@@ -126,6 +145,7 @@ def destination(lat, lon, az_deg, dist_km):
 
 def fetch_many_openmeteo(coords):
     """Open-Meteo Elevation API（Copernicus DEM）。返回 list[int|None]。"""
+    global DEM_SOURCE
     out = []
     chunk = 100  # API 硬上限
     for i in range(0, len(coords), chunk):
@@ -135,7 +155,22 @@ def fetch_many_openmeteo(coords):
             "longitude": ",".join(f"{p[1]:.5f}" for p in part),
         })
         throttle()          # 全局限速：约 10 次/分钟
-        j = http_json(f"{ELEV_API}?{qs}")
+        try:
+            j = http_json(f"{ELEV_API}?{qs}", retry_429=False)
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                body = ""
+                try:
+                    body = e.read().decode("utf-8", "replace")[:160]
+                except Exception:  # noqa: BLE001
+                    pass
+                if "aily" in body:
+                    globals()["_LAST_DAILY"] = True
+                    DEM_SOURCE = {"provider": "opentopo",
+                                  "label": "SRTM 90m（OpenTopoData，Open-Meteo 日额度用尽回退）"}
+                    log("   … 主源日额度已用尽（Daily limit），改用 SRTM 备源")
+                raise RuntimeError(f"HTTP {e.code}（主源不可用）") from e
+            raise
         el = j.get("elevation")
         if not isinstance(el, list) or len(el) != len(part):
             raise RuntimeError(f"elevation 返回条数不对：{len(part)} → {el if not isinstance(el, list) else len(el)}")
@@ -159,7 +194,7 @@ def fetch_many_opentopo(coords):
         qs = urllib.parse.urlencode({"locations": locs})
         # 实测：50 点一次会在 TLS 握手阶段超时；20 点是稳定区间
         try:
-            j = http_json(f"{TOPO_API}?{qs}", timeout=45, retries=2)
+            j = http_json(f"{TOPO_API}?{qs}", timeout=45, retries=2, retry_429=False)
         except RuntimeError:
             if len(part) <= 1:
                 raise
@@ -183,10 +218,96 @@ def fetch_many_opentopo(coords):
     return out
 
 
-DEM_SOURCE = {"provider": "openmeteo", "label": "Copernicus DEM GLO-30（Open-Meteo Elevation API）"}
+DEM_SOURCE = {"provider": "skadi", "label": "SRTM 30 m（AWS elevation-tiles-prod，公开瓦片）"}
 # 上次被 429 的时间戳：3 分钟冷却期内直接用备源，避免每批都白等一分钟
 _LAST_429 = 0.0
+_LAST_DAILY = False        # 主源是否已被"日额度"封顶（当天不再重试）
 DEM_COOLDOWN_SEC = 720.0   # 主源被 429 后，至少 12 分钟内不再试主源
+
+
+# ---------------- SRTM 1 弧秒瓦片（AWS 公共数据集，无需 key、无限速） ----------------
+#
+# 为什么加这条源：Open-Meteo 会被**日额度**封顶（实测 "Daily API request limit exceeded"），
+# OpenTopoData 每次请求 4–25 s 且大批量必超时 —— 两者加起来 224 个机位要跑几十小时。
+# 而 AWS 上的 elevation-tiles-prod 是 SRTM 1 弧秒（约 30 m）的公开镜像：
+# 一个 1°×1° 瓦片 11.7 MB，下载 + 解压 + 解析共 4–6 s，**一个瓦片能覆盖几十个机位**，
+# 224 个机位只需约 30–40 个瓦片。
+SKADI = "https://s3.amazonaws.com/elevation-tiles-prod/skadi/{ns}/{tile}.hgt.gz"
+_TILE_CACHE = {}          # (ns, tile) -> (n, bytes)
+
+
+def skadi_tile_path(lat, lon):
+    ns = "N" if lat >= 0 else "S"
+    ew = "E" if lon >= 0 else "W"
+    return (f"{ns}{abs(int(math.floor(lat))):02d}",
+            f"{ns}{abs(int(math.floor(lat))):02d}{ew}{abs(int(math.floor(lon))):03d}")
+
+
+def load_skadi_tile(lat, lon):
+    """下载并解码一个 SRTM 瓦片，返回 (n, samples bytes)。内存里缓存 3 个。"""
+    ns, tile = skadi_tile_path(lat, lon)
+    key = (ns, tile)
+    if key in _TILE_CACHE:
+        return _TILE_CACHE[key]
+    url = SKADI.format(ns=ns, tile=tile)
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=120) as r:
+        data = r.read()
+    raw = gzip.decompress(data)
+    first = struct.unpack(">h", raw[:2])[0]
+    # 小端瓦片（少见）探测：第一个样本落在 -12000~9000 之外就按小端再解一次
+    if first < -12000 or first > 9000:
+        big = first
+        first = struct.unpack("<h", raw[:2])[0]
+        log(f"   … SRTM 瓦片 {tile} 似乎是小端（大端读数 {big}），已自动切换")
+    n = int(round((len(raw) / 2) ** 0.5))
+    if n * n * 2 != len(raw):
+        raise RuntimeError(f"SRTM 瓦片 {tile} 尺寸异常：{len(raw)} 字节，n={n}")
+    if len(_TILE_CACHE) >= 3:
+        _TILE_CACHE.pop(next(iter(_TILE_CACHE)))
+    _TILE_CACHE[key] = (n, raw)
+    log(f"   … 载入 SRTM 瓦片 {tile}（{n}×{n}，{len(data) / 1024 / 1024:.1f} MB）")
+    return n, raw
+
+
+def skadi_elev(lat, lon):
+    """单点高程（米）；缺测（SRTM void = -32768）返回 None。"""
+    if not (-60 <= lat <= 60):
+        return None
+    n, raw = load_skadi_tile(lat, lon)
+    ns_, tile = skadi_tile_path(lat, lon)
+    # 瓦片左上角 = (ceil(lat), floor(lon))；行向南递增、列向东递增
+    top_lat = int(tile[1:3]) + 1
+    left_lon = int(tile[4:7]) * (1 if tile[3] == "E" else -1)
+    row = (top_lat - lat) * (n - 1)
+    col = (lon - left_lon) * (n - 1)
+    r0 = max(0, min(n - 2, int(row)))
+    c0 = max(0, min(n - 2, int(col)))
+    fr = row - r0
+    fc = col - c0
+    vals = []
+    for (rr, cc, w) in ((r0, c0, (1 - fr) * (1 - fc)), (r0, c0 + 1, (1 - fr) * fc),
+                        (r0 + 1, c0, fr * (1 - fc)), (r0 + 1, c0 + 1, fr * fc)):
+        v = struct.unpack_from(">h", raw, (rr * n + cc) * 2)[0]
+        if v == -32768:
+            continue
+        vals.append((v, w))
+    if not vals:
+        return None
+    tot = sum(w for _, w in vals)
+    return int(round(sum(v * w for v, w in vals) / tot))
+
+
+def fetch_many_skadi(coords):
+    """按瓦片分组批量取高程。返回 list[int|None]。"""
+    out = []
+    for lat, lon in coords:
+        try:
+            out.append(skadi_elev(lat, lon))
+        except Exception as e:  # noqa: BLE001
+            log(f"   … SRTM 瓦片取点失败（{lat:.3f},{lon:.3f}）：{e}")
+            out.append(None)
+    return out
 
 
 def fetch_dem(coords):
@@ -197,8 +318,25 @@ def fetch_dem(coords):
     """
     global DEM_SOURCE, _LAST_429
     now = time.time()
+    # 源优先级：SKADI（AWS 公开瓦片，无限速）> Open-Meteo > OpenTopoData
+    if DEM_SOURCE["provider"] == "skadi":
+        try:
+            return fetch_many_skadi(coords)
+        except Exception as e:  # noqa: BLE001
+            log(f"   … SRTM 瓦片源不可用（{e}），改用 Open-Meteo")
+            DEM_SOURCE = {"provider": "openmeteo", "label": "Copernicus DEM GLO-30（Open-Meteo Elevation API）"}
+    if DEM_SOURCE["provider"] == "openmeteo" or DEM_SOURCE["provider"] == "skadi":
+        pass
+    # 日额度（"Daily API request limit exceeded"）一旦出现，主源今天都不会恢复：
+    # 冷却窗口直接拉到 12 小时，避免每个整点都白试一次。
+    global DEM_COOLDOWN_SEC
+    if _LAST_DAILY:
+        DEM_COOLDOWN_SEC = max(DEM_COOLDOWN_SEC, 12 * 3600.0)
     # 主源刚被限流过（3 分钟内）：这期间直接用备源，省掉每次 4 次重试 + 退避的 1 分钟
-    if DEM_SOURCE["provider"] == "openmeteo" and now - _LAST_429 > DEM_COOLDOWN_SEC:
+    if _LAST_DAILY and DEM_SOURCE["provider"] == "openmeteo":
+        # 今天主源不可能恢复：直接钉死备源，避免每批都白吃一个 429
+        DEM_SOURCE = {"provider": "opentopo", "label": "SRTM 90m（OpenTopoData，Open-Meteo 日额度用尽回退）"}
+    if DEM_SOURCE["provider"] == "openmeteo" and not _LAST_DAILY and now - _LAST_429 > DEM_COOLDOWN_SEC:
         try:
             return fetch_many_openmeteo(coords)
         except RuntimeError as e:
@@ -206,8 +344,8 @@ def fetch_dem(coords):
             _LAST_429 = time.time()
             DEM_SOURCE = {"provider": "opentopo", "label": "SRTM 90m（OpenTopoData，Open-Meteo 限额回退）"}
     elif DEM_SOURCE["provider"] != "openmeteo":
-        # 已在冷却期：顺便检查冷却是否已过，过了就恢复主源（多采到 Copernicus 而非 SRTM）
-        if now - _LAST_429 > DEM_COOLDOWN_SEC:
+        # 已在冷却期：只有冷却确实过期、且不是日额度封顶，才恢复主源
+        if (not _LAST_DAILY) and now - _LAST_429 > DEM_COOLDOWN_SEC:
             DEM_SOURCE = {"provider": "openmeteo", "label": "Copernicus DEM GLO-30（Open-Meteo Elevation API）"}
     for attempt in (1, 2):
         try:
@@ -218,7 +356,7 @@ def fetch_dem(coords):
                 time.sleep(30)
                 continue
             log(f"   … 备用源连续失败（{e}），这一批放弃并记录原因")
-            DEM_SOURCE = {"provider": "openmeteo", "label": "Copernicus DEM GLO-30（Open-Meteo Elevation API）"}
+            # 备源失败不代表主源恢复：保留当前源选择，由 _LAST_DAILY/冷却窗决定下一批走哪边
             raise
 
 
