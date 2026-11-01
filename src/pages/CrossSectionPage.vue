@@ -11,7 +11,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CrossSectionChart from '@/components/xsec/CrossSectionChart.vue'
-import { ageHours, loadNationalIndex, loadXsecContext, loadXsecIndex, loadXsecSpot } from '@/lib/xsec/api'
+import { ageHours, loadNationalContext, loadNationalIndex, loadXsecContext, loadXsecIndex, loadXsecSpot } from '@/lib/xsec/api'
 import { Y_RANGES, beijingDateTime, beijingTime, cloudBands, expandPoints, sectionAt } from '@/lib/xsec/model'
 import { fetchOpenMeteoSection } from '@/lib/xsec/openmeteo'
 import { sunInPlane, sunsetMs } from '@/lib/xsec/sun'
@@ -25,6 +25,8 @@ import type { XsecContext, XsecIndex, XsecNationalIndex, XsecSpotFile } from '@/
 const index = ref<XsecIndex | null>(null)
 /** 全国 224 机位索引（3 时次 × 1 方位）；缺测时页面仍可用海南试点 */
 const national = ref<XsecNationalIndex | null>(null)
+/** 全国机位的 DEM/AOD 上下文（与试点分开两个文件，互不影响） */
+const nationalCtx = ref<XsecContext | null>(null)
 /** 当前选的是全国机位而不是海南试点 */
 const nationalSpotId = ref('')
 /** GFS 缓存（主数据源，4 个时次 × 5 个方位） */
@@ -171,7 +173,9 @@ const bandList = computed(() => {
 /* ---------------- 光照几何（阶段七 P1：真实 DEM + AOD + 球面几何） ---------------- */
 
 /** 当前机位的环境上下文（DEM 地形 + AOD） */
-const spotCtx = computed(() => xctx.value?.spots[spotId.value] ?? null)
+const spotCtx = computed(() =>
+  xctx.value?.spots[spotId.value] ?? nationalCtx.value?.spots[spotId.value] ?? null
+)
 /** 当前剖面的 DEM 地形序列（缺测时图表退回模式地形并注明） */
 const dem = computed(() => spotCtx.value?.profiles?.[String(az.value)] ?? null)
 const demStepKm = computed(() => xctx.value?.sectionStepKm ?? 1.25)
@@ -186,6 +190,12 @@ const aodEntry = computed(() => spotCtx.value?.aod?.[isOm.value ? 0 : tIdx.value
 const aod = computed(() => aodEntry.value?.v ?? null)
 /** 沿「该时次日落方位」的 DEM 序列（光路被地形遮挡的判定用） */
 const sunTerrain = computed(() => spotCtx.value?.sunProfiles?.[isOm.value ? 0 : tIdx.value] ?? null)
+/** 该时次的地形序列是否复用了日落方位那份（全国机位只有一份，试点每时次各一份） */
+const sunTerrainShared = computed(() => {
+  const list = spotCtx.value?.sunProfiles ?? []
+  if (list.length < 2) return false
+  return list.every((p) => Math.abs(p.az - list[0].az) < 0.01)
+})
 const sunStepKm = computed(() => xctx.value?.sunStepKm ?? 2.5)
 
 /** 剖面方向最高地形仰角（°，含曲率修正） */
@@ -438,6 +448,9 @@ async function init(): Promise<void> {
   loadNationalIndex()
     .then((n) => { national.value = n })
     .catch(() => { /* 全国索引缺失：保持海南试点，页面已注明 */ })
+  loadNationalContext()
+    .then((c) => { nationalCtx.value = c })
+    .catch(() => { /* 全国 DEM/AOD 缺失：退回模式地形，页面已注明 */ })
   loadXsecContext()
     .then((c) => { xctx.value = c })
     .catch((e) => { ctxWarn.value = e instanceof Error ? e.message : String(e) })
@@ -935,7 +948,7 @@ const SUNSET_TEXT = computed(() => {
             <p class="xsec-known xsec-known-p">
               剖面只有 {{ activeFile.lengthKm }} km，而夕阳照明边界通常在数十到数百 km 外，
               图上只画进入视野的那一段；地形序列 0–{{ activeFile.lengthKm }} km 每 {{ demStepKm }} km 一个 DEM 点，
-              光路遮挡用沿太阳方位的 0–200 km 地形序列近似。
+              光路遮挡用沿太阳方位的 0–150 km 地形序列近似<template v-if="sunTerrainShared">（全国机位只有日落方位那一份，其余时次复用）</template>。
             </p>
           </div>
 

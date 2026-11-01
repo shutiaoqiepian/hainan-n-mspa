@@ -42,6 +42,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -124,14 +125,17 @@ def fetch_many_openmeteo(coords):
 
 
 def fetch_many_opentopo(coords):
-    """OpenTopoData SRTM 90m（备源）。返回 list[int|None]。"""
+    """OpenTopoData SRTM 90m（备源）。返回 list[int|None]。
+
+    该接口单次点数少、容易超时，所以每段只发 50 个点、超时放宽到 90 s。
+    """
     out = []
-    chunk = 100
+    chunk = 50
     for i in range(0, len(coords), chunk):
         part = coords[i:i + chunk]
         locs = "|".join(f"{p[0]:.5f},{p[1]:.5f}" for p in part)
         qs = urllib.parse.urlencode({"locations": locs})
-        j = http_json(f"{TOPO_API}?{qs}")
+        j = http_json(f"{TOPO_API}?{qs}", timeout=90, retries=3)
         res = j.get("results")
         if not isinstance(res, list) or len(res) != len(part):
             raise RuntimeError(f"opentopodata 返回条数不对：{len(part)} → {res if not isinstance(res, list) else len(res)}")
@@ -144,15 +148,25 @@ DEM_SOURCE = {"provider": "openmeteo", "label": "Copernicus DEM GLO-30（Open-Me
 
 
 def fetch_dem(coords):
-    """按当前 DEM 源取高程；Open-Meteo 失败（多半是小时限额）后自动切 SRTM。"""
+    """按当前 DEM 源取高程。
+
+    Open-Meteo 被限流（429）时切到 SRTM；SRTM 也失败时**每批重新试一次主源**——
+    否则一旦回退就永远用备源，既慢（每批 1–2 分钟）又错过限额恢复的窗口。
+    """
     global DEM_SOURCE
     if DEM_SOURCE["provider"] == "openmeteo":
         try:
             return fetch_many_openmeteo(coords)
         except RuntimeError as e:
-            log(f"   … Open-Meteo 高程不可用（{e}），本轮改用 OpenTopoData SRTM 90m")
+            log(f"   … Open-Meteo 高程不可用（{e}），本批改用 OpenTopoData SRTM 90m")
             DEM_SOURCE = {"provider": "opentopo", "label": "SRTM 90m（OpenTopoData，Open-Meteo 限额回退）"}
-    return fetch_many_opentopo(coords)
+    try:
+        return fetch_many_opentopo(coords)
+    except RuntimeError as e:
+        # SRTM 也挂了：下一批重新试主源（限额是按小时算的，可能已经恢复）
+        log(f"   … SRTM 也不可用（{e}），下一批重新尝试 Open-Meteo")
+        DEM_SOURCE = {"provider": "openmeteo", "label": "Copernicus DEM GLO-30（Open-Meteo Elevation API）"}
+        raise
 
 
 def fetch_aod(lat, lon):
@@ -202,16 +216,97 @@ def pick_aod(times, values, iso):
     return None
 
 
+def dem_batch(batch, out):
+    """一批机位合并取 DEM（每批 100 坐标以内），AOD 逐机位取。结果写入 out['spots']。"""
+    spots_info = []
+    coords = []
+    for sp in batch:
+        spot_file = json.loads((OUT_DIR / sp["file"]).read_text(encoding="utf-8"))
+        meta = spot_file.get("spot") or {}
+        lat = float(meta.get("lat", sp.get("lat")))
+        lon = float(meta.get("lon", sp.get("lon")))
+        if not math.isfinite(lat) or not math.isfinite(lon):
+            raise RuntimeError(f"{sp['id']} 经纬度缺失")
+        azimuths = spot_file.get("azimuths") or []
+        sec_times = [t["utc"] for t in (spot_file.get("times") or [])]
+        if not azimuths or not sec_times:
+            raise RuntimeError(f"{sp['id']} 剖面文件里没有 azimuths/times")
+        # 采样点：机位本身 + 每个剖面方位 41 点 + 太阳方位 61 点
+        pts = [(lat, lon)]
+        layout = []
+        for az in azimuths:
+            for j in range(SECTION_POINTS):
+                pts.append(destination(lat, lon, az, j * SECTION_STEP_KM))
+                layout.append(("sec", str(az), j))
+        sun_meta = []
+        # 太阳方位地形只需"日落方位"那一组：4 个时次的日落方位相差 <5°，
+        # 存 4 份是 4 倍体积换 0 收益（实测相邻时次方位差 0.0–3.2°）。
+        # 其余时次复用第 0 份，并用 sunProfilesSourceTime 标注，前端不重复取数。
+        for iso in sec_times[:1]:
+            d0 = datetime.strptime(iso, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+            try:
+                import build_cross as bc
+                sunset = bc.sunset_utc_for_local_date(d0.date(), lat, lon)
+                az_sun = bc.sun_pos_ms(sunset.timestamp() * 1000, lat, lon)["az"]
+            except Exception:  # noqa: BLE001
+                az_sun = float(spot_file.get("spot", {}).get("defaultAzimuth") or 265)
+            sun_meta.append(round(float(az_sun), 1))
+            for j in range(SUN_POINTS):
+                pts.append(destination(lat, lon, sun_meta[-1], j * SUN_STEP_KM))
+                layout.append(("sun", len(sun_meta) - 1, j))
+        spots_info.append(dict(sp=sp, lat=lat, lon=lon, azimuths=azimuths,
+                               sec_times=sec_times, sun_meta=sun_meta,
+                               offset=len(coords), layout=layout))
+        coords.extend(pts)
+
+    flat = fetch_dem(coords)
+    log(f"   DEM 打包请求：{len(coords)} 个坐标（{len(batch)} 个机位）")
+    for info in spots_info:
+        off = info["offset"]
+        profile = {str(az): [None] * SECTION_POINTS for az in info["azimuths"]}
+        sun_profiles = [{"az": info["sun_meta"][0], "elev": [None] * SUN_POINTS}
+                        for _ in info["sec_times"]]
+        origin = flat[off]
+        for (kind, key, j) in info["layout"]:
+            v = flat[off + 1 + info["layout"].index((kind, key, j))]
+            if kind == "sec":
+                profile[key][j] = v
+            else:
+                for sp_ in sun_profiles:
+                    sp_["elev"][j] = v
+        # AOD：逐机位一次请求（CAMS 接口不支持批量点）
+        try:
+            at, av = fetch_aod(info["lat"], info["lon"])
+            aod = [pick_aod(at, av, iso) for iso in info["sec_times"]]
+        except Exception as e:  # noqa: BLE001
+            log(f"   … {info['sp']['id']} AOD 失败（{e}），记为缺测")
+            aod = [None] * len(info["sec_times"])
+        out["spots"][info["sp"]["id"]] = dict(
+            elevationM=origin,
+            demSource=DEM_SOURCE["label"],
+            profiles=profile,
+            sunProfiles=sun_profiles,
+            aod=aod,
+        )
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--allow-partial", action="store_true", help="局部失败也写出结果（CI 用）")
     ap.add_argument("--spots", nargs="*", help="只处理这些机位 id")
     ap.add_argument("--out", default=str(OUT_DIR / "context.json"))
+    ap.add_argument("--index", default=str(INDEX),
+                    help="机位索引：默认海南试点 index.json；全国用 national-index.json")
+    ap.add_argument("--batch", type=int, default=1,
+                    help="每批合并多少机位的 DEM 采样点（全国 224 机位用 6–8，可把请求数降到 1/5）")
+    ap.add_argument("--skip-existing", action="store_true",
+                    help="已有 context 的机位跳过（分批续跑用，避免重复请求）")
     args = ap.parse_args()
 
-    if not INDEX.exists():
-        sys.exit(f"缺少 {INDEX}（先跑 build_cross.py）")
-    index = json.loads(INDEX.read_text(encoding="utf-8"))
+    idx_path = Path(args.index)
+    if not idx_path.exists():
+        sys.exit(f"缺少 {idx_path}（先跑 build_cross.py 或 build_cross_national.py）")
+    index = json.loads(idx_path.read_text(encoding="utf-8"))
     spots = index.get("spots") or []
     if args.spots:
         spots = [s for s in spots if s["id"] in set(args.spots)]
@@ -233,75 +328,36 @@ def main():
         "errors": [],
     }
 
-    for spot in spots:
-        sid = spot["id"]
-        lat, lon = float(spot["lat"]), float(spot["lon"])
+    # 续跑：先把输出文件里已有的机位并进来（--skip-existing 时不再重复请求）
+    out_path_obj = Path(args.out)
+    if out_path_obj.exists():
+        try:
+            prev = json.loads(out_path_obj.read_text(encoding="utf-8"))
+            for k, v in (prev.get("spots") or {}).items():
+                out["spots"][k] = v
+            log(f"续跑：已有 {len(out['spots'])} 个机位的上下文")
+        except Exception as e:  # noqa: BLE001
+            log(f"  已有输出读不出来，忽略：{e}")
+
+    batch_size = max(1, int(args.batch))
+    pending = [sp for sp in spots if not (args.skip_existing and sp["id"] in out["spots"])]
+    log(f"待处理 {len(pending)} 个机位（批量 {batch_size}）")
+
+    for bi in range(0, len(pending), batch_size):
+        batch = pending[bi:bi + batch_size]
         t0 = time.time()
         try:
-            spot_file = json.loads((OUT_DIR / spot["file"]).read_text(encoding="utf-8"))
-            azimuths = spot_file.get("azimuths") or []
-            sec_times = [t["utc"] for t in (spot_file.get("times") or [])]
-            if not azimuths or not sec_times:
-                raise RuntimeError("剖面文件里没有 azimuths/times")
+            dem_batch(batch, out)
+        except Exception as e:  # noqa: BLE001 —— 一批失败只影响这一批
+            log(f"!! 批 {bi // batch_size + 1} 失败：{e}")
+            for sp in batch:
+                out["errors"].append(f"{sp['id']}: {e}")
+        Path(args.out).write_text(
+            json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        log(f"批 {bi // batch_size + 1}/{(len(pending) + batch_size - 1) // batch_size} 完成，"
+            f"累计 {len(out['spots'])} 个机位（{time.time() - t0:.1f}s）")
 
-            # 1) 一次取全：机位本身 + 5 个剖面方位 × 41 点（打包成 ≤100 坐标的请求）
-            coords = [(lat, lon)]
-            layout = []
-            for az in azimuths:
-                for j in range(SECTION_POINTS):
-                    coords.append(destination(lat, lon, az, j * SECTION_STEP_KM))
-                    layout.append((str(az), j))
-            flat = fetch_dem(coords)
-            origin = flat[0]
-            profiles = {str(az): [None] * SECTION_POINTS for az in azimuths}
-            for k, (az_key, j) in enumerate(layout):
-                profiles[az_key][j] = flat[k + 1]
-
-            # 2) 沿「该时刻日落方位」的地形（光路遮挡判定用）
-            import build_cross as bc  # 复用同一套太阳公式，避免两套实现漂移
-            import datetime as _dt
-            sun_coords = []
-            sun_meta = []
-            for iso in sec_times:
-                dt = time.strptime(iso, "%Y-%m-%dT%H:%M:%SZ")
-                d = _dt.datetime(dt.tm_year, dt.tm_mon, dt.tm_mday, tzinfo=_dt.timezone.utc)
-                try:
-                    sunset = bc.sunset_utc_for_local_date(d.date(), lat, lon)
-                    az = bc.sun_pos_ms(sunset.timestamp() * 1000, lat, lon)["az"]
-                except RuntimeError:
-                    az = float(spot.get("defaultAzimuth") or 265)
-                sun_meta.append(round(float(az), 1))
-                for j in range(SUN_POINTS):
-                    sun_coords.append(destination(lat, lon, sun_meta[-1], j * SUN_STEP_KM))
-            sun_flat = fetch_dem(sun_coords)
-            sun_profiles = [
-                {"az": sun_meta[i], "elev": sun_flat[i * SUN_POINTS:(i + 1) * SUN_POINTS]}
-                for i in range(len(sec_times))
-            ]
-
-            # 3) AOD（逐时，页面按选中时次取）
-            at, av = fetch_aod(lat, lon)
-            aod = [pick_aod(at, av, iso) for iso in sec_times]
-
-            out["spots"][sid] = {
-                "elevationM": origin,
-                "demSource": DEM_SOURCE["label"],
-                "profiles": profiles,
-                "sunProfiles": sun_profiles,
-                "aod": aod,
-            }
-            Path(args.out).write_text(
-                json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-            out["sources"]["terrainUsed"] = DEM_SOURCE["label"]
-            log(f"{sid}: DEM {origin} m（{DEM_SOURCE['label']}），{len(profiles)} 个方位剖面，AOD "
-                f"{[a['v'] if a else None for a in aod]}（{time.time() - t0:.1f}s）")
-        except Exception as e:  # noqa: BLE001 —— 单机位失败不影响其它机位
-            msg = f"{sid}: {e}"
-            out["errors"].append(msg)
-            log(f"!! {msg}")
-            if not args.allow_partial:
-                raise
-
+    out["sources"]["terrainUsed"] = DEM_SOURCE["label"]
     Path(args.out).write_text(
         json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     kb = Path(args.out).stat().st_size / 1024

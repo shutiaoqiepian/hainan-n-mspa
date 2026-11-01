@@ -11,6 +11,7 @@ const BASE = 'data/cross'
 let indexPromise: Promise<XsecIndex> | null = null
 let contextPromise: Promise<XsecContext> | null = null
 let nationalPromise: Promise<XsecNationalIndex> | null = null
+let nationalCtxPromise: Promise<XsecContext> | null = null
 const spotCache = new Map<string, Promise<XsecSpotFile>>()
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -62,6 +63,20 @@ export function loadNationalIndex(): Promise<XsecNationalIndex> {
     })
   }
   return nationalPromise
+}
+
+/**
+ * 全国机位的环境上下文（DEM 地形 + AOD）。缺测时页面退回模式地形/AOD 缺测，
+ * 不影响剖面本身。
+ */
+export function loadNationalContext(): Promise<XsecContext> {
+  if (!nationalCtxPromise) {
+    nationalCtxPromise = fetchJson<XsecContext>(`${BASE}/national-context.json`).catch((e) => {
+      nationalCtxPromise = null
+      throw e
+    })
+  }
+  return nationalCtxPromise
 }
 
 /** 环境上下文（DEM 地形 + AOD）。缺失时页面降级为「地形=AOD=缺测」，不影响云场。 */
