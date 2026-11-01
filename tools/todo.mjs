@@ -83,20 +83,26 @@ export const ITEMS = [
   },
   {
     id: 'satellite-ctt',
-    title: '卫星云顶温度（CTT）作为独立数据源',
-    state: 'pending',
+    title: '卫星云顶高度（CTT/CTH）独立数据源 —— 已打通免注册链路',
+    state: 'open',
     trigger: {
-      text: 'A 级显示「预报低、实际烧」为主（即漏报），才值得为它花那份功夫',
+      text: '2026-11-01：NASA GIBS 瓦片链路已跑通（1 KB/点，免注册）；下一步等每日剖面快照攒够样本',
       metric: null
     },
     why:
-      '四个源都试过：NSMC 要登录申请、RainViewer 红外只覆盖欧非、AWS Himawari-9 能下但卡在 JMA 私有二进制格式，34 省每天跑会爆 Action 配额。',
+      '原结论「代价太高」是因为只看过 AWS Himawari L1b（20+ GB/天、JMA 私有格式）。' +
+      '改用 NASA GIBS 的 MODIS 云顶高度瓦片 + 官方调色板后，一个机位一天只要 1 张几 KB 的 PNG，' +
+      'tools/obs/sample-cth.mjs 已实测 8 机位 × 3 天，高度档结论自洽。' +
+      '仍缺的一环：GFS 剖面没有历史快照，无法和卫星逐日比对。',
     how: [
-      '先确认触发条件确实是「漏报为主」而不是「误报为主」',
-      '若能拿到 L2 云顶温度产品，优先做「高云是否真的存在」这一件事，不要一上来就重算分数',
+      '已完成：tools/obs/sample-cth.mjs（GIBS 瓦片→有云占比+4 档高度）+ compare-cth.mjs + probe-sources.mjs',
+      '已完成：docs/阶段七-03-卫星云顶高度-可行性落地.md（数据链路、实测、诚实边界）',
+      '待做：每天存一份剖面摘要（data/obs/xsec-snapshot/），攒 30 天后做「模式高估/低估高云」的定量分析',
+      '待做：GFS vs ECMWF IFS 0.25 的跨模式压力层对照（免费，现在就能做）',
+      'CDS/ERA5 原始压力层仍需账号，作为第三重交叉验证',
     ],
-    doc: '交接文档 22.4',
-    files: []
+    doc: 'docs/阶段七-03-卫星云顶高度-可行性落地.md',
+    files: ['tools/obs/sample-cth.mjs', 'tools/obs/compare-cth.mjs', 'tools/obs/probe-sources.mjs']
   },
   {
     id: 'tcdc-multiseason',
