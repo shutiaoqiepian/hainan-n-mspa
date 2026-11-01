@@ -58,3 +58,5 @@ docs/给GPT-源码包-可粘贴.md
 # Python 字节码缓存
 __pycache__/
 *.pyc
+
+dist/
