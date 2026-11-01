@@ -1,26 +1,26 @@
 {
- "generatedAt": "2026-11-01T05:17:29Z",
+ "generatedAt": "2026-11-01T05:21:24Z",
  "cycle": "2026-11-01T00:00:00Z",
  "downloads": [
   {
    "fh": 8,
    "how": "filter",
-   "fields": 81
+   "fields": 82
   },
   {
    "fh": 9,
    "how": "filter",
-   "fields": 81
+   "fields": 82
   },
   {
    "fh": 10,
    "how": "filter",
-   "fields": 81
+   "fields": 82
   },
   {
    "fh": 11,
    "how": "filter",
-   "fields": 81
+   "fields": 82
   }
  ],
  "physics": [

@@ -19,6 +19,8 @@ export type XsecField =
   | 'wPaS'
   | 'cfPct'
   | 'belowGround'
+  /** 地面降水率 mm/h（GFS PRATE×3600）；缺测为 null */
+  | 'rainMmH'
 
 export interface XsecTime {
   /** sections[].t 用的下标 */
@@ -138,6 +140,8 @@ export interface XsecPoint {
   wPaS: number | null
   cfPct: number | null
   belowGround: boolean
+  /** 地面降水率 mm/h；null = 缺测（不是"没下雨"） */
+  rainMmH?: number | null
   pressureHpa: number
 }
 

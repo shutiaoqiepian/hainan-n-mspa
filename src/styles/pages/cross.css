@@ -620,3 +620,12 @@
   background: rgba(206, 232, 255, 0.32);
   border: 1px dashed rgba(206, 232, 255, 0.7);
 }
+
+/* ---------- 降水圆点 ---------- */
+
+.xsec-sw-rain {
+  background: radial-gradient(circle at 3px 4px, #5aaaff 1.3px, transparent 1.4px),
+    radial-gradient(circle at 8px 7px, #50c8e6 1.1px, transparent 1.2px),
+    radial-gradient(circle at 5px 10px, #a0d7c8 1px, transparent 1.1px);
+  border-radius: 3px;
+}

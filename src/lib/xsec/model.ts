@@ -54,7 +54,8 @@ export function expandPoints(file: XsecSpotFile, section: XsecSection): XsecPoin
         vMs: num('vMs'),
         wPaS: num('wPaS'),
         cfPct: num('cfPct'),
-        belowGround: num('belowGround') === 1
+        belowGround: num('belowGround') === 1,
+        rainMmH: num('rainMmH')
       }
     })
   )

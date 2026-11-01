@@ -21,7 +21,9 @@ const G0 = 9.80665
 
 /** 与 GFS 剖面保持同一套字段顺序 */
 export const XSEC_FIELDS: XsecField[] = [
-  'hgtM', 'tC', 'rhPct', 'clwMgKg', 'iciMgKg', 'uMs', 'vMs', 'wPaS', 'cfPct', 'belowGround'
+  'hgtM', 'tC', 'rhPct', 'clwMgKg', 'iciMgKg', 'uMs', 'vMs', 'wPaS', 'cfPct', 'belowGround',
+  /* 降水率：Open-Meteo 的气压层接口没有对应变量，一律 null（绝不填 0 冒充"没下雨"） */
+  'rainMmH'
 ]
 
 /** 大圆终点（与 tools/xsec/build_cross.py 同一公式） */

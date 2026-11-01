@@ -44,6 +44,8 @@ const heightAxis = ref<'msl' | 'agl'>('msl')
 /** RH 诊断「潜在云区」阈值（%）；null = 不画。默认关，避免和真实云场混淆 */
 const rhSat = ref<number | null>(null)
 const RH_THRESHOLDS = [80, 85, 90, 95]
+/** 降水圆点：默认开（任务书 P4 要求主图能看出哪里在下雨） */
+const showRain = ref(true)
 const full = ref(false)
 const card = ref<HTMLElement | null>(null)
 /** 从预报页点进来时带的机位（可能不在 8 个代表机位里） */
@@ -683,6 +685,13 @@ const SUNSET_TEXT = computed(() => {
                 <option v-for="t in RH_THRESHOLDS" :key="t" :value="t">{{ t }}%</option>
               </select>
             </span>
+            <button
+              type="button"
+              class="xsec-chip"
+              :class="{ 'is-on': showRain }"
+              title="地面降水率（mm/h），不是降水概率；空心 ? = 缺测"
+              @click="showRain = !showRain"
+            >降水</button>
           </div>
 
           <button type="button" class="xsec-full" @click="toggleFull">
@@ -728,6 +737,7 @@ const SUNSET_TEXT = computed(() => {
                 :dem-step-km="demStepKm"
                 :aod="aod"
                 :rh-sat="rhSat"
+                :show-rain="showRain"
               />
             </div>
 
@@ -754,6 +764,7 @@ const SUNSET_TEXT = computed(() => {
               <span class="xsec-lg"><i class="xsec-sw xsec-sw-boundary" />夕阳照明边界（虚线以下在地球阴影里）</span>
               <span class="xsec-lg"><i class="xsec-sw xsec-sw-lit" />暖色叠加 = 几何受光</span>
               <span v-if="rhSat !== null" class="xsec-lg"><i class="xsec-sw xsec-sw-rhsat" />RH≥{{ rhSat }}% 诊断潜在云区（不是模式云水）</span>
+              <span v-if="showRain" class="xsec-lg"><i class="xsec-sw xsec-sw-rain" />降水率（地面 mm/h，不是概率；? = 缺测）</span>
               <span v-if="dem" class="xsec-lg"><i class="xsec-sw xsec-sw-terrain" />地形 = {{ demSourceShort }}</span>
               <span v-else class="xsec-lg"><i class="xsec-sw xsec-sw-terrain" />地形 = GFS 模式地形（DEM 缺测）</span>
               <span class="xsec-lg xsec-lg-note">

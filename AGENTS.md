@@ -90,6 +90,8 @@ node tools/verify-cache-diff.mjs    # 读出来再写回去必须逐字节一致
 ```bash
 python tools/xsec/verify_cross.py   # 剖面缓存结构 / 数量 / 量级 / 地形遮罩 / 时间单调
 node tools/xsec/test-light.mjs      # 光照几何 52 项（曲率/受光判据/边界/AOD/地形遮挡/受光窗口）
+node tools/test-rain.mjs            # 降水字段契约：缺测必须是 null，不能变 0
+node tools/test-shadow.mjs          # 影子分数 14 项（含「不得高于基线」封顶规则扫描）
 python tools/xsec/build_context.py --allow-partial  # 重建 DEM 地形 + AOD（Open-Meteo 限额时自动回退 SRTM）
 ```
 

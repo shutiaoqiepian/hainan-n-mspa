@@ -41,8 +41,10 @@ const props = withDefaults(
     aod?: number | null
     /** RH 诊断「潜在云区」的阈值（%）；null = 不画 */
     rhSat?: number | null
+    /** 是否画降水圆点（地面附近，按降水率 mm/h 分档） */
+    showRain?: boolean
   }>(),
-  { yMaxKm: 16, mode: 'photo', heightAxis: 'msl', dem: null, demStepKm: 1.25, aod: null, rhSat: null }
+  { yMaxKm: 16, mode: 'photo', heightAxis: 'msl', dem: null, demStepKm: 1.25, aod: null, rhSat: null, showRain: false }
 )
 
 /* ================= 数据 ================= */
@@ -605,6 +607,8 @@ function drawTerrain(ctx: CanvasRenderingContext2D): void {
   ctx.stroke()
   ctx.restore()
 
+  drawRain(ctx)
+
   /* 观察者 */
   const ox = x2px(0)
   const oy = y2px(toAxis(groundM.value / 1000))
@@ -615,6 +619,60 @@ function drawTerrain(ctx: CanvasRenderingContext2D): void {
   ctx.fillStyle = palette.value.muted
   ctx.textAlign = 'left'
   ctx.fillText(`机位 · ${hasDem.value ? 'DEM 地面' : '模式地形'} ${Math.round(groundM.value)} m`, ox + 13, oy + 3)
+  ctx.restore()
+}
+
+/**
+ * 降水圆点（任务书 P4 的降水表达）。
+ *
+ * 口径：数据是 GFS 地面降水率 PRATE（mm/h），**不是降水概率**。
+ *   · 每个 12.5 km 采样点画一列点，点的大小/密度表示强度（0.1 / 0.5 / 2 / 5 mm/h 四档）；
+ *   · 缺测（null）→ 画一个空心"?"标记，绝不画成"没下雨"；
+ *   · 点从地面往上堆 0.6 km，表示"这里的降水来自这一列空气"，不是云层高度。
+ *   · 不画彩虹判断（彩虹需要太阳—观测者—雨幕的三维关系，二维剖面表达不了）。
+ */
+function drawRain(ctx: CanvasRenderingContext2D): void {
+  if (!props.showRain) return
+  const p = plot.value
+  const pal = palette.value
+  const iw = totalKm.value
+  ctx.save()
+  ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip()
+  for (const sample of props.section.samples) {
+    const col = points.value[props.section.samples.indexOf(sample)]
+    const rain = col?.[0]?.rainMmH
+    const x = x2px(sample.d)
+    const groundKm = sample.terrainM / 1000
+    if (rain === null || rain === undefined) {
+      /* 缺测：空心问号，明确表示"这里没有降水数据"，不是"没下雨" */
+      ctx.strokeStyle = 'rgba(180,200,220,0.55)'
+      ctx.lineWidth = 1
+      ctx.setLineDash([2, 2])
+      ctx.beginPath(); ctx.arc(x, y2px(toAxis(groundKm)) - 7, 3.5, 0, Math.PI * 2); ctx.stroke()
+      ctx.setLineDash([])
+      ctx.font = '8px system-ui, sans-serif'
+      ctx.fillStyle = 'rgba(180,200,220,0.7)'
+      ctx.textAlign = 'center'
+      ctx.fillText('?', x, y2px(toAxis(groundKm)) - 4)
+      continue
+    }
+    if (rain < 0.02) continue          /* 无有效降水不画点（0.02 mm/h 是模式噪声下限） */
+    /* 强度 → 点数与大小。分档按 GFS 实际量级：本区域实测 0–0.84 mm/h，
+       所以 0.05/0.15/0.35/0.6 更贴近真实；≥0.6 mm/h 已是明显的雨。 */
+    const level = rain >= 0.6 ? 4 : rain >= 0.35 ? 3 : rain >= 0.15 ? 2 : 1
+    const rows = 1 + level
+    const r = 1.3 + level * 0.6
+    const color = level >= 4 ? 'rgba(90,170,255,0.95)'
+      : level === 3 ? 'rgba(80,200,230,0.9)'
+        : level === 2 ? 'rgba(120,215,190,0.85)'
+          : 'rgba(160,215,200,0.75)'
+    ctx.fillStyle = color
+    for (let k = 0; k < rows; k++) {
+      const jitter = ((props.section.samples.indexOf(sample) * 7 + k * 13) % 9) / 9 - 0.5
+      const yy = y2px(toAxis(groundKm)) - 5 - k * (r * 2 + 1.2)
+      ctx.beginPath(); ctx.arc(x + jitter * 5, yy, r, 0, Math.PI * 2); ctx.fill()
+    }
+  }
   ctx.restore()
 }
 
@@ -1034,7 +1092,7 @@ onBeforeUnmount(() => {
   ro?.disconnect(); mo?.disconnect()
   document.removeEventListener('fullscreenchange', resize)
 })
-watch(() => [props.section, props.yMaxKm, props.layers, props.sun, props.mode, props.heightAxis, props.dem, props.aod, props.rhSat], () => redraw(), { deep: true })
+watch(() => [props.section, props.yMaxKm, props.layers, props.sun, props.mode, props.heightAxis, props.dem, props.aod, props.rhSat, props.showRain], () => redraw(), { deep: true })
 /* 悬停状态一变就重绘 overlay —— v2 曾漏掉这一步，导致"有十字线、没有提示框" */
 watch(hover, () => scheduleOverlay())
 </script>

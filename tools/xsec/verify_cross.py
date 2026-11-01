@@ -16,7 +16,8 @@ ROOT = Path(__file__).resolve().parents[2]
 CROSS = ROOT / "data" / "cross"
 SPOTS_JSON = ROOT / "src" / "data" / "forecast" / "spots.json"
 
-FIELDS = ["hgtM", "tC", "rhPct", "clwMgKg", "iciMgKg", "uMs", "vMs", "wPaS", "cfPct", "belowGround"]
+FIELDS = ["hgtM", "tC", "rhPct", "clwMgKg", "iciMgKg", "uMs", "vMs", "wPaS", "cfPct",
+          "belowGround", "rainMmH"]
 LEVELS = [1000, 925, 850, 700, 600, 500, 400, 300, 200]
 AZIMUTHS = [240, 255, 265, 280, 295]
 
@@ -91,7 +92,9 @@ def main():
                 prev_h = -1.0
                 for li, row in enumerate(smp["levels"]):
                     check(len(row) == len(FIELDS), f"字段数 {len(row)} ≠ {len(FIELDS)}")
-                    hgt, t, rh, clw, ici, u, v, w, cf, below = row
+                    hgt, t, rh, clw, ici, u, v, w, cf, below, rain = row
+                    if rain is not None:
+                        check(-0.01 <= rain <= 200, f"降水率越界：{rain} mm/h")
                     if hgt is None:
                         continue
                     check(hgt > prev_h, f"高度未随气压降低而升高（{hgt} ≤ {prev_h}）")

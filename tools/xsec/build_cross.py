@@ -79,6 +79,10 @@ VARS = {
     "HGT": "gh",        # 位势高度 gpm（逐格点逐层，用于垂直坐标）
 }
 TCDC = "tcc"            # 云分数 %（仅用于阈值标定与「云分数」图层）
+# 降水率：GFS 地面层的 PRATE（kg m^-2 s^-1），换算成 mm/h = PRATE*3600
+# 与「降水概率」不同，这是**强度**；缺测时保持 None，绝不填 0（"没下雨"和"没数据"必须分开）
+PRATE = "prate"
+ALL_VARS_SURFACE = {"PRATE": "prate"}
 # 实际下载的变量集合（TCDC 也取：既是图层，也是阈值的标定基准）
 ALL_VARS = dict(VARS)
 ALL_VARS["TCDC"] = TCDC
@@ -99,7 +103,7 @@ DEFAULT_AZ = 265        # 海南日落方向初始值（§4.2），不是固定�
 
 # 字段量化：整数尽量省字节，但语义要写清楚（index.json 里有 units）
 LEVEL_FIELDS = ["hgtM", "tC", "rhPct", "clwMgKg", "iciMgKg", "uMs", "vMs", "wPaS", "cfPct",
-                "belowGround"]
+                "belowGround", "rainMmH"]
 
 SPOTS = [
     # id, 机位名（必须与 spots.json 完全一致）, 默认方位, 地形标签
@@ -429,7 +433,38 @@ def build_time_cube(date, hh, fh):
             if lats is None:
                 lats, lons = la, lo
             cube[(var, lv)] = v
+    # 地面降水率单独取一次：filter 的 lev_*_mb 只覆盖气压层，地面场要单独指定。
+    # 失败不影响主体（降水只是辅助层），但要记下来，不能在图上假装"没下雨"。
+    cube[("PRATE", 0)] = None
+    try:
+        got2 = fetch_via_filter_surface(date, hh, fh, "PRATE")
+        if got2 is not None:
+            la2, lo2, v2 = to_canonical(got2)
+            if la2.shape == lats.shape and lo2.shape == lons.shape and np.allclose(la2, lats) and np.allclose(lo2, lons):
+                cube[("PRATE", 0)] = v2
+            else:
+                log("  PRATE 网格与气压层不一致，丢弃（不插值到别的网格上）")
+    except Exception as e:  # noqa: BLE001
+        log(f"  PRATE 取数失败：{e}（降水层将显示为缺测）")
     return dict(cube=cube, lats=lats, lons=lons, how=how)
+
+
+def fetch_via_filter_surface(date, hh, fh, var):
+    """只取一个地面变量（无 lev 参数）。返回 eccodes 消息或 None。"""
+    params = [("file", f"gfs.t{hh}z.pgrb2.0p25.f{fh:03d}"), ("subregion", ""),
+              ("dir", f"/gfs.{date}/{hh}/atmos"), (f"var_{var}", "on")]
+    params.extend(bbox_params())
+    url = FILTER + "?" + urllib.parse.urlencode(params)
+    st, buf = http_get(url, timeout=180, retries=2)
+    if buf[:4] != b"GRIB":
+        log(f"  地面 {var} 返回非 GRIB（{len(buf)} B，http={st}）")
+        return None
+    msgs = decode_messages(buf)
+    want = ALL_VARS_SURFACE[var]
+    for m in msgs:
+        if m["sn"] == want:
+            return m
+    return None
 
 
 # ---------------------------------------------------------------- 几何与插值
@@ -544,6 +579,15 @@ def quantize_section(cube, lats, lons, origin_lat, origin_lon, az, orog):
                 levels[-1].append(1)
             else:
                 levels[-1].append(0)
+        # 降水率（mm/h）：与层无关，但为了不让前端多一套数据形状，挂在每一层上重复一次。
+        # PRATE 缺测 → None（绝不写 0），前端显示"缺测"而不是"没下雨"。
+        prate = None
+        if cube.get(("PRATE", 0)) is not None:
+            prate_v = bilinear(cube[("PRATE", 0)], lats, lons, lat, lon)[0]
+            if math.isfinite(prate_v):
+                prate = round(float(prate_v) * 3600.0, 2)
+        for row in levels:
+            row.append(prate)
         samples.append(dict(d=dist, lat=round(lat, 4), lon=round(lon, 4),
                             terrainM=int(round(terrain)), levels=levels))
     return dict(az=az, samples=samples)
