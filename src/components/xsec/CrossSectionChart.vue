@@ -39,8 +39,10 @@ const props = withDefaults(
     demStepKm?: number
     /** 该时次 AOD（550 nm 柱总量）；null = 缺测 */
     aod?: number | null
+    /** RH 诊断「潜在云区」的阈值（%）；null = 不画 */
+    rhSat?: number | null
   }>(),
-  { yMaxKm: 16, mode: 'photo', heightAxis: 'msl', dem: null, demStepKm: 1.25, aod: null }
+  { yMaxKm: 16, mode: 'photo', heightAxis: 'msl', dem: null, demStepKm: 1.25, aod: null, rhSat: null }
 )
 
 /* ================= 数据 ================= */
@@ -258,6 +260,48 @@ function contour(grid: Grid, level: number, nx: number, ny: number): Array<[numb
 
 /* ================= 主绘制 ================= */
 
+/**
+ * RH 诊断「潜在云区」底纹（任务书 P2）。
+ *
+ * ⚠ 这不是云：RH 是按网格点诊断的相对湿度，模式里真正的水物质是 CLWMR/ICMR。
+ *   两者可以不一致（高湿无云、低湿有云都会发生），所以这里只用**极淡的斜纹/底色**，
+ *   并放在云场之下，不抢云的视觉优先级。
+ *   阈值可调（默认 90%），因为「多少湿度算可能成云」没有唯一答案。
+ */
+function drawRhSaturation(ctx: CanvasRenderingContext2D): void {
+  const thr = props.rhSat
+  if (thr === null || !Number.isFinite(thr)) return
+  const p = plot.value
+  const iw = Math.round(p.w)
+  ctx.save()
+  ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip()
+  for (let px = 0; px < iw; px++) {
+    const d = (px / (iw - 1)) * totalKm.value
+    const dsArr = distances.value
+    let si = 0
+    while (si < dsArr.length - 2 && dsArr[si + 1] < d) si++
+    const w = Math.max(0, Math.min(1, (d - dsArr[si]) / (dsArr[si + 1] - dsArr[si] || 1)))
+    for (let j = 0; j < bandEdges.value.length; j++) {
+      const a = levels.value[si]?.[j]
+      const b = levels.value[si + 1]?.[j]
+      /* 缺测不参与插值：只有一侧有值就按那一侧，两侧都缺测就跳过（不当 0） */
+      const va = a && a.rh !== null && !a.below ? a.rh : null
+      const vb = b && b.rh !== null && !b.below ? b.rh : null
+      const rh = va === null && vb === null ? null : (va === null ? vb : vb === null ? va : va * (1 - w) + vb * w)
+      if (rh === null || rh < thr) continue
+      const edge = bandEdges.value[j]
+      const y0 = Math.max(p.y, Math.min(p.y + p.h, y2px(toAxis(edge.hiM / 1000))))
+      const y1 = Math.max(p.y, Math.min(p.y + p.h, y2px(toAxis(edge.loM / 1000))))
+      if (y1 - y0 < 0.4) continue
+      /* 湿度越接近 100% 越实一点，但整体保持很淡 */
+      const alpha = 0.05 + 0.09 * Math.min(1, Math.max(0, (rh - thr) / Math.max(5, 100 - thr)))
+      ctx.fillStyle = `rgba(206,232,255,${alpha.toFixed(3)})`
+      ctx.fillRect(p.x + px, y0, 1, y1 - y0)
+    }
+  }
+  ctx.restore()
+}
+
 /** 点 (剖面距离 d, 海拔 h) 此刻是否处于几何直射光中（太阳方位按 cosΔ 投影到剖面） */
 function litNowAt(dKm: number, hM: number): boolean {
   const sun = props.sun
@@ -342,6 +386,9 @@ function drawBase(): void {
 
   /* 地球阴影 / 夕阳照明边界：必须在云之前画（云落在阴影里也仍然可见） */
   drawShadowRegion(ctx)
+
+  /* RH 诊断「潜在云区」底纹：也不是云，只是「模式湿度高到可能成云」的区域 */
+  drawRhSaturation(ctx)
 
   /* ---- 云场：按模式层真实厚度逐列绘制（横向线性插值，纵向不平滑）---- */
   ctx.save()
@@ -890,7 +937,7 @@ onBeforeUnmount(() => {
   ro?.disconnect(); mo?.disconnect()
   document.removeEventListener('fullscreenchange', resize)
 })
-watch(() => [props.section, props.yMaxKm, props.layers, props.sun, props.mode, props.heightAxis, props.dem, props.aod], () => redraw(), { deep: true })
+watch(() => [props.section, props.yMaxKm, props.layers, props.sun, props.mode, props.heightAxis, props.dem, props.aod, props.rhSat], () => redraw(), { deep: true })
 /* 悬停状态一变就重绘 overlay —— v2 曾漏掉这一步，导致"有十字线、没有提示框" */
 watch(hover, () => scheduleOverlay())
 </script>

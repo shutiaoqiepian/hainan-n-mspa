@@ -41,6 +41,9 @@ const layers = ref({ rh: false, temp: false, wind: false, w: false })
 const mode = ref<'photo' | 'water' | 'ice' | 'total'>('photo')
 /** 纵轴：海拔 MSL / 离地 AGL */
 const heightAxis = ref<'msl' | 'agl'>('msl')
+/** RH 诊断「潜在云区」阈值（%）；null = 不画。默认关，避免和真实云场混淆 */
+const rhSat = ref<number | null>(null)
+const RH_THRESHOLDS = [80, 85, 90, 95]
 const full = ref(false)
 const card = ref<HTMLElement | null>(null)
 /** 从预报页点进来时带的机位（可能不在 8 个代表机位里） */
@@ -660,6 +663,26 @@ const SUNSET_TEXT = computed(() => {
             >
               {{ l.name }}
             </button>
+            <!-- RH 诊断「潜在云区」：默认关，避免和真实云水混淆（任务书 P2） -->
+            <span class="xsec-chip-split">
+              <button
+                type="button"
+                class="xsec-chip"
+                :class="{ 'is-on': rhSat !== null }"
+                :title="'相对湿度 ≥ 阈值就标为潜在云区；这是湿度诊断，不是模式云水'"
+                @click="rhSat = rhSat === null ? 90 : null"
+              >
+                潜在云区 RH≥{{ rhSat ?? 90 }}%
+              </button>
+              <select
+                v-if="rhSat !== null"
+                v-model.number="rhSat"
+                class="xsec-mini-select"
+                aria-label="潜在云区阈值"
+              >
+                <option v-for="t in RH_THRESHOLDS" :key="t" :value="t">{{ t }}%</option>
+              </select>
+            </span>
           </div>
 
           <button type="button" class="xsec-full" @click="toggleFull">
@@ -704,6 +727,7 @@ const SUNSET_TEXT = computed(() => {
                 :dem="dem"
                 :dem-step-km="demStepKm"
                 :aod="aod"
+                :rh-sat="rhSat"
               />
             </div>
 
@@ -729,6 +753,7 @@ const SUNSET_TEXT = computed(() => {
               <span class="xsec-lg"><i class="xsec-sw xsec-sw-sun" />太阳投影</span>
               <span class="xsec-lg"><i class="xsec-sw xsec-sw-boundary" />夕阳照明边界（虚线以下在地球阴影里）</span>
               <span class="xsec-lg"><i class="xsec-sw xsec-sw-lit" />暖色叠加 = 几何受光</span>
+              <span v-if="rhSat !== null" class="xsec-lg"><i class="xsec-sw xsec-sw-rhsat" />RH≥{{ rhSat }}% 诊断潜在云区（不是模式云水）</span>
               <span v-if="dem" class="xsec-lg"><i class="xsec-sw xsec-sw-terrain" />地形 = {{ demSourceShort }}</span>
               <span v-else class="xsec-lg"><i class="xsec-sw xsec-sw-terrain" />地形 = GFS 模式地形（DEM 缺测）</span>
               <span class="xsec-lg xsec-lg-note">
@@ -751,6 +776,10 @@ const SUNSET_TEXT = computed(() => {
               <template v-else>
                 云水/云冰是 GFS 预报变量而非观测。
               </template>
+              <span v-if="rhSat !== null">
+                「潜在云区」是按 RH≥{{ rhSat }}% 诊断出来的湿度区域，<b>不是云水/云冰</b>；
+                高湿无云、低湿有云都会发生，它只提示"这里湿度够高、可能成云"。
+              </span>
               <template v-if="dem">地形为真实 DEM（{{ demSourceShort }}），地形以下的模式层已遮罩。</template>
               <template v-else>DEM 缺测，地形退回 GFS 模式地形（平滑值，非真实 DEM），地形以下的层已遮罩。</template>
             </p>
