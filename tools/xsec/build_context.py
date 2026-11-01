@@ -53,6 +53,24 @@ ELEV_API = "https://api.open-meteo.com/v1/elevation"
 TOPO_API = "https://api.opentopodata.org/v1/srtm90m"
 AQI_API = "https://air-quality-api.open-meteo.com/v1/air-quality"
 UA = "18n-mspa-xsec/1.0 (static site cache builder; contact: repo issues)"
+# 请求节流：Open-Meteo 免费额度实测约 10 次/分钟，长跑会被按小时封顶。
+# 这里用全局令牌桶把主源请求限到 1 次 / 6.2 s，宁可慢也不要触发 429
+# （429 一次要多等 10–40 s 退避，反而更慢，还会让整小时额度更快耗尽）。
+import threading
+_RATE_LOCK = threading.Lock()
+_RATE_NEXT = [0.0]
+MIN_INTERVAL = 6.2
+
+
+def throttle(min_interval: float = MIN_INTERVAL) -> None:
+    """全局串行节流：保证相邻两次请求至少间隔 min_interval 秒。"""
+    with _RATE_LOCK:
+        now = time.time()
+        wait = _RATE_NEXT[0] - now
+        if wait > 0:
+            time.sleep(wait)
+            now = time.time()
+        _RATE_NEXT[0] = now + min_interval
 
 # 沿剖面方向的地形采样：0–50 km，1.25 km 间隔（41 点）——与图的横轴对齐
 SECTION_STEP_KM = 1.25
@@ -81,10 +99,10 @@ def http_json(url, timeout=45, retries=4):
         except urllib.error.HTTPError as e:
             last = e
             if e.code == 429:
-                wait = 10.0 * (k + 1)
-                log(f"   … 触发限流（429），等待 {wait:.0f}s 后重试")
-                time.sleep(wait)
-                continue
+                # 429 是**小时级**限额（实测 reason="Hourly API request limit exceeded"），
+                # 等 10–40 s 再试没有意义，只会把剩下的额度更快耗掉 → 立即抛错交给上层回退。
+                log("   … 触发限流（429，小时级），本批立即改用备源")
+                raise
             time.sleep(1.5 * (k + 1))
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:  # noqa: PERF203
             last = e
@@ -116,12 +134,13 @@ def fetch_many_openmeteo(coords):
             "latitude": ",".join(f"{p[0]:.5f}" for p in part),
             "longitude": ",".join(f"{p[1]:.5f}" for p in part),
         })
+        throttle()          # 全局限速：约 10 次/分钟
         j = http_json(f"{ELEV_API}?{qs}")
         el = j.get("elevation")
         if not isinstance(el, list) or len(el) != len(part):
             raise RuntimeError(f"elevation 返回条数不对：{len(part)} → {el if not isinstance(el, list) else len(el)}")
         out.extend(None if v is None else int(round(float(v))) for v in el)
-        time.sleep(6.0)  # 实测该接口在同一出口 IP 上约 10 次/分钟，6s 间隔是安全值
+        # 已在 throttle() 里统一限速，这里不再额外 sleep
     return out
 
 
@@ -167,6 +186,7 @@ def fetch_many_opentopo(coords):
 DEM_SOURCE = {"provider": "openmeteo", "label": "Copernicus DEM GLO-30（Open-Meteo Elevation API）"}
 # 上次被 429 的时间戳：3 分钟冷却期内直接用备源，避免每批都白等一分钟
 _LAST_429 = 0.0
+DEM_COOLDOWN_SEC = 720.0   # 主源被 429 后，至少 12 分钟内不再试主源
 
 
 def fetch_dem(coords):
@@ -178,20 +198,28 @@ def fetch_dem(coords):
     global DEM_SOURCE, _LAST_429
     now = time.time()
     # 主源刚被限流过（3 分钟内）：这期间直接用备源，省掉每次 4 次重试 + 退避的 1 分钟
-    if DEM_SOURCE["provider"] == "openmeteo" and now - _LAST_429 > 180:
+    if DEM_SOURCE["provider"] == "openmeteo" and now - _LAST_429 > DEM_COOLDOWN_SEC:
         try:
             return fetch_many_openmeteo(coords)
         except RuntimeError as e:
             log(f"   … Open-Meteo 高程不可用（{e}），本批改用 OpenTopoData SRTM 90m")
             _LAST_429 = time.time()
             DEM_SOURCE = {"provider": "opentopo", "label": "SRTM 90m（OpenTopoData，Open-Meteo 限额回退）"}
-    try:
-        return fetch_many_opentopo(coords)
-    except RuntimeError as e:
-        # 备源也不行：把状态复位，下一批再试（主源可能已经恢复）
-        log(f"   … 备用源也不可用（{e}），下一批重试")
-        DEM_SOURCE = {"provider": "openmeteo", "label": "Copernicus DEM GLO-30（Open-Meteo Elevation API）"}
-        raise
+    elif DEM_SOURCE["provider"] != "openmeteo":
+        # 已在冷却期：顺便检查冷却是否已过，过了就恢复主源（多采到 Copernicus 而非 SRTM）
+        if now - _LAST_429 > DEM_COOLDOWN_SEC:
+            DEM_SOURCE = {"provider": "openmeteo", "label": "Copernicus DEM GLO-30（Open-Meteo Elevation API）"}
+    for attempt in (1, 2):
+        try:
+            return fetch_many_opentopo(coords)
+        except RuntimeError as e:
+            if attempt == 1:
+                log(f"   … 备用源暂时失败（{e}），30 s 后重试一次")
+                time.sleep(30)
+                continue
+            log(f"   … 备用源连续失败（{e}），这一批放弃并记录原因")
+            DEM_SOURCE = {"provider": "openmeteo", "label": "Copernicus DEM GLO-30（Open-Meteo Elevation API）"}
+            raise
 
 
 def fetch_aod(lat, lon):
@@ -375,15 +403,27 @@ def main():
     pending = [sp for sp in spots if not (args.skip_existing and sp["id"] in out["spots"])]
     log(f"待处理 {len(pending)} 个机位（批量 {batch_size}）")
 
+    # 全局连续失败预算：主备源都被挡时，与其把 200 个机位逐条记成"失败"，
+    # 不如早点停下让外部（或下一个小时）再来。续跑时会跳过已完成的机位。
+    consec = 0
+    MAX_CONSEC = 16
     for bi in range(0, len(pending), batch_size):
         batch = pending[bi:bi + batch_size]
         t0 = time.time()
         try:
             dem_batch(batch, out)
+            consec = 0
         except Exception as e:  # noqa: BLE001 —— 一批失败只影响这一批
-            log(f"!! 批 {bi // batch_size + 1} 失败：{e}")
+            consec += 1
+            log(f"!! 批 {bi // batch_size + 1} 失败（连续 {consec}）：{e}")
             for sp in batch:
                 out["errors"].append(f"{sp['id']}: {e}")
+            if consec >= MAX_CONSEC:
+                log(f"连续 {consec} 批失败：主源与备源都在限流，先停下。"
+                    f"稍后重跑同一条命令会跳过已完成的 {len(out['spots'])} 个机位继续。")
+                Path(args.out).write_text(
+                    json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+                return 2
         Path(args.out).write_text(
             json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         log(f"批 {bi // batch_size + 1}/{(len(pending) + batch_size - 1) // batch_size} 完成，"
