@@ -60,6 +60,7 @@ SECTION_POINTS = 41
 # 沿太阳方位的地形采样：0–150 km，2.5 km 间隔（61 点）——用于光路被地形遮挡的判定
 SUN_STEP_KM = 2.5
 SUN_POINTS = 61
+# 全国批量时可以再降：--sun-points 31（0–150 km / 5 km 间隔，用于判断低空遮挡足够）
 
 R_KM = 6371.0088
 
@@ -130,21 +131,42 @@ def fetch_many_opentopo(coords):
     该接口单次点数少、容易超时，所以每段只发 50 个点、超时放宽到 90 s。
     """
     out = []
-    chunk = 50
+    # 实测（2026-11-01）：该公共接口单次 5 点约 6 s，10 点以上几乎必超时。
+    # 所以按 5 点/段请求，失败时二分重试（见 fetch_many_opentopo 内层）。
+    chunk = 5
     for i in range(0, len(coords), chunk):
         part = coords[i:i + chunk]
         locs = "|".join(f"{p[0]:.5f},{p[1]:.5f}" for p in part)
         qs = urllib.parse.urlencode({"locations": locs})
-        j = http_json(f"{TOPO_API}?{qs}", timeout=90, retries=3)
+        # 实测：50 点一次会在 TLS 握手阶段超时；20 点是稳定区间
+        try:
+            j = http_json(f"{TOPO_API}?{qs}", timeout=45, retries=2)
+        except RuntimeError:
+            if len(part) <= 1:
+                raise
+            # 二分重试：把这一段拆成两半再试
+            half = len(part) // 2
+            for sub in (part[:half], part[half:]):
+                sqs = urllib.parse.urlencode({"locations": "|".join(f"{p[0]:.5f},{p[1]:.5f}" for p in sub)})
+                sj = http_json(f"{TOPO_API}?{sqs}", timeout=45, retries=3)
+                res_sub = sj.get("results") or []
+                if len(res_sub) != len(sub):
+                    raise RuntimeError("opentopodata 二分返回条数不对")
+                out.extend(None if r.get("elevation") is None else int(round(float(r["elevation"]))) for r in res_sub)
+                time.sleep(1.2)
+            time.sleep(1.2)
+            continue
         res = j.get("results")
         if not isinstance(res, list) or len(res) != len(part):
             raise RuntimeError(f"opentopodata 返回条数不对：{len(part)} → {res if not isinstance(res, list) else len(res)}")
         out.extend(None if r.get("elevation") is None else int(round(float(r["elevation"]))) for r in res)
-        time.sleep(1.3)  # 公共接口限 1 次/秒
+        time.sleep(2.0)
     return out
 
 
 DEM_SOURCE = {"provider": "openmeteo", "label": "Copernicus DEM GLO-30（Open-Meteo Elevation API）"}
+# 上次被 429 的时间戳：3 分钟冷却期内直接用备源，避免每批都白等一分钟
+_LAST_429 = 0.0
 
 
 def fetch_dem(coords):
@@ -153,18 +175,21 @@ def fetch_dem(coords):
     Open-Meteo 被限流（429）时切到 SRTM；SRTM 也失败时**每批重新试一次主源**——
     否则一旦回退就永远用备源，既慢（每批 1–2 分钟）又错过限额恢复的窗口。
     """
-    global DEM_SOURCE
-    if DEM_SOURCE["provider"] == "openmeteo":
+    global DEM_SOURCE, _LAST_429
+    now = time.time()
+    # 主源刚被限流过（3 分钟内）：这期间直接用备源，省掉每次 4 次重试 + 退避的 1 分钟
+    if DEM_SOURCE["provider"] == "openmeteo" and now - _LAST_429 > 180:
         try:
             return fetch_many_openmeteo(coords)
         except RuntimeError as e:
             log(f"   … Open-Meteo 高程不可用（{e}），本批改用 OpenTopoData SRTM 90m")
+            _LAST_429 = time.time()
             DEM_SOURCE = {"provider": "opentopo", "label": "SRTM 90m（OpenTopoData，Open-Meteo 限额回退）"}
     try:
         return fetch_many_opentopo(coords)
     except RuntimeError as e:
-        # SRTM 也挂了：下一批重新试主源（限额是按小时算的，可能已经恢复）
-        log(f"   … SRTM 也不可用（{e}），下一批重新尝试 Open-Meteo")
+        # 备源也不行：把状态复位，下一批再试（主源可能已经恢复）
+        log(f"   … 备用源也不可用（{e}），下一批重试")
         DEM_SOURCE = {"provider": "openmeteo", "label": "Copernicus DEM GLO-30（Open-Meteo Elevation API）"}
         raise
 
@@ -216,6 +241,9 @@ def pick_aod(times, values, iso):
     return None
 
 
+SUN_POINTS_RUNTIME = SUN_POINTS
+
+
 def dem_batch(batch, out):
     """一批机位合并取 DEM（每批 100 坐标以内），AOD 逐机位取。结果写入 out['spots']。"""
     spots_info = []
@@ -251,7 +279,7 @@ def dem_batch(batch, out):
             except Exception:  # noqa: BLE001
                 az_sun = float(spot_file.get("spot", {}).get("defaultAzimuth") or 265)
             sun_meta.append(round(float(az_sun), 1))
-            for j in range(SUN_POINTS):
+            for j in range(SUN_POINTS_RUNTIME):
                 pts.append(destination(lat, lon, sun_meta[-1], j * SUN_STEP_KM))
                 layout.append(("sun", len(sun_meta) - 1, j))
         spots_info.append(dict(sp=sp, lat=lat, lon=lon, azimuths=azimuths,
@@ -264,7 +292,7 @@ def dem_batch(batch, out):
     for info in spots_info:
         off = info["offset"]
         profile = {str(az): [None] * SECTION_POINTS for az in info["azimuths"]}
-        sun_profiles = [{"az": info["sun_meta"][0], "elev": [None] * SUN_POINTS}
+        sun_profiles = [{"az": info["sun_meta"][0], "elev": [None] * SUN_POINTS_RUNTIME}
                         for _ in info["sec_times"]]
         origin = flat[off]
         for (kind, key, j) in info["layout"]:
@@ -297,6 +325,8 @@ def main():
     ap.add_argument("--out", default=str(OUT_DIR / "context.json"))
     ap.add_argument("--index", default=str(INDEX),
                     help="机位索引：默认海南试点 index.json；全国用 national-index.json")
+    ap.add_argument("--sun-points", type=int, default=SUN_POINTS,
+                    help="太阳方位地形采样点数（全国批量用 31，减少请求量）")
     ap.add_argument("--batch", type=int, default=1,
                     help="每批合并多少机位的 DEM 采样点（全国 224 机位用 6–8，可把请求数降到 1/5）")
     ap.add_argument("--skip-existing", action="store_true",
@@ -339,6 +369,8 @@ def main():
         except Exception as e:  # noqa: BLE001
             log(f"  已有输出读不出来，忽略：{e}")
 
+    global SUN_POINTS_RUNTIME
+    SUN_POINTS_RUNTIME = max(9, int(args.sun_points))
     batch_size = max(1, int(args.batch))
     pending = [sp for sp in spots if not (args.skip_existing and sp["id"] in out["spots"])]
     log(f"待处理 {len(pending)} 个机位（批量 {batch_size}）")
