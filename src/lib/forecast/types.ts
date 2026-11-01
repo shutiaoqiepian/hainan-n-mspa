@@ -77,9 +77,14 @@ export interface Measure {
   t2m: number | null
   td2m: number | null
   vis: number | null
+  /** ⚠ 缺测时这里是**计算用的默认值**（0.2），不是观测值；真实与否看 aodMissing */
   aod: number
   /** AOD 缺测时填的是默认值，不是真实观测 */
   aodMissing?: boolean
+  /** AOD 实测值（缺测为 null）。影子分数与展示优先用这个，避免把默认值当真值 */
+  aodReal?: number | null
+  /** 单位时间降水量（mm，该小时）——用于「雨停转好」判断，不是降水概率 */
+  precipMm?: number | null
   /** 该小时的 HH:MM，compute 里补上 */
   time?: string
 }
@@ -270,6 +275,15 @@ export interface Row {
   ms: number
   /** 流水线第一层的原始分（未平滑、未打折），详情里和最终分并列显示 */
   rawScore: number
+  /* ---- 线上评分实际用到的修正项（只读观察值，供影子分数用同一口径做基线）---- */
+  /** 太阳方向上游柱的遮挡系数（1 = 不挡） */
+  horizonBlock?: number
+  /** 雨停回补系数（0 或 1） */
+  rainRelief?: number
+  /** 窗口内平均大气质量（AOD 斜程换算的参考光程） */
+  aodRefMass?: number | null
+  /** 该时次的 9 层气压云量（%），供影子分数做「垂直连续云」判断；缺测为 null */
+  levelCover?: Array<{ hPa: number; coverPct: number | null; heightM: number | null }> | null
   /** 正点前后一小时里「平滑值最高」的那个小时的分数与时刻（最佳时刻） */
   peakScore: number
   peakTime: string

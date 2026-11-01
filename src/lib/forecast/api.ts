@@ -188,12 +188,15 @@ export function measureAt(
   }
 
   /* AOD 缺测时填 0.2（气溶胶不清澈也不脏），但要记下来 ——
-     否则「没数据」和「空气一般」在界面上长得一模一样。 */
-  let aod = 0.2
+     否则「没数据」和「空气一般」在界面上长得一模一样。
+     aodReal 保留原始值（缺测 = null），供影子分数与展示区分"默认值"和"实测"。 */
+  const AOD_DEFAULT = 0.2
+  let aod = AOD_DEFAULT
+  let aodReal: number | null = null
   let aodMissing = true
   if (airObj && airObj.hourly && airObj.hourly.aerosol_optical_depth) {
     const v2 = airObj.hourly.aerosol_optical_depth[k]
-    if (Number.isFinite(v2)) { aod = v2 as number; aodMissing = false }
+    if (Number.isFinite(v2)) { aod = v2 as number; aodReal = v2 as number; aodMissing = false }
   }
 
   return {
@@ -206,7 +209,10 @@ export function measureAt(
     td2m: avg('dew_point_2m'),
     vis: avg('visibility'),
     aod: aod,
-    aodMissing: aodMissing
+    aodReal: aodReal,
+    aodMissing: aodMissing,
+    /* 降水量（mm/小时）只在天气主数据里，剖面那份没有 */
+    precipMm: avg('precipitation')
   }
 }
 
@@ -458,14 +464,19 @@ function loadLive(token: number): void {
 
 /* 气压层变量清单：多层 × 多要素，全部来自 ECMWF IFS。
    与 tools/build-cache.mjs 里的 PROFILE_VARS 必须一致。 */
+export const PROFILE_LEVELS = [1000, 925, 850, 700, 600, 500, 300, 200] as const
+
 export const PROFILE_VARS = [
-  ...[1000, 925, 850, 700, 600, 500, 300, 200].flatMap((lv) => [
+  ...PROFILE_LEVELS.flatMap((lv) => [
     'cloud_cover_' + lv + 'hPa',
     'relative_humidity_' + lv + 'hPa',
     'temperature_' + lv + 'hPa',
     'geopotential_height_' + lv + 'hPa'
   ]),
   ...[1000, 925, 850, 700].flatMap((lv) => ['dew_point_' + lv + 'hPa']),
+  /* 400 hPa RH：scoring.ts 的 profileOf() 一直读它，但以前没请求 → 永远 null，
+     「高层有云」判据等于半失效。补上后该分支才真正生效。 */
+  'relative_humidity_400hPa',
   'temperature_2m', 'dew_point_2m', 'visibility',
   'boundary_layer_height', 'cape', 'precipitation', 'wind_speed_10m'
 ].join(',')
@@ -478,6 +489,31 @@ function profField(pr: RawPoint, name: string, idx: number): number | null {
   if (!a) return null
   const v = a[idx]
   return Number.isFinite(v) ? (v as number) : null
+}
+
+/**
+ * 该时次的 9 层气压云量（%）。
+ * 用于影子分数判断「薄卷云 / 厚层云」，不影响线上评分。
+ * 没有剖面数据时返回 null（不是空数组，避免被当成"9 层都没云"）。
+ */
+export function buildLevelCover(
+  pr: RawPoint | null | undefined,
+  idx: number
+): Array<{ hPa: number; coverPct: number | null; heightM: number | null }> | null {
+  if (!pr || !pr.hourly) return null
+  const out: Array<{ hPa: number; coverPct: number | null; heightM: number | null }> = []
+  for (const lv of PROFILE_LEVELS) {
+    const c = profField(pr, 'cloud_cover_' + lv + 'hPa', idx)
+    const h = profField(pr, 'geopotential_height_' + lv + 'hPa', idx)
+    if (c == null && h == null) continue
+    out.push({
+      hPa: lv,
+      /* 云量缺测就保留 null：影子分数会跳过这一层，而不是当 0% */
+      coverPct: c == null ? null : c,
+      heightM: h == null ? null : h
+    })
+  }
+  return out.length ? out : null
 }
 
 /* 逐小时：目标时刻前后各 2 小时（趋势图 / 详情表用） */
@@ -746,6 +782,9 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
       ? winMasses.reduce((a, b) => a + b, 0) / winMasses.length
       : null
 
+    /* 目标时刻的两个修正系数（只记录，不改变计算）——影子分数要用同一口径 */
+    let obsRelief = 0
+
     const hourScore = (k: number): number => {
       const hit = hourScoreCache.get(k)
       if (hit != null) return hit
@@ -757,6 +796,7 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
       if (now != null && prev != null && now <= 0.1 && prev >= 0.3 && (mm.pop ?? 0) >= 50) {
         relief = 1      /* 刚停雨 + 概率还高 → 把被 pop 压掉的分数找回一点 */
       }
+      if (k === idx) obsRelief = relief
       const v = scoreOfAt(mm, {
         sunEl: hourSunEl(k),
         aodRefMass: refMass,
@@ -965,6 +1005,13 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
       m: m,
       score: score,
       rawScore: scoreOf(m),
+      /* 线上评分实际用到的修正系数（只读观察值，不参与计算；影子分数用它对齐基线） */
+      horizonBlock,
+      rainRelief: obsRelief,
+      aodRefMass: refMass,
+      /* 逐层云量（来自剖面请求，ECMWF 单模式）。只在有剖面数据时给，缺测保持 null，
+         绝不把"没有这一层"写成 0% —— 影子分数的垂直连续性判断依赖这个区分。 */
+      levelCover: buildLevelCover(pr, idx),
       quality: qualityOf(m),
       peakScore: peakScore,
       peakTime: peakTime,

@@ -77,6 +77,17 @@ export async function computeFor(prov: string, fixture: string) {
       vis: r.m.vis == null ? null : Math.round(r.m.vis),
       sunAz: r.sunAz,
       sunEl: r.detail.sunEl,
+      /* 线上评分实际用到的三个修正项系数。
+         影子分数要用「同一口径的基线」，否则会拿裸分当基线（首版踩过：
+         线上 7 个误报被影子算成 19 个）。缺测保持 null。 */
+      horizonBlock: r.horizonBlock ?? null,
+      rainRelief: r.rainRelief ?? null,
+      aodRefMass: r.aodRefMass ?? null,
+      aodRefEl: r.aodRefEl ?? null,
+      /* 9 层气压云量：影子分数判断「薄卷云 / 厚层云」用；缺测保留 null */
+      levelCover: r.levelCover ?? null,
+      /* 降水量（该小时 mm）：影子分数判断「雨停转好」用 */
+      precipMm: r.m.precipMm ?? null,
       spread: r.spread,
       models: r.models,
       faceOff: r.faceOff,

@@ -59,6 +59,8 @@ const PROFILE_VARS = [
     `geopotential_height_${lv}hPa`
   ]),
   ...[1000, 925, 850, 700].map((lv) => `dew_point_${lv}hPa`),
+  /* 与 src/lib/forecast/api.ts 的 PROFILE_VARS 一致：400 hPa RH（profileOf 的高层判据用） */
+  "relative_humidity_400hPa",
   "temperature_2m",
   "dew_point_2m",
   "visibility",
