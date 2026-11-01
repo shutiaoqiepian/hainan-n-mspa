@@ -752,7 +752,10 @@ function onMove(ev: PointerEvent): void {
   const x = ((ev.clientX - r.left) / r.width) * cssW.value
   const y = ((ev.clientY - r.top) / r.height) * cssH.value
   const p = plot.value
-  if (x < p.x || x > p.x + p.w || y < p.y || y > p.y + p.h) { hover.value = null; return }
+  if (x < p.x || x > p.x + p.w || y < p.y || y > p.y + p.h) {
+    if (hover.value) { hover.value = null; scheduleOverlay() }
+    return
+  }
   const d = px2d(x)
   const axisKm = px2km(y)
   const mslKm = fromAxis(axisKm)
@@ -764,11 +767,14 @@ function onMove(ev: PointerEvent): void {
   let s0 = 0
   while (s0 < dsArr.length - 2 && dsArr[s0 + 1] < d) s0++
   const w = Math.max(0, Math.min(1, (d - dsArr[s0]) / (dsArr[s0 + 1] - dsArr[s0] || 1)))
-  const va = modeValue(levels.value[s0]?.[li] ?? null as never)
-  const vb = modeValue(levels.value[s0 + 1]?.[li] ?? null as never)
+  const la = levels.value[s0]?.[li]
+  const lb = levels.value[s0 + 1]?.[li]
+  const va = la ? modeValue(la) : null
+  const vb = lb ? modeValue(lb) : null
   const q = va && vb ? va.q * (1 - w) + vb.q * w : (va ? va.q * (1 - w) : (vb ? vb.q * w : null))
   const point = points.value[si]?.[li]
   const nearest = col[li]
+  if (!nearest) { hover.value = null; scheduleOverlay(); return }
   hover.value = {
     x, y, d, axisKm, mslKm, si, li,
     point,
@@ -776,8 +782,9 @@ function onMove(ev: PointerEvent): void {
     nearest,
     nearestSi: si
   }
+  scheduleOverlay()
 }
-function onLeave(): void { hover.value = null }
+function onLeave(): void { hover.value = null; scheduleOverlay() }
 
 function fmt(v: number | null | undefined, digits = 1, unit = ''): string {
   if (v === null || v === undefined || !Number.isFinite(v)) return '缺测'
@@ -884,6 +891,8 @@ onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', resize)
 })
 watch(() => [props.section, props.yMaxKm, props.layers, props.sun, props.mode, props.heightAxis, props.dem, props.aod], () => redraw(), { deep: true })
+/* 悬停状态一变就重绘 overlay —— v2 曾漏掉这一步，导致"有十字线、没有提示框" */
+watch(hover, () => scheduleOverlay())
 </script>
 
 <template>
