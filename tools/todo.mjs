@@ -97,12 +97,33 @@ export const ITEMS = [
     how: [
       '已完成：tools/obs/sample-cth.mjs（GIBS 瓦片→有云占比+4 档高度）+ compare-cth.mjs + probe-sources.mjs',
       '已完成：docs/阶段七-03-卫星云顶高度-可行性落地.md（数据链路、实测、诚实边界）',
-      '待做：每天存一份剖面摘要（data/obs/xsec-snapshot/），攒 30 天后做「模式高估/低估高云」的定量分析',
-      '待做：GFS vs ECMWF IFS 0.25 的跨模式压力层对照（免费，现在就能做）',
+      '已完成：每天存剖面摘要（tools/obs/snapshot-xsec.mjs，CI 已接）与卫星取样（每日存档、幂等去重）',
+      '已完成：跨模式对照 tools/obs/compare-models.mjs（首批实测：850/700 hPa 云量差 21–23%，300 hPa RH 差 15%）',
+      '待做：攒到 30 天样本后做「模式高估/低估高云」的定量分析（见 tools/todo.mjs 的 xsec-cth-30day）',
       'CDS/ERA5 原始压力层仍需账号，作为第三重交叉验证',
     ],
     doc: 'docs/阶段七-03-卫星云顶高度-可行性落地.md',
     files: ['tools/obs/sample-cth.mjs', 'tools/obs/compare-cth.mjs', 'tools/obs/probe-sources.mjs']
+  },
+  {
+    id: 'xsec-cth-30day',
+    title: '剖面摘要 × 卫星云顶高度 × METAR 的三方定量分析（等 30 天样本）',
+    state: 'waiting',
+    trigger: {
+      text: 'data/obs/xsec-snapshot/ 攒到 ≥30 天，且 data/obs/cth-*.json 每个机位 ≥20 天',
+      metric: null
+    },
+    why:
+      '阶段七-04 起每天自动存：剖面摘要（模式认为云在哪层）、卫星云顶高度档、METAR 实况。' +
+      '这三者凑够 30 天后才能回答「模式是不是系统性高估高云」「误报集中在哪种云况」，' +
+      '现在样本只有 1 天，结论会过拟合。',
+    how: [
+      '写 tools/obs/analyze-30d.mjs：按天 join 三份数据，输出「模式云顶 vs 卫星高度档」的分档混淆矩阵',
+      '看高估/低估是否与季节、天气型（晴空/中云/高云）相关，而不是只看总体均值',
+      '结论只用于标注「这一层不可信」，不直接改 scoreOf()；要改评分必须单独立项 + A 级证据',
+    ],
+    doc: 'docs/阶段七-04-验证数据每日采集.md §5',
+    files: ['tools/obs/snapshot-xsec.mjs', 'tools/obs/sample-cth.mjs']
   },
   {
     id: 'tcdc-multiseason',

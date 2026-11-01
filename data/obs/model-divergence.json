@@ -1,0 +1,3110 @@
+{
+ "generatedAt": "2026-11-01T04:55:29.859Z",
+ "levelNote": "cloud_cover 为 RH 诊断值，不是模式原生云量",
+ "rows": [
+  {
+   "day": "2026-10-28",
+   "spot": "hk-xihai",
+   "name": "海口西海岸观海台",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -1.3,
+     "absDRhPct": 1.3,
+     "dHgtM": 2,
+     "absDHgtM": 2,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": -1.3,
+     "absDCloudPct": 1.3,
+     "dRhPct": -10,
+     "absDRhPct": 10,
+     "dHgtM": 3.7,
+     "absDHgtM": 3.7,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 30,
+     "absDCloudPct": 30,
+     "dRhPct": 0.7,
+     "absDRhPct": 5.3,
+     "dHgtM": 5.7,
+     "absDHgtM": 5.7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 18.7,
+     "absDCloudPct": 18.7,
+     "dRhPct": 6.7,
+     "absDRhPct": 6.7,
+     "dHgtM": 4,
+     "absDHgtM": 4,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -18,
+     "absDRhPct": 18,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -4.7,
+     "absDRhPct": 8,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": -0.3,
+     "absDCloudPct": 9,
+     "dRhPct": -8,
+     "absDRhPct": 8,
+     "dHgtM": 9.9,
+     "absDHgtM": 9.9,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": -27.3,
+     "absDCloudPct": 27.3,
+     "dRhPct": -60,
+     "absDRhPct": 60,
+     "dHgtM": 8.1,
+     "absDHgtM": 8.1,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -5.7,
+     "absDRhPct": 5.7,
+     "dHgtM": 11.6,
+     "absDHgtM": 11.6,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "spot": "cm-yingbin",
+   "name": "澄迈盈滨半岛",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -1.3,
+     "absDRhPct": 1.3,
+     "dHgtM": 2,
+     "absDHgtM": 2,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": -1.3,
+     "absDCloudPct": 1.3,
+     "dRhPct": -10,
+     "absDRhPct": 10,
+     "dHgtM": 3.7,
+     "absDHgtM": 3.7,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 30,
+     "absDCloudPct": 30,
+     "dRhPct": 0.7,
+     "absDRhPct": 5.3,
+     "dHgtM": 5.7,
+     "absDHgtM": 5.7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 18.7,
+     "absDCloudPct": 18.7,
+     "dRhPct": 6.7,
+     "absDRhPct": 6.7,
+     "dHgtM": 4,
+     "absDHgtM": 4,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -18,
+     "absDRhPct": 18,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -4.7,
+     "absDRhPct": 8,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": -0.3,
+     "absDCloudPct": 9,
+     "dRhPct": -8,
+     "absDRhPct": 8,
+     "dHgtM": 9.9,
+     "absDHgtM": 9.9,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": -27.3,
+     "absDCloudPct": 27.3,
+     "dRhPct": -60,
+     "absDRhPct": 60,
+     "dHgtM": 8.1,
+     "absDHgtM": 8.1,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -5.7,
+     "absDRhPct": 5.7,
+     "dHgtM": 11.6,
+     "absDHgtM": 11.6,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "spot": "lg-jiao",
+   "name": "临高角",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -4.7,
+     "absDRhPct": 4.7,
+     "dHgtM": 2.7,
+     "absDHgtM": 2.7,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 16.3,
+     "absDCloudPct": 16.3,
+     "dRhPct": -2.3,
+     "absDRhPct": 3,
+     "dHgtM": 4,
+     "absDHgtM": 4,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 13.3,
+     "absDCloudPct": 13.3,
+     "dRhPct": -9.7,
+     "absDRhPct": 9.7,
+     "dHgtM": 5.7,
+     "absDHgtM": 5.7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 51.7,
+     "absDCloudPct": 51.7,
+     "dRhPct": 11,
+     "absDRhPct": 11,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -9.7,
+     "absDRhPct": 9.7,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": -1.3,
+     "absDCloudPct": 1.3,
+     "dRhPct": -9.7,
+     "absDRhPct": 9.7,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 10,
+     "absDCloudPct": 10,
+     "dRhPct": -6.3,
+     "absDRhPct": 6.3,
+     "dHgtM": 9.9,
+     "absDHgtM": 9.9,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": -1.3,
+     "absDCloudPct": 1.3,
+     "dRhPct": -42,
+     "absDRhPct": 42,
+     "dHgtM": 7.5,
+     "absDHgtM": 7.5,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -14,
+     "absDRhPct": 14,
+     "dHgtM": 14,
+     "absDHgtM": 14,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "spot": "cj-qizhiwan",
+   "name": "昌江棋子湾",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -5.3,
+     "absDRhPct": 5.3,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -1.3,
+     "absDRhPct": 4,
+     "dHgtM": 8,
+     "absDHgtM": 8,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 33,
+     "absDCloudPct": 33,
+     "dRhPct": 5.7,
+     "absDRhPct": 5.7,
+     "dHgtM": 6.3,
+     "absDHgtM": 6.3,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 22.3,
+     "absDCloudPct": 22.3,
+     "dRhPct": -1.3,
+     "absDRhPct": 3.3,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -32,
+     "absDRhPct": 32,
+     "dHgtM": 9.3,
+     "absDHgtM": 9.3,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": -0.7,
+     "absDCloudPct": 0.7,
+     "dRhPct": -12.7,
+     "absDRhPct": 12.7,
+     "dHgtM": 8.3,
+     "absDHgtM": 8.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 46.7,
+     "absDCloudPct": 46.7,
+     "dRhPct": 22.3,
+     "absDRhPct": 22.3,
+     "dHgtM": 9.9,
+     "absDHgtM": 9.9,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 7.3,
+     "absDRhPct": 11.3,
+     "dHgtM": 7.5,
+     "absDHgtM": 7.5,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -18,
+     "absDRhPct": 18,
+     "dHgtM": 13.2,
+     "absDHgtM": 13.2,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "spot": "df-yulinzhou",
+   "name": "东方鱼鳞洲",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 4.3,
+     "absDRhPct": 4.3,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -2.3,
+     "absDRhPct": 2.3,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 12.3,
+     "absDCloudPct": 15,
+     "dRhPct": -5.7,
+     "absDRhPct": 5.7,
+     "dHgtM": 6.3,
+     "absDHgtM": 6.3,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 35.7,
+     "absDCloudPct": 35.7,
+     "dRhPct": 2,
+     "absDRhPct": 4.7,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -37.3,
+     "absDRhPct": 37.3,
+     "dHgtM": 9,
+     "absDHgtM": 9,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": -1.7,
+     "absDCloudPct": 1.7,
+     "dRhPct": -11.3,
+     "absDRhPct": 11.3,
+     "dHgtM": 9.3,
+     "absDHgtM": 9.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 84.3,
+     "absDCloudPct": 84.3,
+     "dRhPct": 24.3,
+     "absDRhPct": 24.3,
+     "dHgtM": 9.5,
+     "absDHgtM": 9.5,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": -2,
+     "absDCloudPct": 2,
+     "dRhPct": -11.3,
+     "absDRhPct": 11.3,
+     "dHgtM": 7.5,
+     "absDHgtM": 7.5,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 2.7,
+     "absDRhPct": 2.7,
+     "dHgtM": 11.6,
+     "absDHgtM": 11.6,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "spot": "ld-longmuwan",
+   "name": "乐东龙沐湾",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 5.3,
+     "absDRhPct": 5.3,
+     "dHgtM": 8,
+     "absDHgtM": 8,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": -0.3,
+     "absDCloudPct": 0.3,
+     "dRhPct": -3,
+     "absDRhPct": 3,
+     "dHgtM": 5.3,
+     "absDHgtM": 5.3,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 25,
+     "absDCloudPct": 25,
+     "dRhPct": -5,
+     "absDRhPct": 5,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 41.3,
+     "absDCloudPct": 41.3,
+     "dRhPct": 1.7,
+     "absDRhPct": 3,
+     "dHgtM": 6.3,
+     "absDHgtM": 6.3,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -30.7,
+     "absDRhPct": 30.7,
+     "dHgtM": 8,
+     "absDHgtM": 8,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": -1.7,
+     "absDCloudPct": 1.7,
+     "dRhPct": -8.3,
+     "absDRhPct": 8.3,
+     "dHgtM": 9.3,
+     "absDHgtM": 9.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 86,
+     "absDCloudPct": 86,
+     "dRhPct": 19.3,
+     "absDRhPct": 19.3,
+     "dHgtM": 9.5,
+     "absDHgtM": 9.5,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": -28.7,
+     "absDCloudPct": 28.7,
+     "dRhPct": -18.7,
+     "absDRhPct": 18.7,
+     "dHgtM": 7.5,
+     "absDHgtM": 7.5,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 16,
+     "absDRhPct": 16,
+     "dHgtM": 10.9,
+     "absDHgtM": 10.9,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "spot": "sy-tianya",
+   "name": "三亚天涯海角",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -4.3,
+     "absDRhPct": 4.3,
+     "dHgtM": 5.7,
+     "absDHgtM": 5.7,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 14.7,
+     "absDCloudPct": 14.7,
+     "dRhPct": -2,
+     "absDRhPct": 2,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 11.3,
+     "absDCloudPct": 11.3,
+     "dRhPct": 0,
+     "absDRhPct": 0.7,
+     "dHgtM": 5.3,
+     "absDHgtM": 5.3,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 34,
+     "absDCloudPct": 34,
+     "dRhPct": 6.3,
+     "absDRhPct": 6.3,
+     "dHgtM": 6.3,
+     "absDHgtM": 6.3,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 2,
+     "absDCloudPct": 2,
+     "dRhPct": -11,
+     "absDRhPct": 11,
+     "dHgtM": 8,
+     "absDHgtM": 8,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": -2,
+     "absDCloudPct": 4.7,
+     "dRhPct": -10,
+     "absDRhPct": 10,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": -2.7,
+     "absDCloudPct": 11.3,
+     "dRhPct": -16,
+     "absDRhPct": 16,
+     "dHgtM": 7.4,
+     "absDHgtM": 7.4,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 94.7,
+     "absDCloudPct": 94.7,
+     "dRhPct": 12,
+     "absDRhPct": 12,
+     "dHgtM": 9.1,
+     "absDHgtM": 9.1,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 24.3,
+     "absDCloudPct": 24.3,
+     "dRhPct": 40.7,
+     "absDRhPct": 40.7,
+     "dHgtM": 10.9,
+     "absDHgtM": 10.9,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "spot": "wzs-main",
+   "name": "五指山主峰",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -7,
+     "absDRhPct": 7,
+     "dHgtM": 4.3,
+     "absDHgtM": 4.3,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 15,
+     "absDCloudPct": 15,
+     "dRhPct": -4.3,
+     "absDRhPct": 4.3,
+     "dHgtM": 3,
+     "absDHgtM": 3,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 4,
+     "absDCloudPct": 9.3,
+     "dRhPct": -2.3,
+     "absDRhPct": 2.3,
+     "dHgtM": 3.7,
+     "absDHgtM": 3.7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 34,
+     "absDCloudPct": 34,
+     "dRhPct": 0.7,
+     "absDRhPct": 3.3,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 1.3,
+     "absDCloudPct": 1.3,
+     "dRhPct": -16.7,
+     "absDRhPct": 16.7,
+     "dHgtM": 8.3,
+     "absDHgtM": 8.3,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 2.3,
+     "absDCloudPct": 2.3,
+     "dRhPct": 0,
+     "absDRhPct": 2,
+     "dHgtM": 6.3,
+     "absDHgtM": 6.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 7.7,
+     "absDCloudPct": 8.3,
+     "dRhPct": -11,
+     "absDRhPct": 11,
+     "dHgtM": 7.4,
+     "absDHgtM": 7.4,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 83.3,
+     "absDCloudPct": 83.3,
+     "dRhPct": 6,
+     "absDRhPct": 6,
+     "dHgtM": 8.6,
+     "absDHgtM": 8.6,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -5.7,
+     "absDRhPct": 5.7,
+     "dHgtM": 12.4,
+     "absDHgtM": 12.4,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "spot": "hk-xihai",
+   "name": "海口西海岸观海台",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 3.7,
+     "absDRhPct": 3.7,
+     "dHgtM": 5.3,
+     "absDHgtM": 5.3,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 19.3,
+     "absDCloudPct": 24,
+     "dRhPct": -0.3,
+     "absDRhPct": 3,
+     "dHgtM": 5.7,
+     "absDHgtM": 5.7,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 28.3,
+     "absDCloudPct": 28.3,
+     "dRhPct": 9,
+     "absDRhPct": 9,
+     "dHgtM": 7.7,
+     "absDHgtM": 7.7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 38.3,
+     "absDCloudPct": 38.3,
+     "dRhPct": 8,
+     "absDRhPct": 8,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 22.7,
+     "absDCloudPct": 22.7,
+     "dRhPct": -3,
+     "absDRhPct": 3,
+     "dHgtM": 6.3,
+     "absDHgtM": 6.3,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 27,
+     "absDCloudPct": 27,
+     "dRhPct": 3.7,
+     "absDRhPct": 3.7,
+     "dHgtM": 5,
+     "absDHgtM": 5,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 50,
+     "absDCloudPct": 50,
+     "dRhPct": 18.3,
+     "absDRhPct": 18.3,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 29.3,
+     "absDCloudPct": 29.3,
+     "dRhPct": 25.3,
+     "absDRhPct": 25.3,
+     "dHgtM": 7.5,
+     "absDHgtM": 7.5,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 5,
+     "absDRhPct": 5,
+     "dHgtM": 12.4,
+     "absDHgtM": 12.4,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "spot": "cm-yingbin",
+   "name": "澄迈盈滨半岛",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 3.7,
+     "absDRhPct": 3.7,
+     "dHgtM": 5.3,
+     "absDHgtM": 5.3,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 19.3,
+     "absDCloudPct": 24,
+     "dRhPct": -0.3,
+     "absDRhPct": 3,
+     "dHgtM": 5.7,
+     "absDHgtM": 5.7,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 28.3,
+     "absDCloudPct": 28.3,
+     "dRhPct": 9,
+     "absDRhPct": 9,
+     "dHgtM": 7.7,
+     "absDHgtM": 7.7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 38.3,
+     "absDCloudPct": 38.3,
+     "dRhPct": 8,
+     "absDRhPct": 8,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 22.7,
+     "absDCloudPct": 22.7,
+     "dRhPct": -3,
+     "absDRhPct": 3,
+     "dHgtM": 6.3,
+     "absDHgtM": 6.3,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 27,
+     "absDCloudPct": 27,
+     "dRhPct": 3.7,
+     "absDRhPct": 3.7,
+     "dHgtM": 5,
+     "absDHgtM": 5,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 50,
+     "absDCloudPct": 50,
+     "dRhPct": 18.3,
+     "absDRhPct": 18.3,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 29.3,
+     "absDCloudPct": 29.3,
+     "dRhPct": 25.3,
+     "absDRhPct": 25.3,
+     "dHgtM": 7.5,
+     "absDHgtM": 7.5,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 5,
+     "absDRhPct": 5,
+     "dHgtM": 12.4,
+     "absDHgtM": 12.4,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "spot": "lg-jiao",
+   "name": "临高角",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 26,
+     "absDCloudPct": 26,
+     "dRhPct": 15.3,
+     "absDRhPct": 15.3,
+     "dHgtM": 7.7,
+     "absDHgtM": 7.7,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 21.3,
+     "absDCloudPct": 21.3,
+     "dRhPct": -2.3,
+     "absDRhPct": 3,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 27,
+     "absDCloudPct": 27,
+     "dRhPct": 3.3,
+     "absDRhPct": 3.3,
+     "dHgtM": 8,
+     "absDHgtM": 8,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 35.3,
+     "absDCloudPct": 35.3,
+     "dRhPct": 10,
+     "absDRhPct": 10,
+     "dHgtM": 8,
+     "absDHgtM": 8,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 36.3,
+     "absDCloudPct": 36.3,
+     "dRhPct": 14,
+     "absDRhPct": 14,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 44,
+     "absDCloudPct": 44,
+     "dRhPct": 22.7,
+     "absDRhPct": 22.7,
+     "dHgtM": 5.3,
+     "absDHgtM": 5.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 67.3,
+     "absDCloudPct": 67.3,
+     "dRhPct": 33.3,
+     "absDRhPct": 33.3,
+     "dHgtM": 5.3,
+     "absDHgtM": 5.3,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 42.7,
+     "absDCloudPct": 42.7,
+     "dRhPct": 34.7,
+     "absDRhPct": 34.7,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 15.3,
+     "absDRhPct": 15.3,
+     "dHgtM": 15.5,
+     "absDHgtM": 15.5,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "spot": "cj-qizhiwan",
+   "name": "昌江棋子湾",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 11.3,
+     "absDRhPct": 11.3,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 8.7,
+     "absDCloudPct": 8.7,
+     "dRhPct": -1,
+     "absDRhPct": 1.7,
+     "dHgtM": 7.3,
+     "absDHgtM": 7.3,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 14,
+     "absDCloudPct": 14,
+     "dRhPct": -6,
+     "absDRhPct": 6,
+     "dHgtM": 8.7,
+     "absDHgtM": 8.7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 24.7,
+     "absDCloudPct": 24.7,
+     "dRhPct": 2.3,
+     "absDRhPct": 3,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 20,
+     "absDCloudPct": 20,
+     "dRhPct": 0.7,
+     "absDRhPct": 1.3,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": -0.7,
+     "absDCloudPct": 0.7,
+     "dRhPct": -5.3,
+     "absDRhPct": 5.3,
+     "dHgtM": 4.3,
+     "absDHgtM": 4.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": -13.3,
+     "absDCloudPct": 13.3,
+     "dRhPct": -16.7,
+     "absDRhPct": 16.7,
+     "dHgtM": 6.2,
+     "absDHgtM": 6.2,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -6.7,
+     "absDRhPct": 6.7,
+     "dHgtM": 6.4,
+     "absDHgtM": 6.4,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 41,
+     "absDCloudPct": 41,
+     "dRhPct": 35,
+     "absDRhPct": 35,
+     "dHgtM": 10.8,
+     "absDHgtM": 10.8,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "spot": "df-yulinzhou",
+   "name": "东方鱼鳞洲",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 16.3,
+     "absDRhPct": 16.3,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 2.3,
+     "absDCloudPct": 2.3,
+     "dRhPct": -3,
+     "absDRhPct": 3,
+     "dHgtM": 6.3,
+     "absDHgtM": 6.3,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 25,
+     "absDCloudPct": 25,
+     "dRhPct": 4.3,
+     "absDRhPct": 4.3,
+     "dHgtM": 7.7,
+     "absDHgtM": 7.7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 25.7,
+     "absDCloudPct": 25.7,
+     "dRhPct": 2.3,
+     "absDRhPct": 3,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 8.7,
+     "absDCloudPct": 8.7,
+     "dRhPct": -11.3,
+     "absDRhPct": 11.3,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": -2.3,
+     "absDCloudPct": 2.3,
+     "dRhPct": -10,
+     "absDRhPct": 10,
+     "dHgtM": 5.3,
+     "absDHgtM": 5.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": -26,
+     "absDCloudPct": 26,
+     "dRhPct": -12,
+     "absDRhPct": 12,
+     "dHgtM": 7.4,
+     "absDHgtM": 7.4,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 16,
+     "absDRhPct": 16,
+     "dHgtM": 6.4,
+     "absDHgtM": 6.4,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 71.7,
+     "absDCloudPct": 71.7,
+     "dRhPct": 36.3,
+     "absDRhPct": 36.3,
+     "dHgtM": 10.8,
+     "absDHgtM": 10.8,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "spot": "ld-longmuwan",
+   "name": "乐东龙沐湾",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 13.3,
+     "absDRhPct": 13.3,
+     "dHgtM": 8.3,
+     "absDHgtM": 8.3,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": -6.3,
+     "absDCloudPct": 6.3,
+     "dRhPct": -6.7,
+     "absDRhPct": 6.7,
+     "dHgtM": 6.3,
+     "absDHgtM": 6.3,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 36,
+     "absDCloudPct": 36,
+     "dRhPct": 1,
+     "absDRhPct": 2.3,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 32.3,
+     "absDCloudPct": 32.3,
+     "dRhPct": 7,
+     "absDRhPct": 7,
+     "dHgtM": 5.7,
+     "absDHgtM": 5.7,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 7.3,
+     "absDCloudPct": 7.3,
+     "dRhPct": -11.7,
+     "absDRhPct": 11.7,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": -2.7,
+     "absDCloudPct": 2.7,
+     "dRhPct": -13.3,
+     "absDRhPct": 13.3,
+     "dHgtM": 5.3,
+     "absDHgtM": 5.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 8,
+     "absDCloudPct": 26.7,
+     "dRhPct": -3.3,
+     "absDRhPct": 3.3,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 28.7,
+     "absDRhPct": 28.7,
+     "dHgtM": 6.4,
+     "absDHgtM": 6.4,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 53,
+     "absDCloudPct": 53,
+     "dRhPct": 25,
+     "absDRhPct": 25,
+     "dHgtM": 10.1,
+     "absDHgtM": 10.1,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "spot": "sy-tianya",
+   "name": "三亚天涯海角",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -4.3,
+     "absDRhPct": 4.3,
+     "dHgtM": 5.7,
+     "absDHgtM": 5.7,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 22.7,
+     "absDCloudPct": 22.7,
+     "dRhPct": 9.7,
+     "absDRhPct": 9.7,
+     "dHgtM": 6.3,
+     "absDHgtM": 6.3,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 11,
+     "absDCloudPct": 11,
+     "dRhPct": 4.7,
+     "absDRhPct": 4.7,
+     "dHgtM": 5.7,
+     "absDHgtM": 5.7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 29.7,
+     "absDCloudPct": 29.7,
+     "dRhPct": 11.3,
+     "absDRhPct": 11.3,
+     "dHgtM": 7.3,
+     "absDHgtM": 7.3,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 14,
+     "absDCloudPct": 14,
+     "dRhPct": 7.3,
+     "absDRhPct": 7.3,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 4,
+     "absDCloudPct": 4,
+     "dRhPct": 13.7,
+     "absDRhPct": 13.7,
+     "dHgtM": 5,
+     "absDHgtM": 5,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 49.7,
+     "absDCloudPct": 49.7,
+     "dRhPct": 23.3,
+     "absDRhPct": 23.3,
+     "dHgtM": 4.9,
+     "absDHgtM": 4.9,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 8,
+     "absDRhPct": 9.3,
+     "dHgtM": 5.9,
+     "absDHgtM": 5.9,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -21.7,
+     "absDRhPct": 21.7,
+     "dHgtM": 10.9,
+     "absDHgtM": 10.9,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "spot": "wzs-main",
+   "name": "五指山主峰",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 36,
+     "absDCloudPct": 36,
+     "dRhPct": 9.7,
+     "absDRhPct": 9.7,
+     "dHgtM": 10.7,
+     "absDHgtM": 10.7,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 50.3,
+     "absDCloudPct": 50.3,
+     "dRhPct": 6,
+     "absDRhPct": 6,
+     "dHgtM": 5.3,
+     "absDHgtM": 5.3,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 45,
+     "absDCloudPct": 45,
+     "dRhPct": 3.7,
+     "absDRhPct": 3.7,
+     "dHgtM": 6.3,
+     "absDHgtM": 6.3,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 31,
+     "absDCloudPct": 31,
+     "dRhPct": 16.3,
+     "absDRhPct": 16.3,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 30.3,
+     "absDCloudPct": 30.3,
+     "dRhPct": 5,
+     "absDRhPct": 5,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 22.7,
+     "absDCloudPct": 22.7,
+     "dRhPct": 11.3,
+     "absDRhPct": 11.3,
+     "dHgtM": 5,
+     "absDHgtM": 5,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 23.3,
+     "absDCloudPct": 23.3,
+     "dRhPct": -2.3,
+     "absDRhPct": 7,
+     "dHgtM": 5.8,
+     "absDHgtM": 5.8,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 30.7,
+     "absDRhPct": 30.7,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 76.7,
+     "absDCloudPct": 76.7,
+     "dRhPct": 30.7,
+     "absDRhPct": 30.7,
+     "dHgtM": 12.4,
+     "absDHgtM": 12.4,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "spot": "hk-xihai",
+   "name": "海口西海岸观海台",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 1.7,
+     "absDRhPct": 1.7,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -10.7,
+     "absDRhPct": 10.7,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 6.7,
+     "absDCloudPct": 6.7,
+     "dRhPct": 10.3,
+     "absDRhPct": 10.3,
+     "dHgtM": 8,
+     "absDHgtM": 8,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 52.3,
+     "absDCloudPct": 52.3,
+     "dRhPct": 13.3,
+     "absDRhPct": 13.3,
+     "dHgtM": 9,
+     "absDHgtM": 9,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 15.7,
+     "absDCloudPct": 15.7,
+     "dRhPct": 3.3,
+     "absDRhPct": 3.3,
+     "dHgtM": 8,
+     "absDHgtM": 8,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -0.3,
+     "absDRhPct": 0.3,
+     "dHgtM": 9.3,
+     "absDHgtM": 9.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -4,
+     "absDRhPct": 4,
+     "dHgtM": 8.6,
+     "absDHgtM": 8.6,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -3.3,
+     "absDRhPct": 3.3,
+     "dHgtM": 8.6,
+     "absDHgtM": 8.6,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 12.3,
+     "absDRhPct": 12.3,
+     "dHgtM": 10.8,
+     "absDHgtM": 10.8,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "spot": "cm-yingbin",
+   "name": "澄迈盈滨半岛",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 1.7,
+     "absDRhPct": 1.7,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -10.7,
+     "absDRhPct": 10.7,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 6.7,
+     "absDCloudPct": 6.7,
+     "dRhPct": 10.3,
+     "absDRhPct": 10.3,
+     "dHgtM": 8,
+     "absDHgtM": 8,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 52.3,
+     "absDCloudPct": 52.3,
+     "dRhPct": 13.3,
+     "absDRhPct": 13.3,
+     "dHgtM": 9,
+     "absDHgtM": 9,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 15.7,
+     "absDCloudPct": 15.7,
+     "dRhPct": 3.3,
+     "absDRhPct": 3.3,
+     "dHgtM": 8,
+     "absDHgtM": 8,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -0.3,
+     "absDRhPct": 0.3,
+     "dHgtM": 9.3,
+     "absDHgtM": 9.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -4,
+     "absDRhPct": 4,
+     "dHgtM": 8.6,
+     "absDHgtM": 8.6,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -3.3,
+     "absDRhPct": 3.3,
+     "dHgtM": 8.6,
+     "absDHgtM": 8.6,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 12.3,
+     "absDRhPct": 12.3,
+     "dHgtM": 10.8,
+     "absDHgtM": 10.8,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "spot": "lg-jiao",
+   "name": "临高角",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 3.7,
+     "absDRhPct": 3.7,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 18.7,
+     "absDCloudPct": 18.7,
+     "dRhPct": 3.3,
+     "absDRhPct": 3.3,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 14.7,
+     "absDCloudPct": 14.7,
+     "dRhPct": -3,
+     "absDRhPct": 5,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 43.7,
+     "absDCloudPct": 43.7,
+     "dRhPct": 10,
+     "absDRhPct": 10,
+     "dHgtM": 8.7,
+     "absDHgtM": 8.7,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 15,
+     "absDCloudPct": 15,
+     "dRhPct": 6.7,
+     "absDRhPct": 6.7,
+     "dHgtM": 8.7,
+     "absDHgtM": 8.7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -13.7,
+     "absDRhPct": 13.7,
+     "dHgtM": 9.3,
+     "absDHgtM": 9.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -12,
+     "absDRhPct": 12,
+     "dHgtM": 8.2,
+     "absDHgtM": 8.2,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 0,
+     "absDRhPct": 2.7,
+     "dHgtM": 9.7,
+     "absDHgtM": 9.7,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 12.3,
+     "absDRhPct": 12.3,
+     "dHgtM": 10.9,
+     "absDHgtM": 10.9,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "spot": "cj-qizhiwan",
+   "name": "昌江棋子湾",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 13.7,
+     "absDRhPct": 13.7,
+     "dHgtM": 6.3,
+     "absDHgtM": 6.3,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -0.7,
+     "absDRhPct": 3.3,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 35.7,
+     "absDCloudPct": 35.7,
+     "dRhPct": 3,
+     "absDRhPct": 3,
+     "dHgtM": 7.7,
+     "absDHgtM": 7.7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 14,
+     "absDCloudPct": 14,
+     "dRhPct": 5.7,
+     "absDRhPct": 5.7,
+     "dHgtM": 8.3,
+     "absDHgtM": 8.3,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 2.7,
+     "absDCloudPct": 2.7,
+     "dRhPct": 1.3,
+     "absDRhPct": 2,
+     "dHgtM": 9.7,
+     "absDHgtM": 9.7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 14,
+     "absDCloudPct": 14,
+     "dRhPct": 4.3,
+     "absDRhPct": 4.3,
+     "dHgtM": 10,
+     "absDHgtM": 10,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -11,
+     "absDRhPct": 11,
+     "dHgtM": 8.6,
+     "absDHgtM": 8.6,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -12,
+     "absDRhPct": 12,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": -1,
+     "absDCloudPct": 1,
+     "dRhPct": -16.7,
+     "absDRhPct": 16.7,
+     "dHgtM": 14,
+     "absDHgtM": 14,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "spot": "df-yulinzhou",
+   "name": "东方鱼鳞洲",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 12.7,
+     "absDRhPct": 12.7,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 3.7,
+     "absDCloudPct": 3.7,
+     "dRhPct": -4.7,
+     "absDRhPct": 4.7,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 50.3,
+     "absDCloudPct": 50.3,
+     "dRhPct": 7,
+     "absDRhPct": 7,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 18.7,
+     "absDCloudPct": 18.7,
+     "dRhPct": 4.3,
+     "absDRhPct": 4.3,
+     "dHgtM": 9,
+     "absDHgtM": 9,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 6.3,
+     "absDCloudPct": 6.3,
+     "dRhPct": 0,
+     "absDRhPct": 2,
+     "dHgtM": 10.3,
+     "absDHgtM": 10.3,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 23.7,
+     "absDCloudPct": 23.7,
+     "dRhPct": 5.7,
+     "absDRhPct": 5.7,
+     "dHgtM": 10,
+     "absDHgtM": 10,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -12,
+     "absDRhPct": 12,
+     "dHgtM": 8.2,
+     "absDHgtM": 8.2,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -10.7,
+     "absDRhPct": 10.7,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": -1.7,
+     "absDCloudPct": 1.7,
+     "dRhPct": -20.3,
+     "absDRhPct": 20.3,
+     "dHgtM": 14,
+     "absDHgtM": 14,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "spot": "ld-longmuwan",
+   "name": "乐东龙沐湾",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 10,
+     "absDRhPct": 10,
+     "dHgtM": 7.3,
+     "absDHgtM": 7.3,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 9,
+     "absDCloudPct": 9,
+     "dRhPct": -4.3,
+     "absDRhPct": 4.3,
+     "dHgtM": 5,
+     "absDHgtM": 5,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 56.3,
+     "absDCloudPct": 56.3,
+     "dRhPct": 4.7,
+     "absDRhPct": 4.7,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 23,
+     "absDCloudPct": 23,
+     "dRhPct": 2.7,
+     "absDRhPct": 2.7,
+     "dHgtM": 9,
+     "absDHgtM": 9,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -4.3,
+     "absDRhPct": 4.3,
+     "dHgtM": 10.7,
+     "absDHgtM": 10.7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 19.7,
+     "absDCloudPct": 19.7,
+     "dRhPct": -0.7,
+     "absDRhPct": 2.7,
+     "dHgtM": 9.3,
+     "absDHgtM": 9.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -16,
+     "absDRhPct": 16,
+     "dHgtM": 9.1,
+     "absDHgtM": 9.1,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -14.7,
+     "absDRhPct": 14.7,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": -1.7,
+     "absDCloudPct": 1.7,
+     "dRhPct": -21.3,
+     "absDRhPct": 21.3,
+     "dHgtM": 12.4,
+     "absDHgtM": 12.4,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "spot": "sy-tianya",
+   "name": "三亚天涯海角",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 0.7,
+     "absDRhPct": 2,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": -1.3,
+     "absDCloudPct": 1.3,
+     "dRhPct": -9.7,
+     "absDRhPct": 9.7,
+     "dHgtM": 5.7,
+     "absDHgtM": 5.7,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 3.3,
+     "absDCloudPct": 3.3,
+     "dRhPct": 11,
+     "absDRhPct": 11,
+     "dHgtM": 7.3,
+     "absDHgtM": 7.3,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 3,
+     "absDRhPct": 3,
+     "dHgtM": 9.3,
+     "absDHgtM": 9.3,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 3.7,
+     "absDRhPct": 3.7,
+     "dHgtM": 11,
+     "absDHgtM": 11,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 1.3,
+     "absDRhPct": 4,
+     "dHgtM": 10,
+     "absDHgtM": 10,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -7,
+     "absDRhPct": 7,
+     "dHgtM": 8.2,
+     "absDHgtM": 8.2,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -10.7,
+     "absDRhPct": 10.7,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 0.3,
+     "absDRhPct": 1.7,
+     "dHgtM": 10.1,
+     "absDHgtM": 10.1,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "spot": "wzs-main",
+   "name": "五指山主峰",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -11.7,
+     "absDRhPct": 11.7,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 3.3,
+     "absDCloudPct": 3.3,
+     "dRhPct": -7.3,
+     "absDRhPct": 7.3,
+     "dHgtM": 5,
+     "absDHgtM": 5,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 40.3,
+     "absDCloudPct": 40.3,
+     "dRhPct": 3.7,
+     "absDRhPct": 3.7,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 35.3,
+     "absDCloudPct": 35.3,
+     "dRhPct": 11.3,
+     "absDRhPct": 11.3,
+     "dHgtM": 8,
+     "absDHgtM": 8,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -14,
+     "absDRhPct": 14,
+     "dHgtM": 9.7,
+     "absDHgtM": 9.7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 4,
+     "absDCloudPct": 4,
+     "dRhPct": 1.7,
+     "absDRhPct": 1.7,
+     "dHgtM": 9.7,
+     "absDHgtM": 9.7,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -8.3,
+     "absDRhPct": 8.3,
+     "dHgtM": 9.5,
+     "absDHgtM": 9.5,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -4.7,
+     "absDRhPct": 4.7,
+     "dHgtM": 7.5,
+     "absDHgtM": 7.5,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 3.7,
+     "absDRhPct": 3.7,
+     "dHgtM": 13.2,
+     "absDHgtM": 13.2,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "spot": "hk-xihai",
+   "name": "海口西海岸观海台",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -2,
+     "absDRhPct": 2,
+     "dHgtM": 4,
+     "absDHgtM": 4,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 5,
+     "absDCloudPct": 5,
+     "dRhPct": -1,
+     "absDRhPct": 1,
+     "dHgtM": 5,
+     "absDHgtM": 5,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 0.3,
+     "absDRhPct": 8.3,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -8.3,
+     "absDRhPct": 8.3,
+     "dHgtM": 7.3,
+     "absDHgtM": 7.3,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -3.3,
+     "absDRhPct": 3.3,
+     "dHgtM": 9,
+     "absDHgtM": 9,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -1,
+     "absDRhPct": 1,
+     "dHgtM": 9.3,
+     "absDHgtM": 9.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -2.3,
+     "absDRhPct": 2.3,
+     "dHgtM": 9,
+     "absDHgtM": 9,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -2.7,
+     "absDRhPct": 2.7,
+     "dHgtM": 9.1,
+     "absDHgtM": 9.1,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 4,
+     "absDRhPct": 4,
+     "dHgtM": 10.1,
+     "absDHgtM": 10.1,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "spot": "cm-yingbin",
+   "name": "澄迈盈滨半岛",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -2,
+     "absDRhPct": 2,
+     "dHgtM": 4,
+     "absDHgtM": 4,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 5,
+     "absDCloudPct": 5,
+     "dRhPct": -1,
+     "absDRhPct": 1,
+     "dHgtM": 5,
+     "absDHgtM": 5,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 0.3,
+     "absDRhPct": 8.3,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -8.3,
+     "absDRhPct": 8.3,
+     "dHgtM": 7.3,
+     "absDHgtM": 7.3,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -3.3,
+     "absDRhPct": 3.3,
+     "dHgtM": 9,
+     "absDHgtM": 9,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -1,
+     "absDRhPct": 1,
+     "dHgtM": 9.3,
+     "absDHgtM": 9.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -2.3,
+     "absDRhPct": 2.3,
+     "dHgtM": 9,
+     "absDHgtM": 9,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -2.7,
+     "absDRhPct": 2.7,
+     "dHgtM": 9.1,
+     "absDHgtM": 9.1,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 4,
+     "absDRhPct": 4,
+     "dHgtM": 10.1,
+     "absDHgtM": 10.1,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "spot": "lg-jiao",
+   "name": "临高角",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -1.7,
+     "absDRhPct": 3,
+     "dHgtM": 4.7,
+     "absDHgtM": 4.7,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 1.3,
+     "absDRhPct": 2,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 15,
+     "absDCloudPct": 15,
+     "dRhPct": 14.7,
+     "absDRhPct": 14.7,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -6.3,
+     "absDRhPct": 6.3,
+     "dHgtM": 7.7,
+     "absDHgtM": 7.7,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -7.3,
+     "absDRhPct": 7.3,
+     "dHgtM": 7.7,
+     "absDHgtM": 7.7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -2.3,
+     "absDRhPct": 2.3,
+     "dHgtM": 9.3,
+     "absDHgtM": 9.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -0.3,
+     "absDRhPct": 0.3,
+     "dHgtM": 9.5,
+     "absDHgtM": 9.5,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -5.3,
+     "absDRhPct": 5.3,
+     "dHgtM": 9.1,
+     "absDHgtM": 9.1,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 5,
+     "absDRhPct": 5,
+     "dHgtM": 10.1,
+     "absDHgtM": 10.1,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "spot": "cj-qizhiwan",
+   "name": "昌江棋子湾",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -2.3,
+     "absDRhPct": 2.3,
+     "dHgtM": 1.7,
+     "absDHgtM": 1.7,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": -13,
+     "absDCloudPct": 13,
+     "dRhPct": -14.3,
+     "absDRhPct": 14.3,
+     "dHgtM": 5,
+     "absDHgtM": 5,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 18.3,
+     "absDCloudPct": 18.3,
+     "dRhPct": -5,
+     "absDRhPct": 5,
+     "dHgtM": 7.7,
+     "absDHgtM": 7.7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 2.7,
+     "absDRhPct": 2.7,
+     "dHgtM": 7.7,
+     "absDHgtM": 7.7,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 4.7,
+     "absDRhPct": 4.7,
+     "dHgtM": 7.7,
+     "absDHgtM": 7.7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -0.3,
+     "absDRhPct": 0.3,
+     "dHgtM": 8.7,
+     "absDHgtM": 8.7,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -2,
+     "absDRhPct": 2,
+     "dHgtM": 9.5,
+     "absDHgtM": 9.5,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -4.7,
+     "absDRhPct": 4.7,
+     "dHgtM": 9.7,
+     "absDHgtM": 9.7,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 3,
+     "absDRhPct": 3,
+     "dHgtM": 11.6,
+     "absDHgtM": 11.6,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "spot": "df-yulinzhou",
+   "name": "东方鱼鳞洲",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -0.7,
+     "absDRhPct": 1.3,
+     "dHgtM": 2.3,
+     "absDHgtM": 2.3,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": -3.7,
+     "absDCloudPct": 19.7,
+     "dRhPct": -8,
+     "absDRhPct": 8,
+     "dHgtM": 4.7,
+     "absDHgtM": 4.7,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 17,
+     "absDCloudPct": 17,
+     "dRhPct": -3.3,
+     "absDRhPct": 3.3,
+     "dHgtM": 6.7,
+     "absDHgtM": 6.7,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 0.7,
+     "absDRhPct": 2,
+     "dHgtM": 8.7,
+     "absDHgtM": 8.7,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -3,
+     "absDRhPct": 3,
+     "dHgtM": 7.7,
+     "absDHgtM": 7.7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -6,
+     "absDRhPct": 6,
+     "dHgtM": 8.7,
+     "absDHgtM": 8.7,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -3.3,
+     "absDRhPct": 3.3,
+     "dHgtM": 10.3,
+     "absDHgtM": 10.3,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -4,
+     "absDRhPct": 4,
+     "dHgtM": 9.1,
+     "absDHgtM": 9.1,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 1.3,
+     "absDRhPct": 1.3,
+     "dHgtM": 11.6,
+     "absDHgtM": 11.6,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "spot": "ld-longmuwan",
+   "name": "乐东龙沐湾",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 0.3,
+     "absDRhPct": 1.7,
+     "dHgtM": 4.3,
+     "absDHgtM": 4.3,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 17.7,
+     "absDCloudPct": 17.7,
+     "dRhPct": -2.3,
+     "absDRhPct": 2.3,
+     "dHgtM": 3.7,
+     "absDHgtM": 3.7,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 13.3,
+     "absDCloudPct": 13.3,
+     "dRhPct": -4.3,
+     "absDRhPct": 6.3,
+     "dHgtM": 5.3,
+     "absDHgtM": 5.3,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -3,
+     "absDRhPct": 3,
+     "dHgtM": 7.3,
+     "absDHgtM": 7.3,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -5.7,
+     "absDRhPct": 5.7,
+     "dHgtM": 7.7,
+     "absDHgtM": 7.7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -3,
+     "absDRhPct": 3,
+     "dHgtM": 7.7,
+     "absDHgtM": 7.7,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -4.3,
+     "absDRhPct": 4.3,
+     "dHgtM": 9.5,
+     "absDHgtM": 9.5,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -2.7,
+     "absDRhPct": 2.7,
+     "dHgtM": 9.1,
+     "absDHgtM": 9.1,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 2,
+     "absDRhPct": 2,
+     "dHgtM": 10.8,
+     "absDHgtM": 10.8,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "spot": "sy-tianya",
+   "name": "三亚天涯海角",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -0.3,
+     "absDRhPct": 1,
+     "dHgtM": 1.7,
+     "absDHgtM": 1.7,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": -0.7,
+     "absDCloudPct": 0.7,
+     "dRhPct": -13.7,
+     "absDRhPct": 13.7,
+     "dHgtM": 2,
+     "absDHgtM": 2,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -6,
+     "absDRhPct": 6,
+     "dHgtM": 5,
+     "absDHgtM": 5,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 8.7,
+     "absDRhPct": 8.7,
+     "dHgtM": 7.7,
+     "absDHgtM": 7.7,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 5.7,
+     "absDRhPct": 5.7,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 1,
+     "absDRhPct": 1,
+     "dHgtM": 7.3,
+     "absDHgtM": 7.3,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -4,
+     "absDRhPct": 4,
+     "dHgtM": 7.8,
+     "absDHgtM": 7.8,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 0,
+     "absDRhPct": 1.3,
+     "dHgtM": 8.6,
+     "absDHgtM": 8.6,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -4.7,
+     "absDRhPct": 4.7,
+     "dHgtM": 10.9,
+     "absDHgtM": 10.9,
+     "n": 9
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "spot": "wzs-main",
+   "name": "五指山主峰",
+   "perLevel": [
+    {
+     "hPa": 1000,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -3.7,
+     "absDRhPct": 3.7,
+     "dHgtM": 8.3,
+     "absDHgtM": 8.3,
+     "n": 9
+    },
+    {
+     "hPa": 925,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 1,
+     "absDRhPct": 1,
+     "dHgtM": 6,
+     "absDHgtM": 6,
+     "n": 9
+    },
+    {
+     "hPa": 850,
+     "dCloudPct": 14.3,
+     "absDCloudPct": 14.3,
+     "dRhPct": -1.7,
+     "absDRhPct": 1.7,
+     "dHgtM": 6.3,
+     "absDHgtM": 6.3,
+     "n": 9
+    },
+    {
+     "hPa": 700,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 5.3,
+     "absDRhPct": 5.3,
+     "dHgtM": 8,
+     "absDHgtM": 8,
+     "n": 9
+    },
+    {
+     "hPa": 600,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -5,
+     "absDRhPct": 5,
+     "dHgtM": 7,
+     "absDHgtM": 7,
+     "n": 9
+    },
+    {
+     "hPa": 500,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -10.3,
+     "absDRhPct": 10.3,
+     "dHgtM": 8,
+     "absDHgtM": 8,
+     "n": 9
+    },
+    {
+     "hPa": 400,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 1.3,
+     "absDRhPct": 1.3,
+     "dHgtM": 9,
+     "absDHgtM": 9,
+     "n": 9
+    },
+    {
+     "hPa": 300,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": -2.7,
+     "absDRhPct": 2.7,
+     "dHgtM": 8.6,
+     "absDHgtM": 8.6,
+     "n": 9
+    },
+    {
+     "hPa": 200,
+     "dCloudPct": 0,
+     "absDCloudPct": 0,
+     "dRhPct": 0,
+     "absDRhPct": 1.3,
+     "dHgtM": 12.4,
+     "absDHgtM": 12.4,
+     "n": 9
+    }
+   ]
+  }
+ ]
+}

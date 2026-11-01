@@ -139,3 +139,16 @@ python tools/xsec/build_context.py --allow-partial  # 重建 DEM 地形 + AOD（
 - 要加新依赖
 - 要动部署配置、仓库权限、CI 权限
 - 要删除任何看起来"没用到"的代码（可能是有意的兼容层）
+
+改了 `tools/obs/` 或验证数据管线（METAR / 卫星 / 剖面快照）额外跑：
+
+```bash
+node tools/obs/probe-sources.mjs          # 数据源连通性体检（哪些免注册可用、哪些 401）
+node tools/obs/snapshot-xsec.mjs --check  # 剖面摘要只打印不落盘
+node tools/obs/merge-cth.mjs --input <文件> --check  # 卫星存档合并（幂等，不写重复）
+node tools/obs/compare-models.mjs --date YYYY-MM-DD --days 3   # GFS vs IFS 逐层分歧
+```
+
+> `data/obs/` 下所有快照都是**只增不改**的历史档案：脚本必须幂等（同一天同一机位只能有一条）。
+> 卫星云顶高度的颜色→高度映射必须用 `tools/obs/data/cloud-top-height-colormap.xml`（官方），
+> `unknownColors` 非 0 要停下来重下调色板，不能继续算。

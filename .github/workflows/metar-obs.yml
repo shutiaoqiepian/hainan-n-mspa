@@ -98,6 +98,24 @@ jobs:
         run: node tools/check-gaps.mjs | tee -a "$GITHUB_STEP_SUMMARY"
         continue-on-error: true
 
+      # ---- 第二条验证路线：卫星云顶高度 + 每日剖面摘要 ----
+      #
+      # 为什么要每天存：data/cross/*.json 每 6 小时被覆盖，历史剖面留不下来；
+      # 没有历史剖面就无法回答「模式报的那朵高云，卫星后来实际看到了吗」。
+      #
+      # 成本：8 个机位 × 1 张 GIBS 瓦片 ≈ 8 次请求、几十 KB；快照约 14 KB/天。
+      # 两者都是幂等的（快照不覆盖已有日期，卫星按月去重），重复跑不会写重复数据。
+      - name: 存当天剖面摘要（每层云水/云冰 + 云顶高度）
+        run: node tools/obs/snapshot-xsec.mjs --force
+        continue-on-error: true
+
+      - name: 采卫星云顶高度（MODIS Terra，NASA GIBS，免注册）
+        run: |
+          YESTERDAY=$(date -u -d 'yesterday' +%F)
+          node tools/obs/sample-cth.mjs --date "$YESTERDAY" --json /tmp/cth-today.json
+          node tools/obs/merge-cth.mjs --input /tmp/cth-today.json
+        continue-on-error: true
+
       - name: 有变化才提交
         run: |
           git config user.name "yt437700"
