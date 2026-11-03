@@ -6,6 +6,7 @@ import Toast from '@/components/layout/Toast.vue'
 import { useReveal } from '@/composables/useReveal'
 import { COPYRIGHT } from '@/data/site'
 import { initTheme, useLiquidGlass } from '@/lib/theme'
+import { initPerf } from '@/lib/perf'
 
 /**
  * 全站外壳：导航 + 主内容 + 页脚 + 轻提示。
@@ -21,10 +22,11 @@ const props = withDefaults(
 
 useReveal()
 
-/* 主题在 HTML 内联脚本里已经设好，这里只补 meta 与指针高光 */
+/* 主题与性能模式在 HTML 内联脚本里已经设好，这里只补 meta 与指针高光 */
 let stopGlass: () => void = () => {}
 onMounted(() => {
   initTheme()
+  initPerf()
   stopGlass = useLiquidGlass()
 })
 onBeforeUnmount(() => stopGlass())

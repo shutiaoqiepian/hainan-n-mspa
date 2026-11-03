@@ -29,3 +29,6 @@
 @import "./pages/login.css";
 @import "./base/liquid.css";
 @import "./base/theme-modes.css";
+/* 性能模式必须放在最后：它要覆盖上面所有 backdrop-filter / 动画声明。
+   放中间会被后面的规则盖掉，且不报错——很难查。 */
+@import "./base/performance.css";

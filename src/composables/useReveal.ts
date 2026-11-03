@@ -32,14 +32,14 @@ export function scanReveal(): void {
   const nodes = document.querySelectorAll<HTMLElement>('.reveal,.fc-reveal')
   if (!nodes.length) return
 
-  /* 没有 IntersectionObserver，或者用户要求减弱动效：
+  /* 没有 IntersectionObserver，或者用户要求减弱动效、开了性能模式：
      不做「等滚到才出现」，直接点亮。
-     —— 注意这里必须自己判一次 prefers-reduced-motion：
-     预报页的区块是数据到位后才渲染的，onMounted 那一刻它们还不存在，
-     不能指望挂载时那次扫描把它们点亮。 */
+     —— 注意这里必须自己判一次：预报页的区块是数据到位后才渲染的，
+     onMounted 那一刻它们还不存在，不能指望挂载时那次扫描把它们点亮。 */
   const calm =
     typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    (window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      document.documentElement.getAttribute('data-perf') === 'on')
 
   if (calm || !('IntersectionObserver' in window)) {
     nodes.forEach((node) => {

@@ -367,10 +367,20 @@ function drawShadowRegion(ctx: CanvasRenderingContext2D): void {
   ctx.restore()
 }
 
+/**
+ * canvas 的像素比上限。
+ * 性能模式下封到 1：剖面图是大面积渐变+网格，2 倍屏下绘制量是 1 倍屏的 4 倍，
+ * 在低端手机上这就是卡顿的主因。文字会比标准模式略软，但读数仍然清楚。
+ */
+function pixelRatio(): number {
+  const cap = document.documentElement.getAttribute('data-perf') === 'on' ? 1 : 2
+  return Math.min(window.devicePixelRatio || 1, cap)
+}
+
 function drawBase(): void {
   const ctx = base.getContext('2d')
   if (!ctx) return
-  const dpr = Math.min(window.devicePixelRatio || 1, 2)
+  const dpr = pixelRatio()
   const W = cssW.value, H = cssH.value
   base.width = Math.round(W * dpr)
   base.height = Math.round(H * dpr)
@@ -996,7 +1006,7 @@ function fmt(v: number | null | undefined, digits = 1, unit = ''): string {
 function drawOverlay(): void {
   const ctx = canvas.value?.getContext('2d')
   if (!ctx) return
-  const dpr = Math.min(window.devicePixelRatio || 1, 2)
+  const dpr = pixelRatio()
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.clearRect(0, 0, cssW.value, cssH.value)
   ctx.drawImage(base, 0, 0, cssW.value, cssH.value)
@@ -1068,7 +1078,7 @@ function resize(): void {
   cssH.value = inFull ? Math.max(340, Math.round(el.clientHeight || rect.height)) : Math.round(Math.max(320, Math.min(560, rect.width * 0.52)))
   const cv = canvas.value
   if (cv) {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const dpr = pixelRatio()
     cv.width = Math.round(cssW.value * dpr)
     cv.height = Math.round(cssH.value * dpr)
     cv.style.width = `${cssW.value}px`
@@ -1084,7 +1094,12 @@ onMounted(() => {
   ro = new ResizeObserver(() => resize())
   if (wrap.value) ro.observe(wrap.value)
   mo = new MutationObserver(() => { readPalette(); redraw() })
-  mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+  /* data-perf 也要监听：性能模式切换会改变 canvas 像素比，
+     不重绘的话画布会保持旧的位图尺寸，看起来糊掉或错位。 */
+  mo.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme', 'data-perf']
+  })
   document.addEventListener('fullscreenchange', resize)
   resize()
 })

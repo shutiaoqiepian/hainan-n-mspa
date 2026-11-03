@@ -42,12 +42,19 @@
     document.documentElement.setAttribute('data-theme', t);
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', t === 'light' ? '#f1f2f4' : (t === 'gray' ? '#26292d' : '#0c0d0f'));
+    /* 性能模式同理：首帧前设好，否则会先铺满毛玻璃再变朴素，闪一下。
+       逻辑与 src/lib/perf.ts 保持一致；?perf=on|off 可临时预览。 */
+    try {
+      var p = new URLSearchParams(location.search).get('perf');
+      if (p !== 'on' && p !== 'off') p = localStorage.getItem('mspa:perf');
+      if (p === 'on') document.documentElement.setAttribute('data-perf', 'on');
+    } catch (e) { /* 隐私模式等，退回标准模式 */ }
   })();
 </script>
-  <script type="module" crossorigin src="/assets/404-4sDqXqsF.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/createPage-JnWw-20m.js">
+  <script type="module" crossorigin src="/assets/404-CclUvMok.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/createPage-Dcd2OXtY.js">
   <link rel="modulepreload" crossorigin href="/assets/useWhitespace-CKqI_xIx.js">
-  <link rel="stylesheet" crossorigin href="/assets/createPage-_QczpMWp.css">
+  <link rel="stylesheet" crossorigin href="/assets/createPage-mYLokz5b.css">
 </head>
 <body>
 

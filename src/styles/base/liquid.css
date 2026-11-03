@@ -311,13 +311,59 @@
 .theme-switch .ts-dot[data-swatch="gray"]  { background: #3a3f45; border: 1px solid rgba(255, 255, 255, 0.3); }
 .theme-switch .ts-dot[data-swatch="light"] { background: #f4f5f7; border: 1px solid rgba(0, 0, 0, 0.25); }
 
+/* ---------- 配色与性能之间的分隔线 ---------- */
+
+/* 两段设置性质不同（一个是配色、一个是耗电），用细竖线分开，
+   否则用户会以为是四个并列的主题。 */
+.theme-switch .ts-sep {
+  width: 1px;
+  height: 14px;
+  margin: 0 3px;
+  background: var(--line);
+  flex: none;
+}
+
+/* ---------- 性能模式按钮 ---------- */
+
+/* 图标是一道「闪电」：用两个斜切的方块拼，不引外链图标。 */
+.theme-switch .perf-dot {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  width: 9px;
+  height: 11px;
+  border-radius: 0;
+  clip-path: polygon(58% 0, 12% 58%, 46% 58%, 34% 100%, 88% 42%, 54% 42%);
+  background: var(--muted);
+  transition: background 0.22s ease;
+}
+
+.theme-switch .perf-toggle:hover .perf-dot { background: var(--text); }
+
+/* 开启后闪电用强调色，且按钮有底——让人一眼看出「现在省电模式开着」 */
+.theme-switch .perf-toggle.is-on .perf-dot { background: var(--accent-a); }
+
+.theme-switch .perf-toggle {
+  /* ★ 必须覆盖掉上面 .theme-switch button 的固定 width: 30px，
+     否则两个字的「性能」会被挤成竖排。 */
+  width: auto;
+  min-width: 0;
+  padding: 0 8px;
+  white-space: nowrap;
+  flex: none;
+}
+
 /* 手机/平板：导航里只留图标，不放文字（与汉堡菜单同断点 900px）。
    三个圆点原本是 27×24，只刚好踩在 WCAG 2.5.8 的 24px 下限上，手指按着偏小；
-   放大到 32×30（导航高 60–68px 装得下），视觉尺寸几乎没变。 */
+   放大到 32×30（导航高 60–68px 装得下），视觉尺寸几乎没变。
+   性能按钮在手机上同样只留闪电图标，宽度与主题按钮对齐。 */
 @media (max-width: 900px) {
   .theme-switch { padding: 3px; }
   .theme-switch button { width: 32px; height: 30px; }
   .theme-switch .ts-label { display: none; }
+  /* 手机上文字已隐藏，性能按钮回到和其他按钮一样的固定宽度 */
+  .theme-switch button.perf-toggle { width: 32px; padding: 0; }
+  .theme-switch .ts-sep { margin: 0 1px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

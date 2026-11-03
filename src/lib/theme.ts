@@ -73,10 +73,12 @@ const GLASS_SELECTOR =
 
 /**
  * 给玻璃面写入 --lg-x / --lg-y（高光位置）。
- * 只在「有鼠标 + 不是 reduce-motion」时启用；触屏设备保持静态高光。
+ * 只在「有鼠标 + 不是 reduce-motion + 没开性能模式」时启用；触屏设备保持静态高光。
+ * 性能模式下这个监听每帧要算 rect + 写 CSS 变量，是白费的电。
  */
 export function useLiquidGlass(): () => void {
   if (typeof window === 'undefined') return () => {}
+  if (document.documentElement.getAttribute('data-perf') === 'on') return () => {}
 
   const fine = window.matchMedia('(hover: hover) and (pointer: fine)')
   const calm = window.matchMedia('(prefers-reduced-motion: reduce)')

@@ -1,0 +1,164 @@
+/* ============================================================
+   性能模式（低配手机 / 省电）
+   ------------------------------------------------------------
+   开关状态在 <html data-perf="on">，与黑/灰/白主题正交。
+   逻辑说明见 src/lib/perf.ts。
+
+   ★ 这里最容易踩的坑：毛玻璃的「底色」只有 4.5%~6% 白，
+   那个厚度感是**靠 backdrop-filter 把背后内容模糊**撑起来的。
+   一旦把 backdrop-filter 关掉而不管底色，卡片在深色主题下会变成
+   几乎透明的方框，字直接压在背景图上——看不清。
+
+   所以第一步不是「删模糊」，而是「换成实色底」，顺序不能反。
+   ============================================================ */
+
+html[data-perf='on'] {
+  /* 玻璃统一退回实色底（三套主题各自的 --surface-solid / --bg-2 已经够对比） */
+  --lg-blur: 0px;
+  --lg-sat: 100%;
+}
+
+/* ---------- 1. 关掉毛玻璃，补上实色底 ---------- */
+
+/* 先一刀关掉全站毛玻璃：不用逐个罗列类名（漏一个就是一个透明的窟窿）。
+   ★ 为什么不能只写 backdrop-filter: none 就完事：
+   毛玻璃的「厚度感」是靠 backdrop-filter 把背后内容模糊起来的，
+   底色只有 4.5%~6% 白。关掉模糊但不补底色 → 卡片变成几乎透明的方框，
+   字直接压在背景图上，比不开性能模式还难看。所以下面第二步必须补实色。 */
+html[data-perf='on'] *,
+html[data-perf='on'] *::before,
+html[data-perf='on'] *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 第二步：把玻璃面换成实色。
+   这里用 !important，因为 .glass / .card 这些类在后面还有 background 简写声明，
+   不压住的话 background-image（渐变）会被重置成 none、颜色却还是 transparent ——
+   卡片就成了全透明。这正是第一版实测踩到的坑。
+
+   ★ transition: none 也是必需的：
+   .glass 等带了 background 过渡，从「透明渐变」切到「实色」会有一段约 150ms
+   的半透明中间态（实测：切换后 60ms 仍是透明，150ms 才实心），
+   看着像卡片闪了一下。性能模式本来就不该有过渡，直接落终态。 */
+html[data-perf='on'] .glass,
+html[data-perf='on'] .card,
+html[data-perf='on'] .step,
+html[data-perf='on'] .member,
+html[data-perf='on'] .fc-row,
+html[data-perf='on'] .fc-timebar,
+html[data-perf='on'] .fcd,
+html[data-perf='on'] .fc-pheno,
+html[data-perf='on'] .fc-note,
+html[data-perf='on'] .fc-refs,
+html[data-perf='on'] .login-card,
+html[data-perf='on'] .login-side,
+html[data-perf='on'] .fb-panel,
+html[data-perf='on'] .dh,
+html[data-perf='on'] .fc-rank,
+html[data-perf='on'] .fcd2-card,
+html[data-perf='on'] .fc-hours2,
+html[data-perf='on'] .fc-fold,
+html[data-perf='on'] .fc-tipcard,
+html[data-perf='on'] .fcm-table {
+  background: var(--surface-solid) !important;
+  /* 玻璃厚度感靠的两层内阴影也一并换成单一边框，省一层合成 */
+  box-shadow: inset 0 0 0 1px var(--line), var(--shadow-soft) !important;
+  transition: none !important;
+}
+
+/* 导航 / 主题胶囊 / 模式选择：本来就是浮层，用不透明的 --nav-bg */
+html[data-perf='on'] .nav,
+html[data-perf='on'] .theme-switch,
+html[data-perf='on'] .fc-modes {
+  background: var(--nav-bg, var(--surface-solid)) !important;
+}
+
+/* 灯箱/名片弹窗的关闭按钮：深色遮罩上的半透明白，保持原样但去掉模糊 */
+html[data-perf='on'] .card-modal .card-modal-close {
+  background: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* 带照片背景的按钮：去掉模糊后要给足底色，否则字压在图上会糊 */
+html[data-perf='on'] .btn,
+html[data-perf='on'] .btn-ghost,
+html[data-perf='on'] .btn-on-photo {
+  background: var(--fill-1) !important;
+}
+
+/* ---------- 2. 关掉无限循环动画（最费电的一类） ---------- */
+
+/* 用 animation/animation-duration 压到 0.01ms 而不是 animation: none，
+   是因为入场动画（lg-grow / lg-row-in）的终态靠 animation-fill-mode: both 维持，
+   直接 none 会让元素退回到初始的 opacity:0 / scale(.9)，内容会「消失」。 */
+html[data-perf='on'] *,
+html[data-perf='on'] *::before,
+html[data-perf='on'] *::after {
+  animation-iteration-count: 1 !important;
+  animation-duration: 0.01ms !important;
+  animation-delay: 0ms !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0ms !important;
+}
+
+/* 一次性入场动画（lg-grow / lg-row-in 等）直接落到终态，
+   否则 duration 压到 0.01ms 时可能出现 from 状态的一帧闪烁 */
+html[data-perf='on'] .reveal,
+html[data-perf='on'] .fc-reveal {
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+/* ---------- 3. 液态玻璃的指针跟随高光 ---------- */
+
+/* JS 在性能模式下不会写 --lg-x/--lg-y，这里兜底把高光固定在顶部 */
+html[data-perf='on'] .glass::after,
+html[data-perf='on'] .card::after,
+html[data-perf='on'] .step::after,
+html[data-perf='on'] .member::after,
+html[data-perf='on'] .fc-row::after,
+html[data-perf='on'] .fcd2-card::after,
+html[data-perf='on'] .fc-hours2::after {
+  display: none;
+}
+
+/* ---------- 4. hover 位移 / 放大 ---------- */
+
+html[data-perf='on'] .card:hover,
+html[data-perf='on'] .step:hover,
+html[data-perf='on'] .member:hover,
+html[data-perf='on'] .fc-row:hover,
+html[data-perf='on'] .fc-tipcard:hover,
+html[data-perf='on'] .wall figure:hover img {
+  transform: none;
+}
+
+/* ---------- 5. 图片：不做「先模糊后清晰」的过渡 ---------- */
+
+html[data-perf='on'] img {
+  filter: none !important;
+  transition: none !important;
+}
+
+/* 首屏大图/背景图在性能模式下不再铺满高分辨率占位 */
+html[data-perf='on'] .hero-body::before,
+html[data-perf='on'] .hero-body::after {
+  opacity: 1;
+}
+
+/* ---------- 6. 滚动提示细线 ---------- */
+
+html[data-perf='on'] .hero-meta::after {
+  animation: none !important;
+  transform: scaleY(1);
+  opacity: 0.6;
+}
+
+/* ---------- 7. 开关本身的视觉反馈 ---------- */
+
+/* 性能模式开启时，导航上的开关要看得出来（否则用户忘了自己开过） */
+.theme-switch .perf-toggle.is-on {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent-a) 22%, var(--glass-hover));
+}
