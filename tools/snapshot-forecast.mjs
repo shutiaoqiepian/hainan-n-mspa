@@ -214,6 +214,19 @@ async function main() {
     process.exit(1)
   }
 
+  /* ── 「一个都没写出来」必须报错 ──
+     2026-10-31 起，本脚本因为一个 const/let 笔误每天崩在 main() 里，
+     CI 那一步是 continue-on-error，Actions 一直是绿的，连崩 3 天才被发现。
+     上面第 126 行那个笔误已经改成 let，但同类「静默少写」的失败还会再来，
+     所以在这里兜底：正常模式下 0 个省份写出 = 失败，不许 exit 0。
+     （--date 补跑模式允许 0，因为「那天的缓存不在了」是正常情况） */
+  if (!backfillDate && ok === 0) {
+    console.error(
+      '::error::一个省份的快照都没写出来（跳过 ' + skipped + '，缓存过旧 ' + stale + '）。' +
+      '当天的 A 级校验样本会缺失 —— 先确认脚本本身没坏，再看缓存是否更新。'
+    )
+    process.exit(1)
+  }
 }
 
 main().catch((e) => { console.error('失败：', e); process.exit(1) })

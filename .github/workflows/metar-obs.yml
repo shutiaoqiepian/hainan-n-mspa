@@ -35,6 +35,9 @@ on:
 
 permissions:
   contents: write
+  # 有数据缺口时要开 Issue 通知人（tools/report-gaps.mjs）。
+  # 少了这一行，上报会 403 而失败，等于通知根本发不出去。
+  issues: write
 
 jobs:
   archive:
@@ -94,6 +97,10 @@ jobs:
 
       # 数据缺口自检：2026-10-28 那天快照「看起来有、其实是旧数据」，
       # 7 天后才被发现。这一步让机器每天自己发现缺口，而不是等人翻历史。
+      #
+      # 2026-10-31 起又栽了一次：snapshot 脚本一个 const/let 笔误连崩 3 天，
+      # 但本步骤是 continue-on-error，Actions 一直是绿的，没人点开看。
+      # 所以下面再加一步「主动找人」——有缺口就开 Issue。
       - name: 数据缺口自检
         run: node tools/check-gaps.mjs | tee -a "$GITHUB_STEP_SUMMARY"
         continue-on-error: true
@@ -108,6 +115,18 @@ jobs:
       - name: 存当天剖面摘要（每层云水/云冰 + 云顶高度）
         run: node tools/obs/snapshot-xsec.mjs --force
         continue-on-error: true
+
+      # ---- 主动找人：有数据缺口就开 GitHub Issue ----
+      #
+      # 必须放在 check-gaps 之后、提交之前：它读的是刚写好的数据。
+      # 有缺口 → 开 Issue（同标题去重，不会刷屏）；缺口消失 → 自动关闭旧 Issue。
+      # 没有 GITHUB_TOKEN 也不会报错，只是退化成只打印。
+      - name: 有数据缺口就开 Issue
+        run: node tools/report-gaps.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # 故意不加 continue-on-error：上报这一步本身失败要标红，
+        # 否则「通知坏了」这件事又会像 10-31 那样被静默吞掉。
 
       - name: 采卫星云顶高度（MODIS Terra，NASA GIBS，免注册）
         run: |
