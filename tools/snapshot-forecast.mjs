@@ -119,7 +119,7 @@ async function main() {
   if (backfillDate && !/^\d{4}-\d{2}-\d{2}$/.test(backfillDate)) {
     throw new Error('--date 格式应为 YYYY-MM-DD，收到：' + backfillDate)
   }
-  const provs = argv.filter((a, i) => !a.startsWith('-') && !(dateIdx >= 0 && i === dateIdx + 1))
+  let provs = argv.filter((a, i) => !a.startsWith('-') && !(dateIdx >= 0 && i === dateIdx + 1))
 
   if (!provs.length) {
     if (!existsSync(SRC_DIR)) throw new Error('找不到 data/forecast/')
