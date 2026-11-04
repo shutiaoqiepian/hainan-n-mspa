@@ -224,6 +224,92 @@ function modeValue(l: Level): { q: number; color: [number, number, number]; labe
   }
 }
 
+/* ================= 光路挡光（「有云」不等于「会烧」） ================= */
+
+/**
+ * 为什么要有这块：
+ *   火烧云 = 高空有云（画布）+ 阳光能穿过大气照到那片云的底部。
+ *   只要光路上有一层厚低云/中云挡着，云再多也不烧 —— 这正是
+ *   「有云就烧」这个错误的核心。
+ *
+ *   首页评分那边早就算了两层（低云系数 lowF + 太阳方向柱 horizonBlock，
+ *   实测 2026-11-03 海南有高云 100% 但低云 57% → 0 分的机位），
+ *   但**剖面图这边没有**：它只画了云在哪，外加地球阴影边界与气溶胶消光，
+ *   没有任何「从太阳到这块云的路上有没有被别的云挡住」的判断。
+ *   所以这一层是补上这个缺口。
+ */
+
+/** 凝结水（云水+云冰）在 (距离 km, 海拔 km) 处的双线性插值；缺测返回 null */
+function condensateAt(dKm: number, hKm: number): number | null {
+  const ds = distances.value
+  const lv = levels.value
+  if (ds.length < 2 || !lv.length) return null
+  if (dKm < ds[0] - 0.01 || dKm > ds[ds.length - 1] + 0.01) return null
+
+  /** 在同一列的 9 层里按高度做线性插值 */
+  const atColumn = (col: Level[] | undefined, h: number): number | null => {
+    if (!col || !col.length) return null
+    let lo = -1
+    for (let j = 0; j < col.length; j++) {
+      const hm = col[j].hM
+      if (hm === null) continue
+      if (hm / 1000 <= h) lo = j
+      else break
+    }
+    if (lo < 0) return null
+    const a = col[lo]
+    if (a.hM === null) return null
+    const qa = (a.clw ?? 0) + (a.ici ?? 0)
+    const b = col[lo + 1]
+    if (!b || b.hM === null) return qa
+    const span = (b.hM - a.hM) / 1000
+    if (span <= 0) return qa
+    const t = Math.max(0, Math.min(1, (h - a.hM / 1000) / span))
+    const qb = (b.clw ?? 0) + (b.ici ?? 0)
+    return qa + (qb - qa) * t
+  }
+
+  let si = 0
+  while (si < ds.length - 2 && ds[si + 1] < dKm) si++
+  const span = ds[si + 1] - ds[si]
+  const w = span > 0 ? Math.max(0, Math.min(1, (dKm - ds[si]) / span)) : 0
+  const qa = atColumn(lv[si], hKm)
+  const qb = atColumn(lv[si + 1], hKm)
+  if (qa === null) return qb
+  if (qb === null) return qa
+  return qa * (1 - w) + qb * w
+}
+
+/** 厚到能挡光的凝结水阈值（mg/kg）。10 就是图上「可辨识云」那一档。 */
+const BLOCK_Q = 10
+
+/**
+ * 从 (d, h) 沿「平面内指向太阳」的方向回溯，看光路上有没有厚云。
+ * 返回第一块挡住光的云（离目标最近的那块，也就是最直接的原因）。
+ *
+ * 局限（必须知道）：这是**二维剖面近似**。光线真实方向与剖面平面有夹角时，
+ * 挡光判断会偏乐观/悲观；太阳偏离剖面超过 ~25° 时已由界面提示「光线只是投影」。
+ */
+function lightPathBlock(
+  dKm: number,
+  hKm: number
+): { blocked: boolean; at?: { d: number; hKm: number; q: number } } {
+  const t = props.sun.toward
+  /* 太阳几乎垂直于剖面时，光路根本不在这一刀里，不能拿平面去判 */
+  if (!(Math.abs(t.x) > 0.15)) return { blocked: false }
+
+  const stepKm = 4
+  for (let s = stepKm; s <= 340; s += stepKm) {
+    const d = dKm + t.x * s
+    const h = hKm + t.y * s
+    if (d < 0 || d > 320) break
+    if (h > 22 || h < -0.5) break
+    const q = condensateAt(d, h)
+    if (q !== null && q >= BLOCK_Q) return { blocked: true, at: { d, hKm: h, q } }
+  }
+  return { blocked: false }
+}
+
 /* ================= 等值线 ================= */
 
 type Grid = Array<Array<number | null>>
@@ -548,7 +634,16 @@ function drawBase(): void {
   ctx.font = '10px system-ui, sans-serif'
   ctx.fillStyle = pal.muted
   ctx.textAlign = 'left'
-  ctx.fillText('每层是模式采样点（垂直分辨率有限）· 横向格点间为线性插值', p.x + 8, p.y + 13)
+  /* ★ 采样点在横向上很不均匀（0–50 km 每 12.5 km 一个，之后是 60–80 km 一个），
+     而 GFS 的网格约 28 km。也就是说：
+       · 左侧 15% 的宽度里塞了 5 个采样点，但对应的真实格点只有约 2 个
+         → 那里的「细节」主要是插值出来的，不是模式真能分辨的东西；
+       · 右侧 85% 的宽度只有 4 个采样点，比模式网格还粗
+         → 大块平滑、看起来「没云」。
+     不说明这一点，用户会以为左边云系细节可信、右边真的晴空。
+     这句话就是用来防止这个误读的。 */
+  const note = '垂直：每层是模式采样点 · 横向：左侧每 12.5 km 一个采样点（比 GFS 约 28 km 网格更密，其间为插值）、右侧约 60–80 km 一个'
+  ctx.fillText(note, p.x + 8, p.y + 13)
   ctx.restore()
 }
 
@@ -1039,7 +1134,13 @@ function drawOverlay(): void {
   const modeName = props.mode === 'water' ? '云水' : props.mode === 'ice' ? '云冰' : props.mode === 'total' ? '总云量' : '云水+云冰'
   lines.push(`光标处插值（${modeName}）：${h.interp.q === null ? '缺测' : h.interp.q.toFixed(2) + (props.mode === 'total' ? ' 折算' : ' mg/kg')}`)
   lines.push(`最近模式层：${h.nearest.hPa} hPa · ${fmt(h.nearest.hM, 0, ' m')}${h.nearest.below ? '（地下）' : ''} · 距光标 ${Math.abs((h.nearest.hM ?? 0) / 1000 - h.mslKm).toFixed(2)} km`)
-  lines.push(`该层原始值：云水 ${fmt(h.nearest.clw)} · 云冰 ${fmt(h.nearest.ici)} mg/kg`)
+  /* 说明「原始值」是哪个采样点的：光标在两点之间时，原始值是「水平最近那个格点」的，
+     不是光标正下方的。不加这句，用户会疑惑「原值 1、插值 0.86 差在哪」。 */
+  const nearD = distances.value[h.nearestSi]
+  lines.push(
+    `该层原始值（最近格点 ${nearD === undefined ? '—' : nearD.toFixed(1) + ' km'}）：` +
+    `云水 ${fmt(h.nearest.clw)} · 云冰 ${fmt(h.nearest.ici)} mg/kg`
+  )
   /* 「该层总云量」容易被读成「整层大气总云量」，实际是 GFS 在该气压层的
      云覆盖（TCDC 分层值）。改成「该层云量」。 */
   lines.push(`该层云量 ${fmt(h.nearest.cf, 0, '%')} · RH ${fmt(h.nearest.rh, 0, '%')} · T ${fmt(h.nearest.t, 1, '°C')}`)
@@ -1047,17 +1148,49 @@ function drawOverlay(): void {
   const litHere = litAt(h.mslKm * 1000, h.d * cosDev, props.sun.el)
   /* 「几何受光」和上方「直射透过率」是两件事：前者不含大气消光，
      后者已经乘上 Beer-Lambert。太阳贴地平线时会出现
-     「在太阳直射光中」+「透过率＜1%」同时成立，加这半句免得看着矛盾。 */
-  lines.push(
-    `光照几何：${litHere ? '在太阳直射光中（几何，未计大气消光）' : '在地球阴影内（几何）'}`
-  )
+     「在太阳直射光中」+「透过率＜1%」同时成立，加这半句免得看着矛盾。
+
+     ★ 太阳在地平线以下（el < 0）却写「在太阳直射光中」看着最反直觉，
+     但这是对的：地面日落时，十几公里高的云仍在地球阴影之上、还能被照亮 ——
+     这正是「火烧云」的物理基础。必须把这句解释补上，否则读者以为是 bug。 */
+  let litText: string
+  if (!litHere) {
+    litText = '在地球阴影内（几何）'
+  } else if (props.sun.el < 0) {
+    litText = `在太阳直射光中（几何）——地面已日落（太阳 ${props.sun.el.toFixed(1)}°），` +
+      `但 ${(h.mslKm).toFixed(1)} km 高处仍在地球阴影之上，所以还被照亮`
+  } else {
+    litText = '在太阳直射光中（几何，未计大气消光）'
+  }
+  lines.push(`光照几何：${litText}`)
+  /* 光路挡光：有云 ≠ 会烧。地球阴影只回答「这里在不在阴影里」，
+     不回答「阳光到这里的路上有没有被别的云吃掉」——后者才是火烧云的关键。 */
+  const block = lightPathBlock(h.d, h.mslKm)
+  if (!litHere) {
+    lines.push('光路：不适用（此点已在地球阴影内）')
+  } else if (!(Math.abs(props.sun.toward.x) > 0.15)) {
+    lines.push('光路：无法判断（太阳几乎垂直于剖面，光路不在这一刀里）')
+  } else if (block.blocked && block.at) {
+    lines.push(
+      `光路：⚠ 被挡 — 朝太阳方向 ${block.at.d.toFixed(0)} km、` +
+      `${block.at.hKm.toFixed(1)} km 高处有厚云（${block.at.q.toFixed(0)} mg/kg），阳光到不了这里`
+    )
+  } else {
+    lines.push('光路：通透 — 朝太阳方向没有厚云挡着（二维剖面近似）')
+  }
   if (props.mode === 'photo' && h.nearest.clw !== null && h.nearest.ici !== null) {
     const tot = (h.nearest.clw ?? 0) + (h.nearest.ici ?? 0)
     lines.push(`液/冰占比：${tot > 0 ? Math.round(((h.nearest.clw as number) / tot) * 100) : 0}% 液`)
   }
 
   ctx.font = '11.5px system-ui, sans-serif'
-  const wBox = 300
+  /* 宽度按最长一行算，不再写死 300：
+     「地面已日落但高处仍被照亮」那句明显更长，固定宽度会溢出到画布外。 */
+  let wBox = 300
+  for (const line of lines) {
+    const w = ctx.measureText(line).width
+    if (w + 22 > wBox) wBox = Math.min(w + 22, cssW.value - 20)
+  }
   const hBox = 14 + lines.length * 17
   let bx = h.x + 14, by = h.y + 14
   if (bx + wBox > cssW.value - 6) bx = h.x - wBox - 14
