@@ -20,7 +20,18 @@ name: 更新大气剖面缓存
 # 上一轮可用缓存保持不动（站点继续用旧数据，页面会显示数据年龄）。
 on:
   schedule:
-    - cron: "40 4,10,16,22 * * *"
+    # ★ 拆成两条表达式，不是为了好看：判断「这一轮跑全国还是仅试点」
+    #   要靠 github.event.schedule（触发它的 cron 原文）。
+    #   一条表达式里塞 4 个时次的话，四条触发的字符串完全一样，没法区分。
+    #
+    # ★★ 2026-11-04 踩的坑（务必看）：第一版用 `date -u +%H` 判断当前小时。
+    #   GitHub 的 scheduled 任务**不保证准点**——实测预定 UTC 04:40 的那轮
+    #   实际 05:32 才启动，晚了 52 分钟，跨过了整点 → 判断成「非全国轮」
+    #   → 全国构建被 skip，又是白等一天。
+    #   结论：**永远不要用运行时时钟去推断「这一轮本该是什么轮」**，
+    #   要用 github.event.schedule。
+    - cron: "40 4,10 * * *"   # 北京 12:40 / 18:40 → 跑全国 224 机位
+    - cron: "40 16,22 * * *"  # 北京 00:40 / 06:40 → 只跑海南试点 8 机位
   workflow_dispatch:
 
 permissions:
@@ -64,19 +75,25 @@ jobs:
       - name: 判断本轮跑全国还是仅试点
         id: mode
         run: |
-          H=$(date -u +%H)
+          # 只看「是哪个 cron 触发的」，不看现在几点。
+          # 定时任务可能延迟很久，用 date 判断会跨整点判错（2026-11-04 实测踩过）。
+          SCHED='${{ github.event.schedule }}'
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             NATIONAL=1
-          elif [ "$H" = "04" ] || [ "$H" = "10" ]; then
+            WHY="手动触发"
+          elif [ "$SCHED" = "40 4,10 * * *" ]; then
             NATIONAL=1
+            WHY="全国轮（cron $SCHED = 北京 12:40 / 18:40）"
           else
             NATIONAL=0
+            WHY="试点轮（cron ${SCHED:-无} = 北京 00:40 / 06:40）"
           fi
           echo "national=$NATIONAL" >> "$GITHUB_OUTPUT"
+          echo "触发来源：$WHY"
           if [ "$NATIONAL" = "1" ]; then
             echo "本轮：全国 224 机位（约 25 分钟）"
           else
-            echo "本轮：海南试点 8 机位（全国版每天 12:40 / 18:40 各一次）"
+            echo "本轮：海南试点 8 机位"
           fi
 
       - name: 构建剖面缓存（全国 224 机位）
