@@ -54,6 +54,20 @@ const RH_THRESHOLDS = [80, 85, 90, 95]
 /** 降水圆点：默认开（任务书 P4 要求主图能看出哪里在下雨） */
 const showRain = ref(true)
 const full = ref(false)
+
+/* ---------- 窄屏图表的「看得全」问题 ----------
+   图表最小宽度 680px，手机屏幕只有约 320–400px：
+   不处理的话用户只看到左边 130 km（全程 320 km 的 40%），
+   而且**没有任何线索告诉他右边还有**（实测截图确认过）。
+   两个缓解手段：
+     · narrowChart：窄屏时显示一条「左右滑动看全程」的提示
+     · fitChart：一键把整张图缩到屏幕宽度看清全貌（字会变小，所以是可选） */
+const narrowChart = ref(false)
+const fitChart = ref(false)
+
+function syncNarrow(): void {
+  narrowChart.value = typeof window !== 'undefined' && window.innerWidth <= 900
+}
 const card = ref<HTMLElement | null>(null)
 /** 从预报页点进来时带的机位（可能不在 8 个代表机位里） */
 const fromName = ref('')
@@ -683,10 +697,13 @@ function applyPendingSun(): void {
 onMounted(() => {
   void init()
   document.addEventListener('fullscreenchange', onFsChange)
+  syncNarrow()
+  window.addEventListener('resize', syncNarrow)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', onFsChange)
+  window.removeEventListener('resize', syncNarrow)
 })
 
 watch([spotId, tIdx, az], () => {
@@ -1082,7 +1099,16 @@ const SUNSET_TEXT = computed(() => {
               </div>
             </div>
 
-            <div class="xsec-scroll">
+            <!-- 窄屏图表是 680px 宽、横向滚动。必须告诉用户「可以滑」，
+                 否则他只看到左边 130 km，以为整张图就是这样（实测踩过）。 -->
+            <p v-if="narrowChart" class="xsec-swipe-hint">
+              <span class="sx-ico" aria-hidden="true">↔</span>
+              <span class="sx-tx">左右滑动看全程 · 共 {{ activeFile.lengthKm }} km</span>
+              <button type="button" class="xsec-swipe-fit" @click="fitChart = !fitChart">
+                {{ fitChart ? '恢复完整尺寸' : '先看全图' }}
+              </button>
+            </p>
+            <div class="xsec-scroll" :class="{ 'is-fit': fitChart }">
               <CrossSectionChart
                 :file="activeFile"
                 :section="section"

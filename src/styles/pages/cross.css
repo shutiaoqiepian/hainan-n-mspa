@@ -721,9 +721,20 @@
     font-size: 15px;
   }
 
-  /* 窄屏不压缩图表：给一个最小宽度，让用户横向拖动看全程 */
+  /* 窄屏默认不压缩图表：给最小宽度，让用户横向拖动看全程（细节最清楚） */
   .xsec-scroll .xsec-chart-wrap {
     min-width: 680px;
+  }
+
+  /* 「先看全图」：把整张图缩到容器宽度。
+     牺牲字号换「一眼看到 U 形分布和云层位置」，看完可一键恢复。 */
+  .xsec-scroll.is-fit {
+    overflow-x: hidden;
+  }
+
+  .xsec-scroll.is-fit .xsec-chart-wrap {
+    min-width: 0;
+    width: 100%;
   }
 
   .xsec-legend {
@@ -850,4 +861,66 @@
 
 .xsec-spot-small .xsec-spot-name {
   font-size: 12.5px;
+}
+
+
+/* ---------- 窄屏「可以左右滑动」提示 ----------
+   图表 680px 宽、手机屏幕 ~320–400px，不提示的话用户看不到右边那 60%。
+   设计上做成「一条极轻的说明 + 一个小按钮」，不占太多首屏高度。 */
+.xsec-swipe-hint {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px dashed var(--line-strong);
+  background: var(--fill-1);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+  /* 窄屏一行放不下时，让按钮掉到下一行，而不是把中文挤成两行 */
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
+/* 文字部分自己成一块并可收缩，避免和按钮抢宽度 */
+.xsec-swipe-hint .sx-ico { flex: none; }
+
+/* 文字块可收缩、不换行；放不下时整体让位给下一行（flex-wrap） */
+.xsec-swipe-hint .sx-tx {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xsec-swipe-hint > span[aria-hidden] {
+  color: var(--accent-a);
+  font-weight: 600;
+}
+
+.xsec-swipe-fit {
+  margin-left: auto;
+  white-space: nowrap;
+  flex: none;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-solid);
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.xsec-swipe-fit:hover {
+  border-color: var(--accent-a);
+  color: var(--accent-a);
+}
+
+@media (max-width: 900px) {
+  .xsec-swipe-hint { display: flex; }
 }

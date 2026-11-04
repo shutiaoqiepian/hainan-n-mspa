@@ -169,12 +169,39 @@ const canvas = ref<HTMLCanvasElement | null>(null)
 const base = document.createElement('canvas')
 const cssW = ref(820)
 const cssH = ref(430)
+
+/**
+ * 图内字号 / 边距的缩放系数。
+ *
+ * 为什么需要它：这张图按 820px 设计，所有字号都硬编码成 10–11.5px。
+ * 手机「先看全图」把它压到 318px 时，**字号不变、画布变小**，
+ * 结果图内说明、色标、坐标轴全部叠在一起（实测截图确认过）。
+ * 这里让边距和字号一起按宽度等比缩小，窄图才不会糊成一团。
+ * 下限 0.62：再小字就看不清了，那时宁可让它横向滚动。
+ */
+const scale = computed(() => {
+  const k = cssW.value / 820
+  return Math.max(0.62, Math.min(1, k))
+})
+/** 按缩放系数取字号字符串 */
+function fs(px: number): string {
+  return `${(px * scale.value).toFixed(1)}px system-ui, sans-serif`
+}
+
 /* b 给底部留出远场光路带（14 px 带 + 刻度 + 标题） */
-const PAD = { l: 56, r: 46, t: 30, b: 82 }
+const PAD = computed(() => {
+  const k = scale.value
+  return {
+    l: Math.round(56 * k),
+    r: Math.round(46 * k),
+    t: Math.round(30 * k),
+    b: Math.round(82 * k)
+  }
+})
 const plot = computed(() => ({
-  x: PAD.l, y: PAD.t,
-  w: Math.max(80, cssW.value - PAD.l - PAD.r),
-  h: Math.max(80, cssH.value - PAD.t - PAD.b)
+  x: PAD.value.l, y: PAD.value.t,
+  w: Math.max(80, cssW.value - PAD.value.l - PAD.value.r),
+  h: Math.max(80, cssH.value - PAD.value.t - PAD.value.b)
 }))
 const x2px = (d: number) => plot.value.x + (d / totalKm.value) * plot.value.w
 const y2px = (km: number) => plot.value.y + (1 - km / props.yMaxKm) * plot.value.h
@@ -448,7 +475,7 @@ function drawShadowRegion(ctx: CanvasRenderingContext2D): void {
   const mid = pts[Math.floor(pts.length * 0.55)]
   const lx = Math.min(p.x + p.w - 8, x2px(mid[0]) + 8)
   const ly = Math.max(p.y + 12, y2px(toAxis(mid[1])) - 6)
-  ctx.font = '10.5px system-ui, sans-serif'
+  ctx.font = fs(10.5)
   ctx.fillStyle = 'rgba(255,196,140,0.95)'
   ctx.textAlign = 'left'
   ctx.fillText('夕阳照明边界', lx, ly)
@@ -607,7 +634,7 @@ function drawBase(): void {
   ctx.restore()
   ctx.save()
   ctx.setLineDash([])
-  ctx.font = '10px system-ui, sans-serif'
+  ctx.font = fs(10)
   ctx.fillStyle = pal.muted
   ctx.textAlign = 'center'
   for (const node of props.section.gridNodes) {
@@ -635,7 +662,7 @@ function drawBase(): void {
 
   /* ---- 图内固定说明 ---- */
   ctx.save()
-  ctx.font = '10px system-ui, sans-serif'
+  ctx.font = fs(10)
   ctx.fillStyle = pal.muted
   ctx.textAlign = 'left'
   /* ★ 采样点在横向上很不均匀（0–50 km 每 12.5 km 一个，之后是 60–80 km 一个），
@@ -646,8 +673,21 @@ function drawBase(): void {
          → 大块平滑、看起来「没云」。
      不说明这一点，用户会以为左边云系细节可信、右边真的晴空。
      这句话就是用来防止这个误读的。 */
-  const note = '垂直：每层是模式采样点 · 横向：左侧每 12.5 km 一个采样点（比 GFS 约 28 km 网格更密，其间为插值）、右侧约 60–80 km 一个'
-  ctx.fillText(note, p.x + 8, p.y + 13)
+  /* 宽度不够时用短版本：长句在窄图上会横穿整幅图、压到右侧色标上
+     （手机「先看全图」实测就是这个样子）。 */
+  const noteLong =
+    '垂直：每层是模式采样点 · 横向：左侧每 12.5 km 一个采样点（比 GFS 约 28 km 网格更密，其间为插值）、右侧约 60–80 km 一个'
+  const noteShort = '每层是模式采样点 · 横向左侧 12.5 km 一点（其间为插值）、右侧 60–80 km 一点'
+  /* 三档：
+     宽图 → 完整说明；中等 → 短说明；窄到连短说明都放不下 → 不画。
+     最后一种情况下这段信息并非丢失：图下方「数据来源」卡片里有同样的话，
+     而挤在右上角色标上只会两头都读不清。 */
+  if (ctx.measureText(noteLong).width <= p.w - 16) {
+    ctx.fillText(noteLong, p.x + 8, p.y + 13)
+  } else if (ctx.measureText(noteShort).width <= p.w - 110) {
+    /* 右边留 110px 给右上角的色标（「≥1 10 100 mg/kg」那块） */
+    ctx.fillText(noteShort, p.x + 8, p.y + 13)
+  }
   ctx.restore()
 }
 
@@ -724,7 +764,7 @@ function drawTerrain(ctx: CanvasRenderingContext2D): void {
   ctx.save()
   ctx.fillStyle = palette.value.text
   ctx.beginPath(); ctx.moveTo(ox + 3, oy); ctx.lineTo(ox + 10, oy - 5); ctx.lineTo(ox + 10, oy + 5); ctx.closePath(); ctx.fill()
-  ctx.font = '10px system-ui, sans-serif'
+  ctx.font = fs(10)
   ctx.fillStyle = palette.value.muted
   ctx.textAlign = 'left'
   ctx.fillText(`机位 · ${hasDem.value ? 'DEM 地面' : '模式地形'} ${Math.round(groundM.value)} m`, ox + 13, oy + 3)
@@ -759,7 +799,7 @@ function drawRain(ctx: CanvasRenderingContext2D): void {
       ctx.setLineDash([2, 2])
       ctx.beginPath(); ctx.arc(x, y2px(toAxis(groundKm)) - 7, 3.5, 0, Math.PI * 2); ctx.stroke()
       ctx.setLineDash([])
-      ctx.font = '8px system-ui, sans-serif'
+      ctx.font = fs(8)
       ctx.fillStyle = 'rgba(180,200,220,0.7)'
       ctx.textAlign = 'center'
       ctx.fillText('?', x, y2px(toAxis(groundKm)) - 4)
@@ -821,7 +861,7 @@ function drawSun(ctx: CanvasRenderingContext2D): void {
     ctx.beginPath(); ctx.moveTo(sx + Math.cos(a) * 9, sy + 10 + Math.sin(a) * 9); ctx.lineTo(sx + Math.cos(a) * 13, sy + 10 + Math.sin(a) * 13); ctx.stroke()
   }
   ctx.globalAlpha = 1
-  ctx.font = '10.5px system-ui, sans-serif'
+  ctx.font = fs(10.5)
   ctx.fillStyle = pal.muted
   ctx.textAlign = 'center'
   const noteX = Math.max(p.x + 140, Math.min(p.x + p.w - 140, sx))
@@ -847,7 +887,7 @@ function drawAxes(ctx: CanvasRenderingContext2D): void {
   ctx.lineWidth = 1
   ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, p.y + p.h); ctx.lineTo(p.x + p.w, p.y + p.h); ctx.stroke()
 
-  ctx.font = '11px system-ui, sans-serif'
+  ctx.font = fs(11)
   ctx.fillStyle = pal.muted
   ctx.textAlign = 'right'
   ctx.textBaseline = 'middle'
@@ -870,7 +910,7 @@ function drawAxes(ctx: CanvasRenderingContext2D): void {
   /* 右侧：气压层刻度 */
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.font = '9.5px system-ui, sans-serif'
+  ctx.font = fs(9.5)
   ctx.fillStyle = pal.muted
   const firstCol = levels.value[0] ?? []
   for (const l of firstCol) {
@@ -957,7 +997,7 @@ function drawFarField(ctx: CanvasRenderingContext2D): void {
   ctx.strokeStyle = pal.line
   ctx.lineWidth = 1
   ctx.beginPath(); ctx.rect(xOf(0), y0, xOf(FAR_KM) - xOf(0), bandH); ctx.stroke()
-  ctx.font = '9.5px system-ui, sans-serif'
+  ctx.font = fs(9.5)
   ctx.fillStyle = pal.muted
   ctx.textAlign = 'center'
   for (const d of [0, 100, 200, 400, 600, 800]) {
@@ -1016,7 +1056,7 @@ function drawScale(ctx: CanvasRenderingContext2D): void {
   ctx.save()
   ctx.fillStyle = g
   ctx.fillRect(x, y, w, h)
-  ctx.font = '9.5px system-ui, sans-serif'
+  ctx.font = fs(9.5)
   ctx.fillStyle = pal.muted
   ctx.textAlign = 'left'
   if (props.mode === 'total') {
@@ -1206,7 +1246,7 @@ function drawOverlay(): void {
     lines.push(`液/冰占比：${tot > 0 ? Math.round(((h.nearest.clw as number) / tot) * 100) : 0}% 液`)
   }
 
-  ctx.font = '11.5px system-ui, sans-serif'
+  ctx.font = fs(11.5)
   /* 宽度按最长一行算，不再写死 300：
      「地面已日落但高处仍被照亮」那句明显更长，固定宽度会溢出到画布外。 */
   let wBox = 300
