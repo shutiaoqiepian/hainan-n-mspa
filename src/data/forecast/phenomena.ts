@@ -181,6 +181,52 @@ export const PHENOMENA: Phenomenon[] = [
     local: '常见',
     match: (c) => (c.score >= 62 && c.low <= 28 && c.clarity >= 60 ? 2 : 0)
   },
+  {
+    key: 'symmetric',
+    name: '对称霞',
+    alias: '两边烧 / 全场烧 / 满烧 / 360 度烧',
+    group: '霞',
+    when: '高云薄而广、铺满整片天，太阳两侧乃至背后都在变色，转到哪个方向都有戏',
+    shoot: '这是唯一值得换广角拍全景、甚至接片的局面；先在原地拍完，再绕着转，别一开始就乱跑',
+    platform: '追霞群 / 小红书',
+    local: '少见',
+    /* 判据：高云饱满且低云几乎不挡（挡一边就不对称了），
+       再加通透度兜底 —— 灰霾天也会有"整片亮"，但那是脏不是烧。 */
+    match: (c) => (c.high >= 70 && c.low <= 20 && c.clarity >= 55 ? 2 : 0)
+  },
+  {
+    key: 'noshow',
+    name: '烧空（放空）',
+    alias: '翻车 / 白来 / 空跑 / 天没烧',
+    group: '平台口语',
+    when: '云量够了但云太厚、太阳被挡在地平线下就停了，或者 AOD 太高把颜色全吃掉',
+    shoot: '确认没戏就收，别硬等。反过来看这是唯一适合转拍长曝、剪影或城市灯的时机',
+    platform: '追霞群',
+    local: '常见',
+    /* 判据：分数低 + 有过云（不是全晴）+ 太阳已沉（不是大白天）。
+       全晴天不该叫"放空"—— 那是压根没报过。 */
+    match: (c) => {
+      const el = c.sunEl ?? 9
+      const cloudy = c.high + c.mid + c.low >= 35
+      return c.score <= 28 && cloudy && el <= -1 ? 1 : 0
+    }
+  },
+  {
+    key: 'sunriseglow',
+    name: '朝霞（日出霞）',
+    alias: '早霞 / 朝烧 / 早上那场',
+    group: '霞',
+    when: '日出前一片高云被照亮；因为夜里空气沉静、低云往往比傍晚少，朝霞比晚霞更干净',
+    shoot: '日出霞来得比晚霞快，提前 50 分钟到位；天亮前先拍蓝调，再等第一片云发红',
+    platform: '追霞群 / 小红书',
+    local: '常见',
+    /* 刻意和落日词条分开：朝霞没有"回光返照"的余韵，
+       而是太阳浮出地平线前那 20 分钟最艳。 */
+    match: (c) => {
+      const el = c.sunEl ?? 9
+      return c.kind === 'sunrise' && el <= 2 && el >= -8 && c.high >= 30 && c.low <= 45 ? 2 : 0
+    }
+  },
 
   /* ---------------- 光束 ---------------- */
   {
@@ -383,6 +429,35 @@ export const PHENOMENA: Phenomenon[] = [
     local: '少见',
     match: (c) => (c.low >= 60 && c.mid >= 40 && c.pop >= 40 ? 1 : 0)
   },
+  {
+    key: 'lowdeck',
+    name: '低云压顶',
+    alias: '天花板云 / 锅盖云 / 闷罐天',
+    group: '云',
+    when: '低云底低于 600 米且云量很大，天空像盖了锅盖，纵深全无',
+    shoot: '不要广角拍天空，改拍近景、局部、地面反射；这种天纵深为零，硬收全景只能得到一片灰',
+    platform: '摄影教程 / 小红书',
+    local: '常见',
+    /* 这条用的是 ctx 里一直空着的 cloudBaseLow。
+       低云底是判断"能不能拍全景"最直接的量：600 米以下的平幕天空没有远近层次。 */
+    match: (c) => {
+      const cb = c.cloudBaseLow
+      return cb != null && cb < 600 && c.low >= 55 ? 1 : 0
+    }
+  },
+  {
+    key: 'splitflow',
+    name: '模式打架',
+    alias: '各家不一致 / 预报分歧 / 五五开',
+    group: '大气',
+    when: 'GFS、ECMWF、ICON 等各模式对同一时刻的评分差异很大（标准差 ≥ 12 分），说明这天本身摇摆',
+    shoot: '这不是天象而是风险提示：分歧大时别为它专门跑一趟，就近拍；分歧小的日子预报才可信',
+    platform: '追霞群',
+    local: '常见',
+    /* spread = 各模式分数的标准差，一直算好却没用上。
+       把它翻成用户能用的判断：分数是同一个，但可信度完全不同。 */
+    match: (c) => (c.spread >= 12 && c.score >= 40 ? 1 : 0)
+  },
 
   /* ---------------- 大气 ---------------- */
   {
@@ -556,6 +631,52 @@ export const PHENOMENA: Phenomenon[] = [
     match: (c) => {
       const el = c.sunEl ?? 0
       return el >= 15 && el <= 32 && highGenus(c) === '卷层云' ? 1 : 0
+    }
+  },
+  {
+    key: 'halo46',
+    name: '46° 晕（大晕）',
+    alias: '大晕 / 外圈晕 / 双晕',
+    group: '冰晶光学',
+    when: '卷层云里冰晶很薄很规整时，22° 晕外面还会再套一圈 46° 晕，颜色比内圈淡',
+    shoot: '46° 晕直径接近 92°，14mm 都未必装得下；优先拍它和 22° 晕同框的局部',
+    platform: '气象爱好者',
+    local: '罕见',
+    /* 46° 晕比 22° 晕苛刻得多：冰晶必须是规整的六棱柱且取向纯净，
+       所以条件叠得更紧（云更薄、太阳更高）。 */
+    match: (c) => {
+      const el = c.sunEl ?? 0
+      return highGenus(c) === '卷层云' && c.high >= 50 && c.high <= 80 && el >= 20 ? 1 : 0
+    }
+  },
+  {
+    key: 'parhelic',
+    name: '幻日环',
+    alias: '白光横带 / 水平光带',
+    group: '冰晶光学',
+    when: '太阳高度很低时，冰晶把光反射成一条与地平线平行的白带，穿过太阳横贯天空',
+    shoot: '低太阳角 + 水平横构图，把白带当地平线以上的"第二条线"用',
+    platform: '气象爱好者 / 摄影教程',
+    local: '少见',
+    match: (c) => {
+      const el = c.sunEl ?? 99
+      return highGenus(c) === '卷层云' && c.high >= 35 && el >= -2 && el <= 20 ? 1 : 0
+    }
+  },
+  {
+    key: 'circumhorizon',
+    name: '环地平弧',
+    alias: '火焰彩虹 / 火彩虹 / 彩虹云',
+    group: '冰晶光学',
+    when: '太阳高于 58°、卷云里是片状冰晶，地平线上方会出现一条极亮的水平彩带',
+    shoot: '南方低纬度夏天正午前后才可能；色彩是全天空象里最艳的，记得压曝光',
+    platform: '小红书 / 气象爱好者',
+    local: '几乎不可能',
+    /* 海南纬度 18–20°，太阳高度最高约 88°，理论上够；
+       但需要 58° 以上 + 特定的片状冰晶，实操中极罕见，所以给"有机会"不打满分。 */
+    match: (c) => {
+      const el = c.sunEl ?? 0
+      return el >= 58 && highGenus(c) === '卷云' && c.high >= 20 ? 1 : 0
     }
   },
   {
@@ -758,17 +879,68 @@ export const PHENOMENA: Phenomenon[] = [
     platform: '抖音 / 小红书',
     local: '少见',
     match: (c) => (c.crep >= 60 && c.low >= 35 ? 1 : 0)
+  },
+  {
+    key: 'lightdust',
+    name: '晨雾 / 薄霭',
+    alias: '地雾 / 平流轻雾 / 光雾',
+    group: '大气',
+    when: '夜里辐射降温把近地面压到露点附近，清晨出现一层贴地的薄雾，逆光会被照亮成金色',
+    shoot: '这是全天最好拍的一小时：逆光让雾发亮、顺光只剩灰。提前查是否有雾，别到了才发现',
+    platform: '摄影教程 / 小红书',
+    local: '常见',
+    /* 用 RH + 低能见度 + 无降水三个量判断：
+       雾必须高湿、低能见度，但又不是在下雨（下雨该叫雨天，不是雾天）。 */
+    match: (c) => {
+      const rh = c.rh
+      const vis = c.vis
+      return rh != null && rh >= 93 && vis != null && vis <= 5 && c.pop <= 25 ? 1 : 0
+    }
+  },
+  {
+    key: 'silhouette',
+    name: '逆光剪影',
+    alias: '黑片 / 剪影 / 对着太阳拍',
+    group: '平台口语',
+    when: '太阳低、光比极大，前景只剩轮廓；追霞圈拍人像和椰树最常用的手法',
+    shoot: '按天空曝光，前景任它黑；要轮廓干净就找形状明确的东西（树、人、栏杆），别指望保留细节',
+    platform: '小红书 / 抖音',
+    local: '每天',
+    /* 判据：太阳低（光比大）+ 有云当背景（纯亮蓝天的剪影没有层次）+ 通透度不差。
+       刻意只给 1 级：剪影几乎每天都能拍，是"顺手可拍"而不是"专门去等"，
+       给 2 级会把真正需要等的火烧云挤下去。 */
+    match: (c) => {
+      const el = c.sunEl ?? 99
+      return el >= -2 && el <= 12 && c.high + c.mid >= 20 && c.clarity >= 50 ? 1 : 0
+    }
   }
 ]
 
 export const PHENO_GROUPS: PhenoGroup[] = ['霞', '光束', '冰晶光学', '云', '大气', '平台口语']
 
+/** 稀缺度：越难得的词条越该排在前面。
+    「每天」都能拍的东西（剪影、玫瑰金）不该挤掉「少见 / 罕见」的（对称霞、46° 晕）——
+    否则用户看到的永远是那几条平平无奇的，词库扩充了也白扩。 */
+const RARITY: Record<string, number> = {
+  '几乎不可能': 5, '罕见': 4, '少见': 3, '常见': 2, '每天': 1
+}
+
 /** 这个时刻最值得拍的题材（按“很有戏”优先，取前 5 条） */
 export function matchPhenomena(c: PhenoContext): Phototip[] {
   const hits = PHENOMENA
-    .map((p) => ({ p, v: p.match(c) }))
+    .map((p, i) => ({ p, v: p.match(c), i, r: RARITY[p.local ?? '常见'] ?? 2 }))
     .filter((x) => x.v > 0)
-    .sort((a, b) => b.v - a.v || (a.p.group === '霞' ? -1 : 1))
+    /* 四级排序，每一级都必须给出完整的序 ——
+       写成 `a.p.group === '霞' ? -1 : 1` 这种两值比较器没有传递性：
+       两个非霞词条互相比较时，a 比 b 和 b 比 a 都返回 1，
+       结果取决于引擎实现、可能把该显示的词条随机挤掉。
+       所以这里每一级都用「相减」表达，最后一定有 a.i - b.i 兜底。 */
+    .sort((a, b) =>
+      b.v - a.v ||                       /* 1. 很有戏 > 有机会 */
+      (a.p.group === '霞' ? 0 : 1) - (b.p.group === '霞' ? 0 : 1) || /* 2. 霞优先 */
+      b.r - a.r ||                       /* 3. 越少见越靠前 */
+      a.i - b.i                          /* 4. 稳定兜底 */
+    )
 
   const out: Phototip[] = []
   for (const h of hits) {

@@ -16,6 +16,7 @@ import { load } from '@/lib/forecast/api'
 import { openListCard, openSpotCard } from '@/lib/forecast/card-ui'
 import { initStateFromUrl, state } from '@/lib/forecast/state'
 import { provName } from '@/data/forecast/spots'
+import { PHENOMENA, PHENO_GROUPS } from '@/data/forecast/phenomena'
 import { layerVerdict } from '@/lib/forecast/scoring'
 import type { Row } from '@/lib/forecast/types'
 
@@ -57,7 +58,13 @@ const rank = computed(() => {
 
 const showAll = ref(false)
 
-/* 窄屏默认折叠「专业判定与参考」里的三大块长内容（天象词库 60 条、云种剖面 8 层、
+/* 天象词库的规模从数据直接读，不写死数字。
+   原来页面里有 4 处写死「60 条」，词库扩到 68 条后全部变成错的，
+   这种数字只要手写就一定会过期。 */
+const phenoTotal = PHENOMENA.length
+const phenoGroups = PHENO_GROUPS.length
+
+/* 窄屏默认折叠「专业判定与参考」里的三大块长内容（天象词库、云种剖面 8 层、
    判定依据）。手机上这几块加起来要滚好几屏，但它们不是「今天要不要跑」的第一答案；
    内容一条不删，默认收起、点开与宽屏行为完全一致。
    用 matchMedia 判断而不是 CSS 隐藏：FoldPanel 的展开状态是组件状态，CSS 藏不住。
@@ -141,7 +148,7 @@ function autoOpenCard(): void {
 
 watch(() => state.rows, () => { void nextTick(autoOpenCard) }, { flush: 'post' })
 
-/* 「查看全部 60 条词条」滚到天象词库 */
+/* TipCards 的「查看全部 N 条词条」滚到天象词库 */
 function gotoPhenomena(): void {
   const el = document.getElementById('fc-phenomena')
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -215,7 +222,7 @@ onBeforeUnmount(() => {
           <div class="fc-block-head">
             <h2>当次能拍的题材</h2>
             <span class="sub">
-              {{ selected.spot.n }} · 从 60 条词库里按当前天况挑出的 {{ selected.detail.tips.length }} 条 · 点卡片看怎么拍
+              {{ selected.spot.n }} · 从 {{ phenoTotal }} 条词库里按当前天况挑出的 {{ selected.detail.tips.length }} 条 · 点卡片看怎么拍
             </span>
           </div>
           <TipCards :tips="selected.detail.tips" @open-all="gotoPhenomena" />
@@ -278,7 +285,7 @@ onBeforeUnmount(() => {
             <FoldPanel title="方法说明：时间口径 / 四个机会 / 怎么算的 / 我们做不到的" count="8 节">
               <Explanations />
             </FoldPanel>
-            <FoldPanel title="摄影圈天象词库" count="60 条 · 6 组" :open="!narrow">
+            <FoldPanel title="摄影圈天象词库" :count="phenoTotal + ' 条 · ' + phenoGroups + ' 组'" :open="!narrow">
               <div id="fc-phenomena"><Phenomena /></div>
             </FoldPanel>
             <FoldPanel title="参考文献与方法来源" count="13 条">
