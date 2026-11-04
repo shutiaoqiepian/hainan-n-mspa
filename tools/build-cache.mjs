@@ -182,7 +182,18 @@ function buildUrls(spots) {
   };
 }
 
-async function get(url, label, tries = 3) {
+/**
+ * 带退避重试的 GET。
+ *
+ * ★ 2026-11-04 加强：原来 tries=3、429 退避 15s×i（最多 45 秒），
+ *   但全国 34 省 × 224 机位一跑就是上百次请求，只要**有一批**最终失败，
+ *   整个 build-cache 就非零退出 —— 当天 forecast-cache 失败 2 次就是这么来的
+ *   （本地重跑同一份代码 100% 成功，说明不是数据/代码问题，是限流窗口没熬过去）。
+ *
+ *   现在：tries 提到 6，429 退避改成 20s / 40s / 60s / 60s / 60s，
+ *   最长能扛住约 4 分钟的限流窗口。总耗时增加只在「真的被限流」时发生。
+ */
+async function get(url, label, tries = 6) {
   for (let i = 1; i <= tries; i++) {
     try {
       const r = await fetch(url, { signal: AbortSignal.timeout(90000) });
@@ -193,8 +204,9 @@ async function get(url, label, tries = 3) {
     } catch (e) {
       console.warn(`  ${label}: 第 ${i} 次失败 — ${e.message}`);
       if (i === tries) throw e;
-      /* 429 = 撞到限速：退避久一点，别继续加速撞 */
-      const wait = /429/.test(e.message) ? 15000 * i : 3000;
+      /* 429 = 撞到限速：退避久一点，别继续加速撞。
+         20/40/60/60/60 秒：最多等约 4 分钟，足够熬过 Open-Meteo 的分钟/小时窗口。 */
+      const wait = /429/.test(e.message) ? Math.min(60000, 20000 * i) : 3000;
       await new Promise((r) => setTimeout(r, wait));
     }
   }
@@ -276,9 +288,9 @@ async function fetchAll(spots) {
     if (ci) await sleep(GAP_MS);
 
     const [weather, prof, air] = await Promise.all([
-      get(u.weather, `cloud ${ci + 1}/${chunks.length}`, 4),
-      get(u.prof, `profile ${ci + 1}/${chunks.length}`, 4),
-      get(u.air, `air ${ci + 1}/${chunks.length}`, 4)
+      get(u.weather, `cloud ${ci + 1}/${chunks.length}`, 6),
+      get(u.prof, `profile ${ci + 1}/${chunks.length}`, 6),
+      get(u.air, `air ${ci + 1}/${chunks.length}`, 6)
     ]);
 
     const w = remapByNearest(weather, chunk);
@@ -365,7 +377,7 @@ async function fetchHorizon(spots) {
     const url =
       `https://api.open-meteo.com/v1/forecast?${LL}` +
       `&hourly=${HORIZON_VARS}&${TZ}`;
-    const got = await get(url, `horizon ${Math.floor(i / BATCH) + 1}/${Math.ceil(coords.length / BATCH)}`, 3);
+    const got = await get(url, `horizon ${Math.floor(i / BATCH) + 1}/${Math.ceil(coords.length / BATCH)}`, 6);
     resp.push(...got);
   }
 
