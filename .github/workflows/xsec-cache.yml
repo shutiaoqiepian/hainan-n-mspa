@@ -145,3 +145,15 @@ jobs:
           else
             echo "no change"
           fi
+
+      # ---- 数据缺口上报：和 metar-obs 里同一个脚本，双保险 ----
+      #
+      # 为什么这里也要放一份：2026-11-04 实测发现 metar-obs 当天**一次都没被调度**，
+      # 而「关掉已解决的困难 Issue」这一步只写在 metar-obs 里 ——
+      # 结果数据早就补好了（全国轮 19:33 成功），Issue 却一直开着。
+      # 通知链路不能依赖单一工作流的存在性。
+      - name: 数据缺口上报（有缺口开 Issue / 补上就关）
+        run: node tools/report-gaps.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
