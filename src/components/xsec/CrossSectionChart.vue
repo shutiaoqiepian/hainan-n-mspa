@@ -17,6 +17,7 @@ import {
   distanceAxis, expandPoints, fieldIndex, heightProfile, liquidShare, regularGrid, terrainProfile
 } from '@/lib/xsec/model'
 import { boundaryHeightKm, farFieldLit, litAt, transmittance } from '@/lib/xsec/light'
+import { genusLabel, genusOfLevel } from '@/lib/xsec/cloudgenus'
 import type { SunInPlane } from '@/lib/xsec/sun'
 import type { XsecPoint, XsecSection, XsecSpotFile } from '@/lib/xsec/types'
 
@@ -81,6 +82,8 @@ interface Level {
   v: number | null
   w: number | null
   below: boolean
+  /** 地面降水率 mm/h（云属判据用）；null = 缺测，不是"没下雨" */
+  rain: number | null
 }
 const levels = computed<Level[][]>(() =>
   points.value.map((col, si) =>
@@ -95,7 +98,8 @@ const levels = computed<Level[][]>(() =>
       u: p.uMs,
       v: p.vMs,
       w: p.wPaS,
-      below: p.belowGround
+      below: p.belowGround,
+      rain: p.rainMmH ?? null
     }))
   )
 )
@@ -1144,6 +1148,25 @@ function drawOverlay(): void {
   /* 「该层总云量」容易被读成「整层大气总云量」，实际是 GFS 在该气压层的
      云覆盖（TCDC 分层值）。改成「该层云量」。 */
   lines.push(`该层云量 ${fmt(h.nearest.cf, 0, '%')} · RH ${fmt(h.nearest.rh, 0, '%')} · T ${fmt(h.nearest.t, 1, '°C')}`)
+  /* 云属：用 GFS 的真三维云水/云冰判，比只靠云量+湿度更硬。
+     判不出来（数据不足）就不显示这一行，不硬猜。 */
+  const genus = genusOfLevel({
+    hPa: h.nearest.hPa,
+    tC: h.nearest.t,
+    rhPct: h.nearest.rh,
+    clwMgKg: h.nearest.clw,
+    iciMgKg: h.nearest.ici,
+    cfPct: h.nearest.cf,
+    wPaS: h.nearest.w,
+    rainMmH: h.nearest.rain
+  })
+  if (genus) {
+    /* 统一写法：学名（英文缩写）。云种有就带上，没有不硬凑。 */
+    const sp = genus.species ? ' · ' + genus.species : ''
+    const ev = genus.evidence === 'guess' ? '，云水缺测、按云量推断' : ''
+    lines.push(`云属：${genusLabel(genus)} · ${genus.familyName}${sp}`)
+    lines.push(`　　　${genus.note}${ev}`)
+  }
   const cosDev = Math.cos((props.sun.deviationDeg * Math.PI) / 180)
   const litHere = litAt(h.mslKm * 1000, h.d * cosDev, props.sun.el)
   /* 「几何受光」和上方「直射透过率」是两件事：前者不含大气消光，

@@ -15,6 +15,7 @@ import { ageHours, loadNationalContext, loadNationalIndex, loadXsecContext, load
 import { Y_RANGES, beijingDateTime, beijingTime, cloudBands, expandPoints, sectionAt } from '@/lib/xsec/model'
 import { CHART_GUIDE, QUICK_STEPS, TOOLBAR_GUIDE } from '@/lib/xsec/guide'
 import { fetchOpenMeteoSection } from '@/lib/xsec/openmeteo'
+import { genusOfLevel, type CloudGenusInfo } from '@/lib/xsec/cloudgenus'
 import { sunInPlane, sunsetMs } from '@/lib/xsec/sun'
 import {
   airmass, bandLightWindow, boundaryHeightKm, describeMin, terminatorKm,
@@ -124,6 +125,8 @@ const section = computed(() => {
   return sectionAt(f, isOm.value ? 0 : tIdx.value, az.value)
 })
 
+
+
 /** 时次列表始终用 GFS 缓存的（Open-Meteo 只拉当前选中的那一个时刻） */
 const times = computed(() => gfsFile.value?.times ?? [])
 
@@ -213,6 +216,44 @@ const bandList = computed(() => {
   const pts = expandPoints(f, s)
   const mid = pts[Math.floor(pts.length / 2)]
   return mid ? cloudBands(mid, 10) : []
+})
+
+/**
+ * 每个「云层带」是什么云属。
+ *
+ * 用路径中点那一列的逐层数据判（和 bandList 同一个格点，保证两者对得上），
+ * 取该带内**凝结水最浓的那一层**作代表：
+ *   云属是「这团云」的属性，不是层平均的属性；平均会把浓云和薄纱拌成中间值，判错族。
+ *
+ * 判据走 src/lib/xsec/cloudgenus.ts（用 GFS 真三维云水/云冰的液冰比，
+ * 比预报页那份只靠云量+湿度猜云属更硬）。
+ */
+const bandGenuses = computed<Array<CloudGenusInfo | null>>(() => {
+  const f = activeFile.value
+  const s = section.value
+  if (!f || !s) return []
+  const pts = expandPoints(f, s)
+  const mid = pts[Math.floor(pts.length / 2)]
+  if (!mid) return []
+  return bandList.value.map((b) => {
+    let best: CloudGenusInfo | null = null
+    let bestQ = -Infinity
+    for (const p of mid) {
+      /* band 的 fromHpa 是低层、toHpa 是高层（levelsHpa 由低到高） */
+      if (p.pressureHpa > b.fromHpa || p.pressureHpa < b.toHpa) continue
+      if (p.belowGround) continue
+      const q = (p.clwMgKg ?? 0) + (p.iciMgKg ?? 0)
+      if (q <= bestQ) continue
+      const info = genusOfLevel({
+        hPa: p.pressureHpa,
+        tC: p.tC, rhPct: p.rhPct,
+        clwMgKg: p.clwMgKg, iciMgKg: p.iciMgKg,
+        cfPct: p.cfPct, wPaS: p.wPaS, rainMmH: p.rainMmH ?? null
+      })
+      if (info) { bestQ = q; best = info }
+    }
+    return best
+  })
 })
 
 /* ---------------- 光照几何（阶段七 P1：真实 DEM + AOD + 球面几何） ---------------- */
@@ -1174,7 +1215,8 @@ const SUNSET_TEXT = computed(() => {
               <p class="xsec-panel-sub">
                 取路径中点那一个格点，
                 <template v-if="isOm">按「云量 ≥ 50%」判为有云（RH 诊断，估算）。</template>
-                <template v-else>按「总凝结水 ≥ 10 mg/kg（0.01 g/kg）」判为有云；云底/云顶取中段采样点的最低/最高有云层，厚度 = 云顶 − 云底。</template>
+                <template v-else>按「总凝结水 ≥ 10 mg/kg（0.01 g/kg）」判为有云；云底/云顶取中段采样点的最低/最高有云层，厚度 = 云顶 − 云底。
+                云属按该带内<b>凝结水最浓那层</b>的液冰比例判定（冰晶为主→卷云族，液态为主→层积云族；把鼠标放到云上也能看到单点云属）。</template>
                 <span v-if="!bandList.length">这一时刻路径中段没有达到该阈值的云。</span>
               </p>
               <ul v-if="bandList.length" class="xsec-bands">
@@ -1183,10 +1225,20 @@ const SUNSET_TEXT = computed(() => {
                     class="xsec-band-dot"
                     :class="b.estimated ? 'is-est' : (b.liquid ? 'is-liquid' : 'is-ice')"
                   />
-                  {{ b.toHpa }}–{{ b.fromHpa }} hPa
+                  {{ b.toHpa === b.fromHpa ? b.fromHpa : b.toHpa + '–' + b.fromHpa }} hPa
                   <span class="xsec-band-h">（{{ b.toKm.toFixed(1) }}–{{ b.fromKm.toFixed(1) }} km）</span>
                   <span class="xsec-band-kind">
                     {{ b.estimated ? '湿度诊断云量' : (b.liquid ? '含液水' : '冰云为主') }}
+                  </span>
+                  <!-- 云属：用 GFS 真三维云水/云冰的液冰比判，比只看云量+湿度更硬 -->
+                  <span
+                    v-if="bandGenuses[i]"
+                    class="xsec-band-genus"
+                    :title="(bandGenuses[i]!.codeEn || '') + (bandGenuses[i]!.speciesEn ? ' · ' + bandGenuses[i]!.speciesEn : '') + '\n' + bandGenuses[i]!.note"
+                  >
+                    {{ bandGenuses[i]!.familyName }} ·
+                    {{ bandGenuses[i]!.genus }}<b>（{{ bandGenuses[i]!.code }}）</b>
+                    <template v-if="bandGenuses[i]!.species">· {{ bandGenuses[i]!.species }}</template>
                   </span>
                   <span v-if="!b.estimated" class="xsec-band-peak">
                     峰值 {{ Math.round(b.peakMgKg) }} mg/kg
