@@ -147,12 +147,32 @@ const sunsetAt = computed(() => {
 
 const sunDown = computed(() => Number.isFinite(sunsetAt.value) && sunTimeMs.value >= sunsetAt.value)
 
+/**
+ * 数据年龄。
+ *
+ * ★ 这里曾经用错源头：拿的是「海南试点索引 index.json」的 generatedAt，
+ * 而页面上真正显示的是「全国索引 national-index.json + <省>/<id>.json」。
+ * 两个索引各自更新，全国那份 2026-11-01 之后就没再刷新过，
+ * 但试点索引每天在更新 → 全国模式下一页过期数据被判定成「新鲜」，
+ * 过期警告永远不出现。用户看到的就是 4 天前的剖面 + Open-Meteo 报错。
+ *
+ * 现在按「当前真正在用的那份索引」算：
+ *   来看全国机位 → 用 national.generatedAt
+ *   看海南试点   → 用 index.generatedAt
+ */
 const dataAge = computed(() => {
-  const idx = index.value
+  const idx = national.value ?? index.value
   return idx ? ageHours(idx.generatedAt) : NaN
 })
 
-const stale = computed(() => !isOm.value && Number.isFinite(dataAge.value) && dataAge.value > 12)
+/**
+ * 过期判定。
+ * 原来写成 `!isOm && ...`，等于「切到 Open-Meteo 模式就不提示过期」——
+ * 但恰恰是 Open-Meteo 模式最需要这个提示：它只能查未来 3 天，
+ * GFS 缓存一旦过期超过 3 天，请求必然失败。用户看到的却是一句
+ * 「Open-Meteo 没有 xxxx 这一时刻的数据」，完全猜不到是本地缓存旧了。
+ */
+const stale = computed(() => Number.isFinite(dataAge.value) && dataAge.value > 12)
 
 /** 与日落时刻最接近的那个时次高亮 */
 const nearestSunsetIdx = computed(() => {
@@ -394,6 +414,9 @@ async function pickSpotById(id: string, file: string): Promise<void> {
     if (!f.times.some((t) => t.t === tIdx.value)) {
       tIdx.value = nearestSunsetIdx.value >= 0 ? nearestSunsetIdx.value : 0
     }
+    /* 和 pickSpot 保持一致：Open-Meteo 模式下换了机位要重新拉一次，
+       否则图上还是上一个机位的空气。 */
+    if (isOm.value) await loadOm()
     syncSunOffset()
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
@@ -428,11 +451,55 @@ async function pickSpot(id: string): Promise<void> {
   }
 }
 
+/**
+ * Open-Meteo 对照：目标时刻该取哪一个。
+ *
+ * ★ 原来直接拿 GFS 缓存里的 t.utc。问题在于 GFS 缓存可能已经过期好几天，
+ * 而 Open-Meteo 的 forecast 接口**只覆盖未来 3 天**（forecast_days=3），
+ * 拿 4 天前的时刻去请求 100% 失败，报错还只说「没有这一时刻的数据」，
+ * 用户完全无从判断是本地数据旧了还是接口挂了。
+ *
+ * 现在：优先用缓存里的时刻（能和 GFS 同刻对比才有意义）；
+ * 如果那一刻已经超出 Open-Meteo 的可查范围，就改用「今天的同一钟点」，
+ * 并通过 omShifted 告诉界面发生了什么（不静默改）。
+ */
+const omTargetIso = computed(() => {
+  const g = gfsFile.value
+  if (!g) return ''
+  const t = g.times.find((x) => x.t === tIdx.value) ?? g.times[0]
+  if (!t) return ''
+  const want = new Date(t.utc).getTime()
+  if (!Number.isFinite(want)) return ''
+
+  /* Open-Meteo 的 forecast_days=3 从现在算起，往前一整天都不保证有；
+     留 6 小时余量，比它更早的时刻一律换算到今天同一钟点。 */
+  const cutoff = Date.now() - 6 * 3600000
+  if (want >= cutoff) return t.utc
+
+  const d = new Date(want)
+  const now = new Date()
+  const shifted = new Date(now)
+  shifted.setUTCHours(d.getUTCHours(), 0, 0, 0)
+  return shifted.toISOString()
+})
+
+/** Open-Meteo 用了「不是缓存里那一刻」的时刻 → 界面要说明 */
+const omShifted = computed(() => {
+  const g = gfsFile.value
+  if (!g) return null
+  const t = g.times.find((x) => x.t === tIdx.value) ?? g.times[0]
+  if (!t) return null
+  const want = omTargetIso.value
+  if (!want || want === t.utc) return null
+  return { from: t.utc, to: want }
+})
+
 async function loadOm(): Promise<void> {
   const g = gfsFile.value
   if (!g) return
   const t = g.times.find((x) => x.t === tIdx.value) ?? g.times[0]
   if (!t) return
+  const target = omTargetIso.value || t.utc
   omLoading.value = true
   omError.value = ''
   try {
@@ -441,10 +508,14 @@ async function loadOm(): Promise<void> {
       levelsHpa: g.levelsHpa,
       sampleKm: distances,
       az: az.value,
-      validIso: t.utc
+      validIso: target
     })
   } catch (e) {
-    omError.value = e instanceof Error ? e.message : String(e)
+    const msg = e instanceof Error ? e.message : String(e)
+    /* 把「为什么失败」说清楚：多半是本地 GFS 缓存太旧，不是 Open-Meteo 挂了 */
+    omError.value = stale.value
+      ? msg + '（本地剖面缓存已 ' + Math.round(dataAge.value) + ' 小时未更新，Open-Meteo 只能查未来 3 天，所以这条路走不通）'
+      : msg
     omFile.value = null
   } finally {
     omLoading.value = false
@@ -452,9 +523,13 @@ async function loadOm(): Promise<void> {
 }
 
 async function init(): Promise<void> {
-  loadNationalIndex()
-    .then((n) => { national.value = n })
-    .catch(() => { /* 全国索引缺失：保持海南试点，页面已注明 */ })
+  /* 全国索引要先等一等：URL 里的 ?spot= 可能是全国机位 id（如 hn-003），
+     而海南试点索引里只有 8 个 id（hk-xihai 这种）。
+     以前是「发出去不管」，pickSpot 只查试点索引 → 全国 id 查不到 →
+     静默退回默认机位，用户在预报页点进某个机位，打开却是另一个地方。 */
+  const nationalReady = loadNationalIndex()
+    .then((n) => { national.value = n; return n })
+    .catch(() => null)
   loadNationalContext()
     .then((c) => { nationalCtx.value = c })
     .catch(() => { /* 全国 DEM/AOD 缺失：退回模式地形，页面已注明 */ })
@@ -467,17 +542,33 @@ async function init(): Promise<void> {
     tIdx.value = u.t
     az.value = u.az
     pendingSunOffset.value = u.sun
+
+    /* 先看这个 id 是不是全国机位 */
+    const nat = await nationalReady
+    if (u.spot && nat?.spots.some((s) => s.id === u.spot)) {
+      nationalSpotId.value = u.spot
+      const f = nationalFile(u.spot)
+      if (f) await pickSpotById(u.spot, f)
+      applyPendingSun()
+      return
+    }
+
     const q = new URLSearchParams(location.search)
     const incoming = resolveIncoming(q)
     if (incoming.note) fromNote.value = incoming.note
     await pickSpot(u.spot || incoming.id || (index.value.spots[0]?.id ?? ''))
-    if (pendingSunOffset.value !== null) {
-      sunOffsetMin.value = pendingSunOffset.value
-      pendingSunOffset.value = null
-    }
+    applyPendingSun()
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
     loading.value = false
+  }
+}
+
+/** URL 带了「太阳时间偏移」的话，等机位加载完再应用，避免被 syncSunOffset 覆盖 */
+function applyPendingSun(): void {
+  if (pendingSunOffset.value !== null) {
+    sunOffsetMin.value = pendingSunOffset.value
+    pendingSunOffset.value = null
   }
 }
 
@@ -844,9 +935,19 @@ const SUNSET_TEXT = computed(() => {
           Open-Meteo 请求失败：{{ omError }}<br /><br />可以切回 GFS 模式云水查看缓存数据。
         </div>
 
+        <!-- ★ 注意：这里不能插一个独立的 v-if —— 它会把下面 <template v-else-if>
+             的 v-if/v-else-if 链从中间断开，图表就永远不显示了（实际踩过）。
+             提示条放到图表卡片内部去（见下方 v-if="isOm && omShifted"）。 -->
         <template v-else-if="activeFile && section && sun">
           <!-- 图表卡片 -->
           <div ref="card" class="card xsec-card" :class="{ 'is-full': full }">
+
+            <!-- Open-Meteo 用了「不是缓存里那一刻」的时刻：必须说出来，不能静默改 -->
+            <div v-if="isOm && omShifted" class="xsec-warn xsec-om-shift">
+              ⚠ 本地剖面缓存里的时刻（{{ beijingDateTime(omShifted.from) }}）已经超出 Open-Meteo 的可查范围
+              （它只有未来 3 天），这里改为按 <b>{{ beijingDateTime(omShifted.to) }}</b> 的同一钟点查询。
+              因此这张图<b>不能</b>和 GFS 缓存逐时刻对照，只能看「今天的空气大致长什么样」。
+            </div>
             <div class="xsec-card-head">
               <div>
                 <strong>{{ activeFile.spot.name }}</strong>

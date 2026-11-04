@@ -493,6 +493,16 @@
   color: var(--warn);
 }
 
+/* Open-Meteo 时刻被自动换算时的说明条。
+   要「看得见但仍属提示级」：加一点底色和左边框，不抢图表主视觉。 */
+.xsec-om-shift {
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--warn);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+}
+
 /* ---------- 下方两块面板 ---------- */
 
 .xsec-panels {
