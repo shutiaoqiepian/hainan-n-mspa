@@ -5,10 +5,15 @@ name: 更新大气剖面缓存
 # GFS 每天 4 次起报（UTC 00 / 06 / 12 / 18），起报后约 3.5–4.5 小时才出齐。
 # 这里按「起报 + 4 小时」排，保证抓的是最新一轮，而且赶在海南日落前：
 #
-#   UTC 04:40（北京 12:40）← 00Z 起报
-#   UTC 10:40（北京 18:40）← 06Z 起报（日落前最后一次）
-#   UTC 16:40（北京 00:40）← 12Z 起报
-#   UTC 22:40（北京 06:40）← 18Z 起报
+#   UTC 04:40（北京 12:40）← 00Z 起报  ★ 跑全国 224 机位
+#   UTC 10:40（北京 18:40）← 06Z 起报  ★ 跑全国 224 机位（日落前最后一次，最有用）
+#   UTC 16:40（北京 00:40）← 12Z 起报    只跑海南试点 8 机位
+#   UTC 22:40（北京 06:40）← 18Z 起报    只跑海南试点 8 机位
+#
+# 为什么不是每轮都跑全国：全国一轮实测约 25 分钟（53 个带 × 4 时次下载），
+# 每轮都跑会让任务时长和仓库体积都翻几倍。**每天两次**是 2026-11-04 定的口径：
+# 挑北京 12:40 与 18:40 两个用户最活跃、且都赶在当天日落前的时次。
+# 手动触发（workflow_dispatch）一律跑全国，方便随时补数据。
 #
 # 失败处理：build_cross.py 内建 filter → Range 双下载路径与重试；
 # 任何一步失败都非零退出，**不会**生成半成品缓存，也就不会提交。
@@ -28,7 +33,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # 全国 224 机位构建实测约 25 分钟（53 个带 × 4 时次下载 + 224 × 4 剖面量化），
+    # 加上依赖安装和校验，留 50 分钟余量。试点轮只需几分钟。
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
 
@@ -42,11 +49,52 @@ jobs:
           pip install eccodes numpy
           python -c "import eccodes, numpy; print('eccodes', eccodes.codes_get_api_version(), '| numpy', numpy.__version__)"
 
-      - name: 构建剖面缓存（GFS → data/cross/*.json）
+      # ---- 决定这一轮跑「全国 224 机位」还是「海南试点 8 机位」 ----
+      #
+      # 2026-11-04 之前这里**只跑试点**，导致全国 224 机位的数据
+      # 从 2026-11-01 起冻结了 4 天（用户截图报「Open-Meteo 没有这一时刻的数据」
+      # 就是因为它用了 4 天前的时刻去查只覆盖未来 3 天的接口）。
+      #
+      # 全国一轮约 25 分钟，所以不能每轮都跑。按主人定的「每天两次」：
+      #   UTC 04:40（北京 12:40）← 00Z 起报 → 跑全国
+      #   UTC 10:40（北京 18:40）← 06Z 起报 → 跑全国（日落前最后一轮，最有用）
+      #   UTC 16:40（北京 00:40）← 12Z 起报 → 只跑试点
+      #   UTC 22:40（北京 06:40）← 18Z 起报 → 只跑试点
+      # 手动触发（workflow_dispatch）默认也跑全国，方便随时补。
+      - name: 判断本轮跑全国还是仅试点
+        id: mode
+        run: |
+          H=$(date -u +%H)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            NATIONAL=1
+          elif [ "$H" = "04" ] || [ "$H" = "10" ]; then
+            NATIONAL=1
+          else
+            NATIONAL=0
+          fi
+          echo "national=$NATIONAL" >> "$GITHUB_OUTPUT"
+          if [ "$NATIONAL" = "1" ]; then
+            echo "本轮：全国 224 机位（约 25 分钟）"
+          else
+            echo "本轮：海南试点 8 机位（全国版每天 12:40 / 18:40 各一次）"
+          fi
+
+      - name: 构建剖面缓存（全国 224 机位）
+        if: steps.mode.outputs.national == '1'
+        run: python tools/xsec/build_cross_national.py
+
+      - name: 构建剖面缓存（海南试点 8 机位）
+        if: steps.mode.outputs.national != '1'
         run: python tools/xsec/build_cross.py
 
-      - name: 校验产物结构与物理量级
+      # 试点那份永远要校验（它每天每轮都在更新）。
+      # 全国那份用 quality_national.py：检查 224 个机位是否齐全、结构是否自洽。
+      - name: 校验试点产物结构与物理量级
         run: python tools/xsec/verify_cross.py
+
+      - name: 校验全国 224 机位完整性
+        if: steps.mode.outputs.national == '1'
+        run: python tools/xsec/quality_national.py
 
       # 环境上下文（真实 DEM 地形 + AOD）。数据源是 Open-Meteo 的两个接口，
       # 免费额度在同一出口 IP 上比较紧（实测约 10 次/分钟），所以：
