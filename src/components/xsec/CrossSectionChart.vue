@@ -165,6 +165,36 @@ function readPalette(): void {
 /* ================= 布局 ================= */
 
 const wrap = ref<HTMLDivElement | null>(null)
+
+/**
+ * 画布里「当前真正能被看到」的横向范围（画布坐标系，px）。
+ *
+ * 为什么需要：窄屏时画布 680px、但外面的 .xsec-scroll 只有 ~318px，
+ * 用户横向滚动查看不同段落。悬停框如果只按画布边界定位，
+ * 算出来的框会落在**屏幕外面**，用户只看到被切掉的一半
+ * （2026-11-04 手机实测：框右半截直接跑到屏幕外）。
+ *
+ * 返回 { lo, hi }：lo = 可见区域左边缘在画布中的 x，hi = 右边缘。
+ * 桌面没有横向滚动时就是 [0, cssW]。
+ */
+function visibleXRange(): { lo: number; hi: number } {
+  const el = wrap.value
+  if (!el) return { lo: 0, hi: cssW.value }
+  /* 往上找可横向滚动的祖先（.xsec-scroll） */
+  let scroller: HTMLElement | null = el.parentElement
+  while (scroller) {
+    const cs = getComputedStyle(scroller)
+    if ((cs.overflowX === 'auto' || cs.overflowX === 'scroll') && scroller.scrollWidth > scroller.clientWidth + 1) break
+    scroller = scroller.parentElement
+  }
+  if (!scroller) return { lo: 0, hi: cssW.value }
+  const wr = el.getBoundingClientRect()
+  const sr = scroller.getBoundingClientRect()
+  /* 画布左边缘相对可见窗口的偏移量，换算成画布坐标 */
+  const lo = Math.max(0, sr.left - wr.left)
+  const hi = Math.min(cssW.value, sr.right - wr.left)
+  return hi > lo ? { lo, hi } : { lo: 0, hi: cssW.value }
+}
 const canvas = ref<HTMLCanvasElement | null>(null)
 const base = document.createElement('canvas')
 const cssW = ref(820)
@@ -1101,7 +1131,24 @@ function nearestLevelIdx(col: Level[], hKm: number): number {
   return li
 }
 
+/**
+ * 是否「正在用手指操作」。
+ *
+ * ★ 不要用 matchMedia('(hover: none)') 判断：那是**一次性**求值，
+ *   混合设备（带触摸屏的笔记本）和无头浏览器都会误判 ——
+ *   实测桌面会被判成触摸设备，导致鼠标用户也得点一下才出提示框，体验倒退。
+ *
+ * 正确做法：看**事件自己的 pointerType**。
+ * 鼠标移动 → 'mouse'；手指按下 → 'touch'。以「最近一次输入」为准，
+ * 混合设备也能自动切换。
+ */
+const lastPointerType = ref<string>('mouse')
+function isTouchInput(): boolean {
+  return lastPointerType.value === 'touch'
+}
+
 function onMove(ev: PointerEvent): void {
+  lastPointerType.value = ev.pointerType || 'mouse'
   const cv = canvas.value
   if (!cv) return
   const r = cv.getBoundingClientRect()
@@ -1140,7 +1187,18 @@ function onMove(ev: PointerEvent): void {
   }
   scheduleOverlay()
 }
-function onLeave(): void { hover.value = null; scheduleOverlay() }
+/**
+ * 触摸设备上**不要**在 pointerleave 时清空悬停框。
+ *
+ * 手指一抬就会触发 pointerup/pointerleave，框立刻消失 ——
+ * 用户根本来不及读那 8 行数字（手机实测确认）。
+ * 所以触摸设备改成「点一下保持」，再点图表别处才更新，点图表外面才关闭。
+ */
+function onLeave(): void {
+  if (isTouchInput()) return
+  hover.value = null
+  scheduleOverlay()
+}
 
 function fmt(v: number | null | undefined, digits = 1, unit = ''): string {
   if (v === null || v === undefined || !Number.isFinite(v)) return '缺测'
@@ -1255,8 +1313,23 @@ function drawOverlay(): void {
     if (w + 22 > wBox) wBox = Math.min(w + 22, cssW.value - 20)
   }
   const hBox = 14 + lines.length * 17
-  let bx = h.x + 14, by = h.y + 14
-  if (bx + wBox > cssW.value - 6) bx = h.x - wBox - 14
+  /* ★ 框必须落在「用户真正能看到的横向范围」内，不是画布范围内。
+     窄屏画布 680px、可见只有 ~318px，按画布边界算会让框跑到屏幕外。 */
+  const vr = visibleXRange()
+  const visW = vr.hi - vr.lo
+  /* 框比可见宽度还宽 → 得换行，否则永远显示不全 */
+  const tooWide = wBox > visW - 8
+  let bx: number
+  let by = h.y + 14
+  if (tooWide) {
+    /* 超宽：贴住可见区域左边，宽度收到可见宽度 */
+    wBox = Math.max(140, visW - 8)
+    bx = vr.lo + 4
+  } else {
+    bx = h.x + 14
+    if (bx + wBox > vr.hi - 4) bx = h.x - wBox - 14
+    if (bx < vr.lo + 4) bx = vr.lo + 4
+  }
   if (by + hBox > cssH.value - 6) by = cssH.value - hBox - 6
   if (by < 4) by = 4
   ctx.fillStyle = 'rgba(8,10,12,0.92)'
@@ -1265,7 +1338,29 @@ function drawOverlay(): void {
   ctx.beginPath(); ctx.roundRect(bx, by, wBox, hBox, 8); ctx.fill(); ctx.stroke()
   ctx.fillStyle = '#dbe3e9'
   ctx.textAlign = 'left'; ctx.textBaseline = 'top'
-  lines.forEach((line, i) => ctx.fillText(line, bx + 10, by + 8 + i * 17))
+  /* 逐行绘制；一行放不下就折行（窄屏框宽有限，云属说明那种长句必然要折）。 */
+  const innerW = wBox - 20
+  let ty = by + 8
+  for (const line of lines) {
+    if (ctx.measureText(line).width <= innerW) {
+      ctx.fillText(line, bx + 10, ty)
+      ty += 17
+      continue
+    }
+    /* 按字符折行（中文没有空格可断，只能逐字量） */
+    let cur = ''
+    for (const ch of line) {
+      const next = cur + ch
+      if (ctx.measureText(next).width > innerW && cur) {
+        ctx.fillText(cur, bx + 10, ty)
+        ty += 17
+        cur = ch
+      } else {
+        cur = next
+      }
+    }
+    if (cur) { ctx.fillText(cur, bx + 10, ty); ty += 17 }
+  }
 }
 
 /* ================= 生命周期 ================= */
@@ -1297,6 +1392,19 @@ function resize(): void {
 
 let ro: ResizeObserver | null = null
 let mo: MutationObserver | null = null
+/** 触摸设备：点图表以外的地方关闭悬停框 */
+/**
+ * 点在图表外面 → 关闭悬停框。
+ * 触摸设备上这是**唯一**的关闭方式（手指抬起不再自动关，否则来不及读）。
+ * 鼠标设备上原本就是靠 pointerleave 关的，这里只是多一层保险。
+ */
+function onDocPointerDown(ev: PointerEvent): void {
+  const el = wrap.value
+  if (!el) return
+  if (el.contains(ev.target as Node)) return
+  if (hover.value) { hover.value = null; scheduleOverlay() }
+}
+
 onMounted(() => {
   readPalette()
   ro = new ResizeObserver(() => resize())
@@ -1309,11 +1417,13 @@ onMounted(() => {
     attributeFilter: ['data-theme', 'data-perf']
   })
   document.addEventListener('fullscreenchange', resize)
+  document.addEventListener('pointerdown', onDocPointerDown)
   resize()
 })
 onBeforeUnmount(() => {
   ro?.disconnect(); mo?.disconnect()
   document.removeEventListener('fullscreenchange', resize)
+  document.removeEventListener('pointerdown', onDocPointerDown)
 })
 watch(() => [props.section, props.yMaxKm, props.layers, props.sun, props.mode, props.heightAxis, props.dem, props.aod, props.rhSat, props.showRain], () => redraw(), { deep: true })
 /* 悬停状态一变就重绘 overlay —— v2 曾漏掉这一步，导致"有十字线、没有提示框" */
