@@ -353,11 +353,11 @@
   flex: none;
 }
 
-/* 手机/平板：导航里只留图标，不放文字（与汉堡菜单同断点 900px）。
+/* 手机/平板：导航里只留图标，不放文字（与汉堡菜单同断点，2026-11-04 起 1100px）。
    三个圆点原本是 27×24，只刚好踩在 WCAG 2.5.8 的 24px 下限上，手指按着偏小；
    放大到 32×30（导航高 60–68px 装得下），视觉尺寸几乎没变。
    性能按钮在手机上同样只留闪电图标，宽度与主题按钮对齐。 */
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .theme-switch { padding: 3px; }
   .theme-switch button { width: 32px; height: 30px; }
   .theme-switch .ts-label { display: none; }

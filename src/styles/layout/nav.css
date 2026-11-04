@@ -66,6 +66,9 @@
 }
 
 .nav ul a {
+  /* 中文链接绝不允许折行：宁可整体溢出（能看见并修），
+     也不要变成「首/页」竖排（2018-11-04 实测 1024px 就是这个样子）。 */
+  white-space: nowrap;
   font-size: 14.5px;
   color: var(--muted);
   letter-spacing: 0.08em;
