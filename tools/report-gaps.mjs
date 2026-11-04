@@ -118,6 +118,57 @@ const { out, hasGap } = runGaps()
 
 console.log('===== 数据缺口自动上报 =====')
 console.log('自检结论：' + (hasGap ? '有缺口' : '无缺口'))
+
+/**
+ * ★ 关键：区分「还能不能补」。
+ *
+ * check-gaps 报的是「有 METAR 却没有快照的所有日子」，包括很久以前丢的。
+ * 快照只能**当天**生成（要用当天的预报缓存），所以过了那个点就永远补不回来。
+ * 如果一有缺口就开 Issue，那个 Issue 会永远开着、每天追加一条评论 ——
+ * 通知就变成了噪音，人就会开始无视它（正是 10-31 那次事故的根源）。
+ *
+ * 所以判定规则是「这一天的快照现在还能不能生成」：
+ *   · 今天/昨天的缺口 → 可能还能补救（昨天那次可能只是没跑起来）→ 值得开 Issue
+ *   · 更早的缺口      → 已经补不回来了，属于历史旧账 → 只打印，不刷 Issue
+ */
+const RECOVERABLE_DAYS = 2
+
+function recentMissingDays(text) {
+  const m = text.match(/缺预报快照 \d+ 天：([0-9-,\s]+)/)
+  if (!m) return []
+  const days = m[1].split(',').map((s) => s.trim()).filter(Boolean)
+  /* 允许的日期集合 = 今天 + 昨天（严格枚举，不用「>= 截止日」的算术，
+     否则前天那条会正好卡在边界上被误判成「还能补」）。
+     两个日期都按北京时间的日历日算。 */
+  const bjNow = new Date(Date.now() + 8 * 3600 * 1000)
+  const ok = new Set()
+  for (let i = 0; i < RECOVERABLE_DAYS; i++) {
+    ok.add(new Date(bjNow.getTime() - i * 86400000).toISOString().slice(0, 10))
+  }
+  return days.filter((d) => ok.has(d))
+}
+
+/**
+ * 「预报快照」以外、且**通常能补**的缺口。
+ * 这里必须精确列举：check-gaps 的输出里到处都有「缺口」二字
+ * （标题、结尾的「共 N 类问题」等），用宽泛的 /.*缺口/ 会把正常输出全误判成新问题。
+ */
+function otherGaps(text) {
+  return (
+    /❌ 缺 accuracy 存档/.test(text) ||
+    /❌ 快照文件名与内部目标日期不一致/.test(text) ||
+    /⚠ 昨天（\S+）没有 METAR/.test(text)
+  )
+}
+
+const recent = recentMissingDays(out)
+/* 只有「最近缺口」或「别的类型缺口」才算需要上报的新问题 */
+const actionable = hasGap && (recent.length > 0 || otherGaps(out))
+
+if (hasGap && !actionable) {
+  console.log('→ 缺口全部是 ' + RECOVERABLE_DAYS + ' 天以前的历史旧账（补不回来了），不再开 Issue 刷屏。')
+  console.log('  清单：' + (out.match(/缺预报快照 \d+ 天：([0-9-,\s]+)/)?.[1]?.trim() || '(见下)'))
+}
 console.log('')
 
 const t = token()
@@ -130,8 +181,10 @@ if (!t || !repo) {
   process.exit(0)
 }
 
-if (!hasGap) {
-  /* 缺口消失 → 关掉旧 Issue */
+if (!actionable) {
+  /* 没有需要处理的新缺口 → 关掉旧 Issue。
+     注意判断条件是 actionable 而不是 hasGap：
+     历史旧账永远不会消失，用 hasGap 的话 Issue 就永远关不掉。 */
   let open = null
   try {
     open = await findOpen()
@@ -143,14 +196,17 @@ if (!hasGap) {
     if (dry) {
       console.log('[dry] 会关闭 Issue #' + open.number)
     } else {
+      const why = hasGap
+        ? '✅ ' + bjNow() + ' 最近 ' + RECOVERABLE_DAYS + ' 天内没有新缺口（只剩更早的历史旧账，补不回来），自动关闭。'
+        : '✅ ' + bjNow() + ' 自检通过，缺口已消失。自动关闭。'
       await api('POST', '/issues/' + open.number + '/comments', {
-        body: '✅ ' + bjNow() + ' 自检通过，缺口已消失。自动关闭。\n\n```\n' + out.trim() + '\n```'
+        body: why + '\n\n```\n' + out.trim() + '\n```'
       })
       await api('PATCH', '/issues/' + open.number, { state: 'closed' })
       console.log('✅ 已关闭 Issue #' + open.number)
     }
   } else {
-    console.log('✅ 无缺口，也没有遗留的 Issue。')
+    console.log('✅ 没有需要处理的新缺口，也没有遗留的 Issue。')
   }
   process.exit(0)
 }

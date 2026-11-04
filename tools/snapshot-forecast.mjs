@@ -136,6 +136,7 @@ async function main() {
   let skipped = 0
   let stale = 0
   let late = 0
+  let unchanged = 0
   let totalRows = 0
 
   const today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10)
@@ -195,6 +196,33 @@ async function main() {
       spots: snap.rows.length,
       rows: snap.rows
     }
+
+    /* ★ 同一天重跑时不要白写一遍。
+       cron 每天跑两次（20:00 + 20:25 补跑）。第二次若内容完全一样，
+       只有 generatedAt 变了一个时间戳 —— 会生成一个「只改 1 行」的空提交，
+       白白污染历史，也让「今天到底有没有新数据」变得难判断。
+       （2026-11-03 就实际发生了：12:54 和 13:29 各提交了一次同样的快照。）
+       比较时排除 generatedAt：其余字段一致就不写。 */
+    if (existsSync(out)) {
+      try {
+        const prev = JSON.parse(await readFile(out, 'utf8'))
+        const same =
+          prev.prov === payload.prov &&
+          prev.targetDate === payload.targetDate &&
+          prev.targetTime === payload.targetTime &&
+          prev.spots === payload.spots &&
+          JSON.stringify(prev.rows) === JSON.stringify(payload.rows)
+        if (same) {
+          ok++
+          totalRows += snap.rows.length
+          unchanged++
+          continue
+        }
+      } catch {
+        /* 旧文件坏了就照常覆盖 */
+      }
+    }
+
     await writeFile(out, JSON.stringify(payload), 'utf8')
     ok++
     totalRows += snap.rows.length
@@ -203,7 +231,9 @@ async function main() {
   const sample = provs[0]
   console.log(
     '写好了 ' + ok + ' 个省（跳过 ' + skipped + '，缓存过旧 ' + stale + ' 个' +
-    (late ? '，生成晚于日落 ' + late + ' 个' : '') + '），共 ' + totalRows + ' 行机位快照'
+    (late ? '，生成晚于日落 ' + late + ' 个' : '') +
+    (unchanged ? '，内容未变未重写 ' + unchanged + ' 个' : '') +
+    '），共 ' + totalRows + ' 行机位快照'
   )
   console.log('示例文件：data/obs/forecast-' + sample + '-' + wantDay + '.json')
   if (!backfillDate && stale && !ok) {
