@@ -1262,3 +1262,112 @@ button.fcl-row.open { background: var(--fill-2); }
   .fcl-row.fcl-hd > span:nth-child(6) { display: none; }
 }
 
+
+/* ---------- 决策卡里的「大气剖面」入口 ----------
+   设计取向：**克制**。决策卡的主 CTA 是「生成名片」（渐变强调色），
+   这里必须是次级动作，不能抢主视觉；但又要显得专业，所以：
+     · 不用渐变、不用发光，只用 1px 细边框 + 一点点底色
+     · 图标用三条不等长的横线表示「云层分层」，纯 CSS 画、不引图标库
+     · hover 只做两件事：边框转强调色、箭头右移 2px
+   信息层级：主标题 1 个词 + 一句限定说明，不加第三个层级。 */
+.dh-xsec {
+  /* .dh 是 grid 容器。不指定跨列的话，这个 item 的 min-width:auto 会被
+     内部那句不换行的说明撑破列宽 —— 窄屏实测溢出视口 8px。 */
+  grid-column: 1 / -1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 14px 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--fill-1);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.22s ease, background 0.22s ease;
+}
+
+.dh-xsec:hover {
+  border-color: color-mix(in srgb, var(--accent-a) 55%, var(--line));
+  background: color-mix(in srgb, var(--accent-a) 7%, var(--fill-1));
+}
+
+.dh-xsec:focus-visible {
+  outline: 2px solid var(--accent-a);
+  outline-offset: 2px;
+}
+
+/* 三条横线 = 三个云层。宽度递减、透明度递减，读起来像一张分层示意。 */
+.dh-xsec-ico {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  width: 26px;
+  height: 26px;
+  padding: 6px 5px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--fill-1);
+}
+
+.dh-xsec-ico i {
+  display: block;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent-a);
+  transition: background 0.22s ease;
+}
+
+.dh-xsec-ico i:nth-child(1) { width: 100%; opacity: 0.95; }
+.dh-xsec-ico i:nth-child(2) { width: 68%; opacity: 0.7; }
+.dh-xsec-ico i:nth-child(3) { width: 42%; opacity: 0.45; }
+
+.dh-xsec:hover .dh-xsec-ico i { background: var(--accent-b); }
+
+.dh-xsec-tx {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  /* 必须能收缩，否则内部 nowrap 的副标题会把整个卡片撑宽 */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dh-xsec-tx b {
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.dh-xsec-tx small {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.dh-xsec-arw {
+  flex: none;
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--muted);
+  transition: transform 0.22s ease, color 0.22s ease;
+}
+
+.dh-xsec:hover .dh-xsec-arw {
+  transform: translateX(2px);
+  color: var(--accent-a);
+}
+
+@media (max-width: 560px) {
+  /* 窄屏：说明文字换两行会挤，压到一行省略 */
+  .dh-xsec { padding: 9px 12px; gap: 10px; margin: 10px 10px 0; }
+  .dh-xsec-tx small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

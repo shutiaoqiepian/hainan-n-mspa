@@ -17,6 +17,25 @@ const emit = defineEmits<{ (e: 'select', name: string): void; (e: 'gotoRank'): v
    这里把第 2–4 名做成三颗可点的胶囊，并给一个跳到完整排行的入口。 */
 const rivals = computed(() => props.others.slice(0, 3))
 
+/**
+ * 跳到「大气剖面」页（/cross）的链接。
+ *
+ * 带的是机位**名字 + 经纬度**，不是 id —— 因为 spots.json 里没有 id 字段，
+ * 而 /cross 的 national-index.json 里两者都有：那边会先按名字在全国 224 机位里
+ * 精确匹配（resolveIncoming），匹配不到再按经纬度就近找。
+ * 时次和方位不带：全国机位只有「当天日落方位」那一个剖面，
+ * /cross 会自己选最接近日落的时次。
+ */
+const crossHref = computed(() => {
+  const sp = props.row.spot
+  const q = new URLSearchParams({
+    name: sp.n,
+    lat: String(sp.lat),
+    lon: String(sp.lon)
+  })
+  return `cross.html?${q.toString()}`
+})
+
 /* 「下次约几点更新」——让用户知道手上的数据有多新、什么时候会变。
    时刻表在 lib/forecast/time.ts 的 CACHE_SLOTS 里，跟着 ECMWF/GFS 的发布走。
    只在读的是预生成缓存时才显示：实时请求没有「下次」这回事。 */
@@ -274,6 +293,18 @@ function onShare(): void {
         <span class="s">{{ c.s }}</span>
       </div>
     </div>
+
+    <!-- 大气剖面：把「这个分数为什么是这样」摊开成一张切面图。
+         放在「云层剖面速览」之后 —— 速览是结论，这里是同一件事的深入版。
+         用 <a> 而不是 button：这是真跳转，新标签打开、右键复制链接都该正常。 -->
+    <a class="dh-xsec" :href="crossHref">
+      <span class="dh-xsec-ico" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="dh-xsec-tx">
+        <b>大气剖面</b>
+        <small>沿镜头方向切开 320 km：云在哪几层、阳光能不能照到</small>
+      </span>
+      <span class="dh-xsec-arw" aria-hidden="true">→</span>
+    </a>
 
     <!-- 四个机会指数：窄屏默认收起为一行摘要（内容零删除，展开后与宽屏一致） -->
     <div class="dh-opps-wrap">

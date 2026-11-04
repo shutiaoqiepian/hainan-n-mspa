@@ -402,14 +402,23 @@ function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): num
 }
 
 /** 预报页的机位不在 8 个代表机位里时，用最近的那个代替，并如实说明 */
-function resolveIncoming(q: URLSearchParams): { id: string; note: string } {
+function resolveIncoming(q: URLSearchParams): { id: string; national: boolean; note: string } {
   const idx = index.value
-  if (!idx) return { id: '', note: '' }
+  if (!idx) return { id: '', national: false, note: '' }
   const name = q.get('name') ?? ''
   fromName.value = name
+
+  /* ★ 优先在全国 224 机位里按名字精确匹配。
+     从霞光预报页的决策卡点「大气剖面」进来时带的就是机位名；
+     那 224 个机位全都有剖面文件，能精确落到同一个点。
+     以前只查海南试点 8 个 —— 全国机位一点过来就掉到默认机位去了。 */
+  const natSpots = national.value?.spots ?? []
+  const natExact = name ? natSpots.find((s) => s.name === name) : undefined
+  if (natExact) return { id: natExact.id, national: true, note: '' }
+
   const exact = idx.spots.find((s) => name && (s.name === name || s.name.includes(name) || name.includes(s.name)))
   if (exact) {
-    return { id: exact.id, note: name && exact.name !== name ? `已定位到代表机位「${exact.name}」` : '' }
+    return { id: exact.id, national: false, note: name && exact.name !== name ? `已定位到代表机位「${exact.name}」` : '' }
   }
   const lat = Number(q.get('lat'))
   const lon = Number(q.get('lon'))
@@ -423,11 +432,12 @@ function resolveIncoming(q: URLSearchParams): { id: string; note: string } {
     if (best) {
       return {
         id: best.id,
+        national: false,
         note: `「${name}」不在 8 个代表机位里，这里显示距它最近的「${best.name}」（约 ${Math.round(bd)} km）`
       }
     }
   }
-  return { id: '', note: name ? `「${name}」不在 8 个代表机位里，下面显示的是默认机位` : '' }
+  return { id: '', national: false, note: name ? `「${name}」不在 8 个代表机位里，下面显示的是默认机位` : '' }
 }
 
 /* ---------------- 加载 ---------------- */
@@ -440,7 +450,12 @@ function readUrl(): { spot: string; t: number; az: number; sun: number | null } 
   const sun = Number(q.get('sun'))
   return {
     spot,
-    t: Number.isFinite(t) ? t : 0,
+    /* ★ 没带 t 时给 -1，而不是 0。
+       0 会锁死在「第一个时次」（往往是下午偏早、离日落还远）。
+       -1 不在 times 里，pickSpot* 会自动选「最接近日落」的那个时次 ——
+       这才是从预报页点进来时用户真正想看的时刻。
+       （Number(null) === 0，所以原来「没带参数」和「明确要第 0 个」分不开。） */
+    t: q.has('t') && Number.isFinite(t) ? t : -1,
     az: Number.isFinite(a) && a >= 0 ? a : 265,
     sun: q.has('sun') && Number.isFinite(sun) ? Math.round(sun) : null
   }
@@ -641,6 +656,14 @@ async function init(): Promise<void> {
     const q = new URLSearchParams(location.search)
     const incoming = resolveIncoming(q)
     if (incoming.note) fromNote.value = incoming.note
+    /* 从预报页带名字进来、且名字命中全国机位时，走全国分支 */
+    if (!u.spot && incoming.national && incoming.id) {
+      nationalSpotId.value = incoming.id
+      const f = nationalFile(incoming.id)
+      if (f) await pickSpotById(incoming.id, f)
+      applyPendingSun()
+      return
+    }
     await pickSpot(u.spot || incoming.id || (index.value.spots[0]?.id ?? ''))
     applyPendingSun()
   } catch (e) {
