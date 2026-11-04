@@ -405,15 +405,35 @@ function readUrl(): { spot: string; t: number; az: number; sun: number | null } 
   }
 }
 
+/**
+ * 把当前状态写回地址栏。
+ *
+ * ★ 2026-11-04 精简过一轮。原则是：**URL 只放「内容标识」，不放「拖动状态」**。
+ *
+ *   保留：
+ *     spot  哪个机位 —— 从预报页点进来、分享给别人，都靠它。真实需求。
+ *     t     第几个时次 —— 「日落那一刻」是这个页面的核心视角，值得携带。
+ *   不再写入：
+ *     sun   相对日落的分钟偏移。这是**拖动太阳时间滑杆产生的交互状态**，
+ *           原来 watch(sunOffsetMin) 每拖一下都 replaceState 一次，
+ *           地址栏一直在抖。而且分享「日落后 13 分钟」对别人意义有限。
+ *           （读取仍然保留：带 sun 的老链接照样能用。）
+ *     az    方位。全国 224 机位按设计**只有 1 个方位**（当天日落方位，
+ *           是数据算出来的，不是用户选的），写进 URL 纯属噪音。
+ *           只有试点机位（5 个方位可选）才写。
+ */
 function writeUrl(): void {
   const q = new URLSearchParams()
   q.set('spot', spotId.value)
   q.set('t', String(tIdx.value))
-  q.set('az', String(az.value))
-  const m = minutesFromSunset.value
-  const def = m !== null && Number.isFinite(m) ? Math.round(m) : 0
-  if (sunOffsetMin.value !== def) q.set('sun', String(sunOffsetMin.value))
-  history.replaceState(null, '', `${location.pathname}?${q.toString()}`)
+  /* ★ 用「已加载文件的 azimuths」判断，不能用 azChoices：
+     azChoices 在文件还没加载时回退成 5 个预设备选，会让全国机位也被写上 az。 */
+  const azs = gfsFile.value?.azimuths ?? []
+  if (azs.length > 1) q.set('az', String(az.value))
+  const qs = q.toString()
+  /* 状态没变就别动地址栏（避免无意义的 replaceState） */
+  if (qs === location.search.replace(/^\?/, '')) return
+  history.replaceState(null, '', qs ? `${location.pathname}?${qs}` : location.pathname)
 }
 
 function syncSunOffset(): void {
@@ -436,6 +456,9 @@ async function pickSpotById(id: string, file: string): Promise<void> {
        否则图上还是上一个机位的空气。 */
     if (isOm.value) await loadOm()
     syncSunOffset()
+    /* 数据到位后再写一次地址栏：上面那个 watch 在 spotId 一改就触发，
+       那时 gfsFile 还是空的，写出来的 URL 会带不该有的参数。 */
+    writeUrl()
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
     gfsFile.value = null
@@ -461,6 +484,9 @@ async function pickSpot(id: string): Promise<void> {
     }
     if (isOm.value) await loadOm()
     syncSunOffset()
+    /* 数据到位后再写一次地址栏：上面那个 watch 在 spotId 一改就触发，
+       那时 gfsFile 还是空的，写出来的 URL 会带不该有的参数。 */
+    writeUrl()
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
     gfsFile.value = null
@@ -609,9 +635,9 @@ watch([spotId, tIdx, az], () => {
   }
 })
 
-watch(sunOffsetMin, () => {
-  if (spotId.value) writeUrl()
-})
+/* 太阳时间滑杆**不**写 URL：它是拖动状态，不是内容标识。
+   原来这里有一句 writeUrl()，导致每拖一像素就 replaceState 一次、地址栏抖动。
+   带 sun 参数的老链接仍能正常打开（readUrl 还在读）。 */
 
 watch(source, (v) => {
   if (v === 'om' && !omFile.value) void loadOm()
