@@ -493,6 +493,19 @@
   color: var(--warn);
 }
 
+/* 全国机位只有 1 个方位时，用一句说明代替 5 个按钮。
+   要和旁边的 .xsec-hint 有明显区别，否则看着像漏了按钮。 */
+.xsec-az-single {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px dashed var(--line-strong);
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
 /* Open-Meteo 时刻被自动换算时的说明条。
    要「看得见但仍属提示级」：加一点底色和左边框，不抢图表主视觉。 */
 .xsec-om-shift {

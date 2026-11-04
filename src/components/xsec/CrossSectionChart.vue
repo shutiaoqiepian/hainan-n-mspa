@@ -726,7 +726,12 @@ function drawSun(ctx: CanvasRenderingContext2D): void {
   ctx.fillStyle = pal.muted
   ctx.textAlign = 'center'
   const noteX = Math.max(p.x + 140, Math.min(p.x + p.w - 140, sx))
-  const trText = T === null ? 'AOD 缺测' : `直射透过率 ${Math.round(T * 100)}%`
+  /* 透过率取整要注意：太阳贴近地平线时 T 可能只有 0.004，
+     Math.round(0.4) = 0 → 图上会写「直射透过率 0%」，
+     而页面下方「数据来源」面板对同一个数写的是「＜1%」。
+     同一份数据两种说法，而且 0% 会被读成「完全没有直射光」这个更强的断言。
+     统一成：小于 1% 一律写「＜1%」。 */
+  const trText = T === null ? 'AOD 缺测' : T < 0.01 ? '直射透过率 ＜1%' : `直射透过率 ${Math.round(T * 100)}%`
   const note = sun.inFront
     ? `${props.sunDown ? '太阳已落下' : '太阳'} 方位 ${sun.az.toFixed(0)}° · 高度角 ${sun.el.toFixed(1)}° · 剖面内投影 ${sun.inPlaneEl.toFixed(0)}° · ${trText}`
     : `太阳在剖面背后（偏 ${Math.abs(sun.deviationDeg).toFixed(0)}°）— 光线仅为投影 · ${trText}`
@@ -1035,10 +1040,17 @@ function drawOverlay(): void {
   lines.push(`光标处插值（${modeName}）：${h.interp.q === null ? '缺测' : h.interp.q.toFixed(2) + (props.mode === 'total' ? ' 折算' : ' mg/kg')}`)
   lines.push(`最近模式层：${h.nearest.hPa} hPa · ${fmt(h.nearest.hM, 0, ' m')}${h.nearest.below ? '（地下）' : ''} · 距光标 ${Math.abs((h.nearest.hM ?? 0) / 1000 - h.mslKm).toFixed(2)} km`)
   lines.push(`该层原始值：云水 ${fmt(h.nearest.clw)} · 云冰 ${fmt(h.nearest.ici)} mg/kg`)
-  lines.push(`该层总云量 ${fmt(h.nearest.cf, 0, '%')} · RH ${fmt(h.nearest.rh, 0, '%')} · T ${fmt(h.nearest.t, 1, '°C')}`)
+  /* 「该层总云量」容易被读成「整层大气总云量」，实际是 GFS 在该气压层的
+     云覆盖（TCDC 分层值）。改成「该层云量」。 */
+  lines.push(`该层云量 ${fmt(h.nearest.cf, 0, '%')} · RH ${fmt(h.nearest.rh, 0, '%')} · T ${fmt(h.nearest.t, 1, '°C')}`)
   const cosDev = Math.cos((props.sun.deviationDeg * Math.PI) / 180)
   const litHere = litAt(h.mslKm * 1000, h.d * cosDev, props.sun.el)
-  lines.push(`光照几何：${litHere ? '在太阳直射光中（几何）' : '在地球阴影内（几何）'}`)
+  /* 「几何受光」和上方「直射透过率」是两件事：前者不含大气消光，
+     后者已经乘上 Beer-Lambert。太阳贴地平线时会出现
+     「在太阳直射光中」+「透过率＜1%」同时成立，加这半句免得看着矛盾。 */
+  lines.push(
+    `光照几何：${litHere ? '在太阳直射光中（几何，未计大气消光）' : '在地球阴影内（几何）'}`
+  )
   if (props.mode === 'photo' && h.nearest.clw !== null && h.nearest.ici !== null) {
     const tot = (h.nearest.clw ?? 0) + (h.nearest.ici ?? 0)
     lines.push(`液/冰占比：${tot > 0 ? Math.round(((h.nearest.clw as number) / tot) * 100) : 0}% 液`)

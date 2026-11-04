@@ -68,7 +68,25 @@ const ctxWarn = ref('')
  */
 const showGuide = ref(false)
 
-const AZ_CHOICES = [240, 255, 265, 280, 295]
+/**
+ * 方位按钮。
+ *
+ * ★ 原来写死成 [240,255,265,280,295]（海南试点的 5 个方位）。
+ * 但全国 224 机位是「按当天日落方位只生成 1 个剖面」——
+ * 文件里只有 1 个方位，而 sectionAt() 找不到时会**回退到最接近的那个**。
+ * 结果：点「240°」，按钮高亮 240°，图上画的却是 254.9° 的剖面。
+ * 用户以为在看 240° 方向的空气，实际是 255° 的。
+ *
+ * 现在按「当前文件的 azimuths」渲染：全国只出现 1 个按钮，试点仍 5 个。
+ */
+const FALLBACK_AZ = [240, 255, 265, 280, 295]
+const azChoices = computed<number[]>(() => {
+  const f = gfsFile.value
+  const list = f?.azimuths
+  return list && list.length ? list : FALLBACK_AZ
+})
+/** 只有 1 个方位时不必显示按钮组，用一句话说明就够 */
+const singleAz = computed(() => azChoices.value.length === 1)
 const LAYER_ITEMS = [
   { key: 'rh' as const, name: '湿度等值线', hint: '50 / 70 / 85 / 95 %' },
   { key: 'temp' as const, name: '温度等值线', hint: '每 10 °C' },
@@ -828,16 +846,21 @@ const SUNSET_TEXT = computed(() => {
 
           <div class="xsec-group">
             <span class="xsec-group-label">方位</span>
-            <div class="xsec-seg">
+            <!-- 全国机位只有 1 个方位（当天日落方位）：不显示按钮，直接说明，
+                 免得用户以为能切、点了却发现是高亮的假按钮。 -->
+            <span v-if="singleAz" class="xsec-hint xsec-az-single">
+              {{ azChoices[0] }}°（当天日落方位，全国机位只生成这一个剖面）
+            </span>
+            <div v-else class="xsec-seg">
               <button
-                v-for="a in AZ_CHOICES"
+                v-for="a in azChoices"
                 :key="a"
                 type="button"
                 class="xsec-seg-btn"
-                :class="{ 'is-on': a === az }"
+                :class="{ 'is-on': Math.abs(a - az) < 0.5 }"
                 @click="selectAz(a)"
               >
-                {{ a }}°
+                {{ Math.round(a) }}°
               </button>
             </div>
             <span v-if="sun" class="xsec-hint">太阳方位 {{ sun.az.toFixed(0) }}°</span>
@@ -959,7 +982,12 @@ const SUNSET_TEXT = computed(() => {
               <div class="xsec-card-meta">
                 <span>方位 {{ az }}°</span>
                 <span>太阳 {{ sun.el.toFixed(0) }}° / {{ sun.az.toFixed(0) }}°</span>
-                <span v-if="!isOm">起报 {{ beijingDateTime(index.cycle) }}</span>
+                <!-- ★ 这里原来写的是 index.cycle —— 那是「海南试点索引」的起报时刻，
+                     而页面显示的可能是「全国机位」的文件，两者各自更新。
+                     结果就是同一个界面上出现「起报 11月4日 02:00 / 时刻 11月1日 18:00」
+                     这种物理上不可能的组合（11-04 的起报不会有 11-01 的预报时刻）。
+                     起报必须取自「当前真正显示的这份文件」。 -->
+                <span v-if="!isOm">起报 {{ beijingDateTime(activeFile.cycle) }}</span>
                 <span v-else>Open-Meteo 实时请求</span>
               </div>
             </div>
@@ -1157,7 +1185,10 @@ const SUNSET_TEXT = computed(() => {
                 <dd>{{ activeFile.model }}</dd>
                 <template v-if="!isOm">
                   <dt>起报 / 更新</dt>
-                  <dd>{{ beijingDateTime(index.cycle) }} → {{ beijingDateTime(index.generatedAt) }}（北京）</dd>
+                  <!-- 同上：必须用当前文件的 cycle/generatedAt，不能用试点索引 -->
+                  <dd>
+                    {{ beijingDateTime(activeFile.cycle) }} → {{ beijingDateTime(activeFile.generatedAt) }}（北京）
+                  </dd>
                   <dt>有效时刻</dt>
                   <dd>
                     {{ times.map((t) => beijingTime(t.utc)).join(' / ') }}
