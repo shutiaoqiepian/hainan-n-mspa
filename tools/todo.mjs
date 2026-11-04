@@ -232,9 +232,9 @@ export const ITEMS = [
   {
     id: 'cross-far-field-sunpath',
     title: '/cross 只有 50 km 剖面，夕阳照明边界大多在视野外',
-    state: 'open',
+    state: 'done',
     trigger: {
-      text: '阶段七-01 已把边界位置/速度做成数字，但边界很少落进 0–50 km 图内',
+      text: '2026-11-01 已完成：SAMPLE_KM 扩到 0–320 km（9 个采样点），lengthKm=320，图下方另有 0–800 km 光路带',
       metric: null
     },
     why:
@@ -273,9 +273,9 @@ export const ITEMS = [
   {
     id: 'xsec-expand-spots',
     title: '大气剖面目前只做 8 个代表机位，要不要扩到全部 224 个',
-    state: 'open',
+    state: 'done',
     trigger: {
-      text: '看实际使用与 CI 预算再决定（当前单轮 341 KB / 15 s，扩到 28 个海南机位约 1.2 MB）',
+      text: '2026-11-01 已完成：224/224 落盘（34 个省目录）。2026-11-04 起 CI 每天 12:40 / 18:40 自动跑全国轮',
       metric: null
     },
     why:
@@ -457,9 +457,16 @@ async function main() {
     if (isDue) dueCount++
 
     if (onlyDue && !isDue) continue
+    /* done = 已完成归档。默认（不带 --all）不列，免得「已完成」混在待办里误导人；
+       --all 时以 ✅ 单独展示。*/
+    if (!showAll && !onlyDue && item.state === 'done') continue
     if (!showAll && !onlyDue && item.state === 'pending' && !isDue) continue
 
-    const flag = isDue ? '🔔 到期' : item.state === 'open' ? '○ 可做' : '⏳ 等待'
+    const flag =
+      isDue ? '🔔 到期'
+      : item.state === 'done' ? '✅ 已完成'
+      : item.state === 'open' ? '○ 可做'
+      : '⏳ 等待'
     console.log(`${flag}  [${item.id}] ${item.title}`)
     console.log(`        触发：${item.trigger.text}`)
     console.log(`        判定：${ev.detail}${ev.due === null ? '（无自动判定）' : ev.due ? ' → ✅ 条件已到' : ''}`)
