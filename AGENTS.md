@@ -22,7 +22,8 @@ node tools/check-gaps.mjs        # 这周有没有缺数据（只看 accuracy-tr
 ## 1. 这个项目是什么
 
 18N-MSPA（北纬18度椰青摄联）官网 + 霞光预报工具。
-Vue 3 + TypeScript + Vite 多页应用，部署在 Cloudflare Pages（仓库根目录即产物目录）。
+Vue 3 + TypeScript + Vite 多页应用，部署在 Cloudflare Pages（构建命令 `npm run build`，输出 `dist/`；
+**`dist/` 不进仓库**，本地构建一次即可，别把它加回 Git）。
 
 三块业务：**摄影作品**、**摄影师社群**、**霞光预测**。
 不要把它改造成通用企业官网或普通天气网站。

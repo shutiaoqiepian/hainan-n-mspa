@@ -1,6 +1,6 @@
 # 不纳入版本库的文件
 
-# 依赖与缓存（构建产物 dist/ 是特意提交的，见 README「发布流程」）
+# 依赖与缓存
 node_modules/
 .vite/
 
@@ -59,8 +59,12 @@ docs/给GPT-源码包-可粘贴.md
 __pycache__/
 *.pyc
 
-# 不要把vite产物放进仓库！
+# Vite 产物不进仓库（2026-11-05 起）。
+# 线上由 Cloudflare Pages 跑 npm run build 生成 dist/ 再发布，
+# 仓库里只要源码；本地跑一次 build 就能拿到。
+# 曾经把 dist/ 提交进仓库，每次构建都产生几十个带哈希的新文件，历史又大又全是噪音。
 dist/
+dist/*
 
 # 验证脚本的截图产物（可随时重新生成，不入库）
 tools/obs/out/
