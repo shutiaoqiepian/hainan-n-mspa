@@ -374,6 +374,14 @@ const demSourceLabel = computed(
 /** 图例用短标签（去掉括号里的实现说明） */
 const demSourceShort = computed(() => demSourceLabel.value.split('（')[0])
 /** 当前时次的 AOD（GFS 模式与 Open-Meteo 对照都用同一份 CAMS 柱总量） */
+/**
+ * 模式格距（km）。
+ * 数据文件里**没有** gridKm 这个字段（build_cross*.py 只写 sampleIntervalKm），
+ * 所以只能按数据源自己给：GFS 0.25° 在中纬度约 27.8 km，Open-Meteo 同源。
+ * 以前页面直接拼 activeFile.gridKm，实际显示「km」并在除法里得到 Infinity。
+ */
+const gridKmNow = computed<number>(() => activeFile.value?.gridKm ?? 27.8)
+
 const aodEntry = computed(() => spotCtx.value?.aod?.[isOm.value ? 0 : tIdx.value] ?? null)
 const aod = computed(() => aodEntry.value?.v ?? null)
 /** 沿「该时次日落方位」的 DEM 序列（光路被地形遮挡的判定用） */
@@ -415,6 +423,23 @@ const termSpeed = computed(() => {
   if (!f || !s) return null
   return terminatorSpeedKmMin(validMs.value, f.spot.lat, f.spot.lon, s.deviationDeg)
 })
+/**
+ * 边界落在**后方**时补一句人话。
+ *
+ * 公式 terminatorKm = −el·R_km / cos(偏差)：太阳越高，值越负。
+ * 日出后太阳已经高过地平线，从机位往东看，被照亮的低空云其实在**身后**（西侧）
+ * 和头顶 —— 前方 320 km 整段都在直射光里，图上自然没有虚线。
+ * 这时只写「（后方）」会让人以为图坏了，所以直接说明该看哪里。
+ *
+ * 太阳在地平线下（el<0）时值变正，是日出前的正常情况，不加这句。
+ */
+const terminatorLabel = computed(() => {
+  const s = sun.value
+  if (!s || terminator.value === null) return ''
+  if (terminator.value >= 0 || s.el <= 0) return ''
+  return '，即整段前方都在直射光里，图上不会有虚线'
+})
+
 /** 剖面 0 km 处的阴影上缘高度（km；0 = 无阴影） */
 const boundaryAtOrigin = computed(() =>
   sun.value ? boundaryHeightKm(0, sun.value.el, sun.value.deviationDeg) : 0
@@ -886,6 +911,17 @@ const EVENT_TEXT = computed(() => {
 })
 /** 「日出」/「日落」两个字，界面文案里到处要用 */
 const EVENT_WORD = computed(() => (isSunriseFile.value ? '日出' : '日落'))
+
+/**
+ * 照明边界那条橙色虚线叫什么。
+ *
+ * 物理上它是同一个东西 —— 地球阴影的边缘（晨昏线）在剖面方向上的位置，
+ * 太阳在它另一边就照不到云。但「夕阳照明边界」是黄昏的说法：
+ * 日出时太阳从东边升起来，被照亮的是**东侧**的低空云，
+ * 同一根线应该叫「朝阳光边界」，否则用户会以为看的是日落的图。
+ * 图例、dl 词条、脚注三处必须同时跟着变，不能只改一处。
+ */
+const lightBoundaryWord = computed(() => (isSunriseFile.value ? '朝阳光照明边界' : '夕阳照明边界'))
 </script>
 
 <template>
@@ -1297,7 +1333,7 @@ const EVENT_WORD = computed(() => (isSunriseFile.value ? '日出' : '日落'))
               <span class="xsec-lg"><i class="xsec-sw xsec-sw-terrain" />模式地形</span>
               <span class="xsec-lg"><i class="xsec-sw xsec-sw-grid" />真实格点</span>
               <span class="xsec-lg"><i class="xsec-sw xsec-sw-sun" />太阳投影</span>
-              <span class="xsec-lg"><i class="xsec-sw xsec-sw-boundary" />夕阳照明边界（虚线以下在地球阴影里）</span>
+              <span class="xsec-lg"><i class="xsec-sw xsec-sw-boundary" />{{ lightBoundaryWord }}（虚线以下在地球阴影里）</span>
               <span class="xsec-lg"><i class="xsec-sw xsec-sw-lit" />暖色叠加 = 几何受光</span>
               <span v-if="rhSat !== null" class="xsec-lg"><i class="xsec-sw xsec-sw-rhsat" />RH≥{{ rhSat }}% 诊断潜在云区（不是模式云水）</span>
               <span v-if="showRain" class="xsec-lg"><i class="xsec-sw xsec-sw-rain" />降水率（地面 mm/h，不是概率；? = 缺测）</span>
@@ -1359,7 +1395,7 @@ const EVENT_WORD = computed(() => (isSunriseFile.value ? '日出' : '日落'))
               <dd>
                 剖面方向 {{ sectionHorizonDeg === null ? '缺测' : sectionHorizonDeg.toFixed(1) + '°' }} ·
                 太阳方向 {{ sunHorizonDeg === null ? '缺测' : sunHorizonDeg.toFixed(1) + '°' }}
-                <template v-if="sun.el <= 0">→ 太阳已落到地平线下（此刻没有直射光）</template>
+                <template v-if="sun.el <= 0">→ {{ isSunriseFile ? '太阳还在地平线下（还没升上来，此刻没有直射光）' : '太阳已落到地平线下（此刻没有直射光）' }}</template>
                 <template v-else-if="sunBlockedByTerrain === true">
                   → <b>太阳低于地形视线，低空被山体遮挡</b>
                 </template>
@@ -1374,13 +1410,13 @@ const EVENT_WORD = computed(() => (isSunriseFile.value ? '日出' : '日落'))
                 </template>
                 <template v-else>缺测（不推测，也不用默认值代替）</template>
               </dd>
-              <dt>夕阳照明边界</dt>
+              <dt>{{ lightBoundaryWord }}（橙色虚线）</dt>
               <dd>
                 <template v-if="terminator === null">
                   太阳方位与剖面近乎垂直，边界位置在二维图里不可判
                 </template>
                 <template v-else>
-                  地面日落线在剖面方向 <b>{{ terminator.toFixed(0) }} km</b>{{ terminator >= 0 ? '（前方）' : '（后方）' }}；
+                  {{ isSunriseFile ? '地面日出线' : '地面日落线' }}在剖面方向 <b>{{ terminator.toFixed(0) }} km</b>{{ terminator >= 0 ? '（前方）' : '（后方）' }}{{ terminatorLabel }}；
                   剖面内 0 km 处阴影上缘 {{ boundaryAtOrigin.toFixed(1) }} km
                   <template v-if="termSpeed !== null">
                     · 边界沿剖面移动约 {{ Math.abs(termSpeed).toFixed(1) }} km/min
@@ -1402,7 +1438,7 @@ const EVENT_WORD = computed(() => (isSunriseFile.value ? '日出' : '日落'))
               </dd>
             </dl>
             <p class="xsec-known xsec-known-p">
-              剖面只有 {{ activeFile.lengthKm }} km，而夕阳照明边界通常在数十到数百 km 外，
+              剖面只有 {{ activeFile.lengthKm }} km，而{{ lightBoundaryWord }}通常在数十到数百 km 外，
               图上只画进入视野的那一段；地形序列 0–{{ activeFile.lengthKm }} km 每 {{ demStepKm }} km 一个 DEM 点，
               光路遮挡用沿太阳方位的 0–150 km 地形序列近似<template v-if="sunTerrainShared">（全国机位只有日落方位那一份，其余时次复用）</template>。
             </p>
@@ -1481,7 +1517,7 @@ const EVENT_WORD = computed(() => (isSunriseFile.value ? '日出' : '日落'))
                   <dt>云量性质</dt>
                   <dd>由相对湿度诊断估算，无云水/云冰字段；不能与 GFS 云水直接比较数值</dd>
                 </template>
-                <dt>水平分辨率</dt><dd>{{ activeFile.gridKm }} km（0.25°，{{ activeFile.lengthKm }} km 内只有 {{ Math.max(1, Math.round(activeFile.lengthKm / activeFile.gridKm)) }} 个左右真实格点）</dd>
+                <dt>水平分辨率</dt><dd>{{ gridKmNow }} km（0.25°，{{ activeFile.lengthKm }} km 内只有约 {{ Math.max(1, Math.round(activeFile.lengthKm / gridKmNow)) }} 个真实格点）</dd>
                 <dt>垂直坐标</dt><dd>逐格点逐层位势高度（不是固定压高表换算）</dd>
                 <dt>垂直速度</dt>
                 <dd>

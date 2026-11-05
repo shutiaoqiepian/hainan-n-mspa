@@ -508,7 +508,9 @@ function drawShadowRegion(ctx: CanvasRenderingContext2D): void {
   ctx.font = fs(10.5)
   ctx.fillStyle = 'rgba(255,196,140,0.95)'
   ctx.textAlign = 'left'
-  ctx.fillText('夕阳照明边界', lx, ly)
+  /* 同一根线，日出日落叫法不同：照到云的是从东边升起来的太阳。
+     写死「夕阳」会让选日出的用户以为看的是日落的图。 */
+  ctx.fillText(props.file.kind === 'sunrise' ? '朝阳光照明边界' : '夕阳照明边界', lx, ly)
   ctx.fillStyle = 'rgba(255,196,140,0.6)'
   ctx.fillText('（边界以下在地球阴影里）', lx, ly + 12)
   ctx.restore()

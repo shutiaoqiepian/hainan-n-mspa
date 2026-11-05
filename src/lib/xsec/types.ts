@@ -116,12 +116,26 @@ export interface XsecSpotFile {
   cycle: string
   generatedAt: string
   domain: XsecDomain
-  gridKm: number
+  /**
+   * 模式格距（km）。
+   * ★ 标成可选是因为**实际数据文件从来没有这个字段** ——
+   *   build_cross*.py 写的是 domain / sampleIntervalKm，不写 gridKm。
+   *   页面上直接拼 `{{ gridKm }} km` 会显示「km」，除法的分母是 undefined
+   *   还会算出 "Infinity 个真实格点"。2026-11-05 实测发现，日出日落文件都一样，
+   *   属于与日出无关的既有 bug。
+   */
+  gridKm?: number
   lengthKm: number
   sampleIntervalKm: number
   levelsHpa: number[]
   levelFields: XsecField[]
   azimuths: number[]
+  /**
+   * 这份剖面对应哪个事件。2026-11-04 起 build_cross_national.py 会写入
+   * `kind`（日出文件同时也会在索引里标 kind）。
+   * 老数据没有这个字段 —— 按 'sunset' 处理，与索引的处理方式保持一致。
+   */
+  kind?: 'sunrise' | 'sunset'
   times: XsecTime[]
   spot: XsecSpotMeta
   sections: XsecSection[]
