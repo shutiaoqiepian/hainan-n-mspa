@@ -86,19 +86,35 @@ const profile = computed(() => {
     .sort((a, b) => b.height - a.height)
 
   const lit = layers.filter((l) => l.reachable && l.cover > 0)
-  const topLit = lit.length ? lit.reduce((a, b) => (a.cover >= b.cover ? a : b)) : null
 
-  /* 一句结论：有能被照亮的高云时，用「什么色」代替「什么云」——
-     这才是追霞的人真正想知道的。
-     颜色取全场「有量且会被照亮」的那几层里色阶最高的一个。 */
+  /* ★ 「会烧成 X」只能由**中高云**决定。
+     vividLabel 里的「湛蓝 / 近灰」原本是描述「整片天空鲜亮度」的词，
+     拿它去说某层云「会烧成湛蓝」在物理上讲不通 —— 云不会被烧成蓝色，
+     那是晴空底色。而且低层云（积云 / 层积云）太阳一低就被地面挡住，
+     正常只成暗色剪影，根本谈不上「烧成什么色」。
+     2026-11-05 用户报「积云会烧成湛蓝，下面却说高云被照亮」，就是这个原因。 */
+  const isHighOrMid = (l: { height: number }): boolean => l.height >= 2000
+  const canvasLit = lit.filter(isHighOrMid)
+
+  /* 结论文案里代表「天上那张画布」的层：优先中高云。
+     没有中高云时才退回低云，但那种情况下面会明确说它是剪影，不是画布。 */
+  const topLit = canvasLit.length
+    ? canvasLit.reduce((a, b) => (a.cover >= b.cover ? a : b))
+    : (lit.length ? lit.reduce((a, b) => (a.cover >= b.cover ? a : b)) : null)
+
+  /* 色阶只在中高云里取；「湛蓝 / 近灰 / 淡彩」这三档表示「几乎没有颜色」，
+     不该被当成「会烧成这个色」播报（否则会出现「会烧成湛蓝」这种话）。
+     至少要有「粉紫」及以上，才值得用「会烧成 X」的句式。 */
   const RANK = ['无', '近灰', '淡彩', '湛蓝', '粉紫', '橙金', '火烧']
+  const COLORS = ['粉紫', '橙金', '火烧']
   let bestHue = '无'
-  for (const l of lit) {
+  for (const l of canvasLit) {
     if (l.cover < 10) continue
+    if (!COLORS.includes(l.hue)) continue
     if (RANK.indexOf(l.hue) > RANK.indexOf(bestHue)) bestHue = l.hue
   }
 
-  return { layers, lit, topLit, bestHue, hueColor: HUE_COLOR }
+  return { layers, lit, canvasLit, topLit, bestHue, hueColor: HUE_COLOR }
 })
 
 const r = computed(() => props.row)
@@ -133,7 +149,9 @@ const cells = computed(() => {
   const round = (x: number | null): number | null => (x == null || !Number.isFinite(x) ? null : Math.round(x))
   const fx = (x: number, n: number): string => (Math.round(x * Math.pow(10, n)) / Math.pow(10, n)).toFixed(n)
   return [
-    { k: '高云', v: round(mm.high), u: '%', s: '理想 40–80%', c: '' },
+    /* 55–78% 才是评分里 fHigh 的满分区间，原来写 40–80% 会让 40–55% 的高云
+       显示成「理想」却拿到低分，用户会以为算错了。 */
+    { k: '高云', v: round(mm.high), u: '%', s: '理想 55–78%', c: '' },
     { k: '中云', v: round(mm.mid), u: '%', s: '越少越好', c: '' },
     { k: '低云', v: round(mm.low), u: '%', s: '挡住地平线', c: '' },
     { k: 'AOD', v: fx(mm.aod, 2), u: '', s: mm.aodMissing ? '缺测' : v.aodName + ' · 0.5 内通透', c: '' },
@@ -228,8 +246,14 @@ function onShare(): void {
           </span>
           <span class="tx">
             <b>
+              <!-- 只有识别出「粉紫 / 橙金 / 火烧」这种真正被染上的颜色，才说「会烧成 X」。
+                   否则说「哪一层能被照亮」，而不是硬套一个颜色词
+                   （「会烧成湛蓝」是说不通的 —— 蓝是晴空底色，不是云的烧色）。 -->
               <template v-if="profile.bestHue !== '无'">会烧成<span :style="{ color: profile.hueColor[profile.bestHue] }">{{ profile.bestHue }}</span></template>
-              <template v-else-if="profile.topLit">只能{{ profile.topLit.genus }} · 淡彩</template>
+              <template v-else-if="profile.topLit && profile.topLit.height >= 2000">
+                有云可被照亮 · 颜色偏淡
+              </template>
+              <template v-else-if="profile.topLit">{{ profile.topLit.genus }}·剪影</template>
               <template v-else>没有能被照亮的云</template>
             </b>
             <small>

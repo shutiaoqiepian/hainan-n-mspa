@@ -151,7 +151,7 @@ function lowGenus(c: JudgeCtx, totalCloudTop: number | null): { code: string; ge
     return {
       code: 'St', genus: '层云', species: rh >= 96 ? '碎层云 / 雾' : '层云',
       lit: false,
-      note: '贴着地面的灰雾，与海面糊成一片，能见度和色彩都会被吃掉'
+      note: '贴着地面的灰雾，与地面景物糊成一片，能见度和色彩都会被吃掉'
     }
   }
 
