@@ -96,23 +96,38 @@
   .wrap { padding: 0 20px; }
   :root { --nav-h: 60px; }
 
-  .section { padding: 72px 0; }
+  /* 72px 的上下留白是桌面节奏，手机上占比太大：
+     一个 section 光留白就要多滚 144px。缩到 44/40。 */
+  .section { padding: 44px 0 40px; }
 
-  .hero { min-height: 88vh; }
-  .hero-body { padding-bottom: 62px; }
+  /* 首屏：桌面是 88vh 的"整屏图"，手机竖屏下这块只剩图、看不到任何文字，
+     第一屏全是空烧的天空。改成按内容高度 + 上下限，让标题能在首屏露出来。 */
+  .hero { min-height: 0; }
+  .hero-body { padding: 76px 0 44px; }
   .hero-meta { display: none; }
+  .hero h1 { margin-bottom: 16px; }
+  .hero p.lead { margin-bottom: 26px; line-height: 1.75; }
 
+  /* 手机上一律单列。原来 ≤1000px 就变两列，但 390px 宽度下
+     两列每列只有 168px，一行放 5 个字都费劲。 */
   .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .stats { grid-template-columns: repeat(2, 1fr); }
-  .wall { column-count: 1; }
+  /* 作品墙的两列在 components/wall.css 里定义（本文件后加载，会盖掉它），
+     所以这里必须显式写死两列，不能留着 column-count:1。 */
+  .wall { column-count: 2; column-gap: 10px; }
 
-  .card { padding: 26px 22px; }
-  .quote { padding: 52px 22px; }
-  .page-head { padding: 62px 0 44px; }
-  .footer .logo { height: 104px; }
+  .card { padding: 24px 18px; }
+  .quote { padding: 44px 20px; }
+  .page-head { padding: 40px 0 30px; }
+  .footer { margin-top: 24px; padding: 40px 0 32px; }
+  .footer .logo { height: 88px; }
 
   .hero-brand { padding: 8px 16px; margin-bottom: 22px; border-radius: 20px; }
   .hero-logo { width: 220px; }
   .hero-logo-wrap { margin: -48px 0 -64px; }
+
+  /* 区块之间的内边距也压一档（.section-head 的 54px 底距在手机上太多） */
+  .section-head { margin-bottom: 28px; }
+  .section-head h2 { margin-bottom: 10px; }
 }
 

@@ -91,23 +91,31 @@
   word-break: break-all;
 }
 
-/* ---------- 手机上的作品集 ----------
-   首页那 9 张「精选」保持单列大图（影像是主角）；
-   但作品集是 40 张要翻的目录，单列在 375px 下是 15 291px 的长卷，
-   等于没法浏览。这里改成两列，缩略图仍有 ~170px 宽，
+/* ---------- 手机上的作品墙 ----------
+   首页 9 张「精选」和作品集 41 张，原来在手机上都是单列大图：
+   首页那块实测 3 153px（首屏后面还要滚三屏半），作品集是 15 291px 的长卷。
+   等于没法浏览。这里统一改成两列，缩略图仍有 ~170px 宽，
    点开还是原尺寸大图（灯箱），信息密度和观感折中在这一点。 */
 @media (max-width: 760px) {
-  /* 选择器要写成 .wall.wall--gallery：motion.css 里还有一条 .wall{column-count:1}，
-     同优先级下后加载的会赢，必须提高一格特异性。 */
-  .wall.wall--gallery {
+  /* 注意特异性：motion.css 里有一条 `.wall { column-count: 1 }`（同断点），
+     靠加载顺序不一定赢，所以这里用 .wall 之外再带一层父级不够可靠，
+     直接在 motion.css 里把那条改成只影响 761px 以上更稳妥 —— 见该文件。 */
+  .wall {
     column-count: 2;
     column-gap: 10px;
   }
-  .wall.wall--gallery figure {
+  .wall figure {
     margin-bottom: 10px;
     border-radius: 10px;
   }
-  .wall.wall--gallery figcaption {
+  /* 竖构图超过 1.25 高的图在两列里会变成一条竖长条，把整列拉长。
+     统一限高，宁可裁掉一点上下，也别让 9 张图占出 6 屏。 */
+  .wall img {
+    height: auto;
+    max-height: 60vw;
+    object-fit: cover;
+  }
+  .wall figcaption {
     padding: 22px 10px 9px;
     font-size: 11px;
     letter-spacing: 0.04em;

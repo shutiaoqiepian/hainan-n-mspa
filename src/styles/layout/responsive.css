@@ -3,8 +3,11 @@
    ============================================================ */
 
 @media (max-width: 760px) {
-  /* 首屏——原来 88vh + 底部大留白，小屏上会很挤 */
-  .hero { min-height: 80vh; }
+  /* 首屏——原来 88vh + 底部大留白，小屏上会很挤。
+     80vh 仍然偏高（390×844 下是 675px），第一屏几乎全是照片，
+     标题要滚一下才看得到。改成「内容高 + 上下限」：至少 420px（图不能太扁），
+     最多 68vh（保证下一屏的「我们是谁」能露出来）。 */
+  .hero { min-height: min(68vh, max(420px, 100vw)); }
   /* 竖屏裁切时把地平线压到文字下方，别让亮点正好穿过正文 */
   .hero-media img { object-position: 50% 30%; filter: saturate(112%) contrast(1.03) brightness(0.88); }
 
@@ -89,15 +92,36 @@
   .fc-meta { font-size: 11.5px; line-height: 1.75; margin-top: 4px; }
   .fc-prof { font-size: 12px; }
 
-  /* 控制区竖排 */
+  /* 控制区。原来 .fc-controls 是 column，里面的 .fc-picks 又是纵向折行，
+     省市区那一整块竖着排下来占 152px —— 但它们本来就是同一个
+     「选哪儿」的决策，本该并排。
+     注意结构：.fc-modes（日期 / 时段）是 .fc-picks 的**子元素**，
+     所以 flex-basis 只能给 .fc-picks 的直接子元素，给 .fc-modes 会撑爆。 */
   .fc-controls {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 10px;
   }
-  .fc-picks { justify-content: center; gap: 8px; }
-  .fc-modes { justify-content: center; }
-  .fc-mode { padding: 9px 15px; font-size: 13.5px; }
+  .fc-picks {
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px 10px;
+  }
+  /* 省份下拉和日期按钮并排（两者都窄），不各占一行 */
+  .fc-prov-wrap { flex: 0 0 auto; }
+  .fc-picks .fc-modes { flex: 0 0 auto; }
+  .fc-picks .fc-modes:last-of-type { flex: 0 0 auto; }
+  /* 模式下拉（8 种模式对照表）自己占一行 */
+  .fc-picks .fc-model-wrap { flex: 1 1 100%; margin-top: 2px; }
+  /* 区域 chip 是纯短词，一行排 3–4 个 */
+  .fc-areas { flex-wrap: wrap; gap: 6px; }
+  .fc-areas .chip {
+    font-size: 12.5px;
+    padding: 7px 13px;
+  }
+  .fc-mode { padding: 8px 14px; font-size: 13px; }
+  .fc-select { min-width: 0; max-width: 100%; }
 
   /* 海口详细表格 */
   .fc-detail { padding: 20px 16px; }
@@ -128,8 +152,19 @@
 
   .hero-brand { display: none; }
   .wrap { padding: 0 16px; }
-  .section { padding: 48px 0; }
+  /* 注意：这里曾经写 48px，比 760px 断点的 44px 还大 —— 越窄屏留白越多，
+     方向相反。收到 36px。 */
+  .section { padding: 36px 0 32px; }
   .btn { padding: 13px 22px; font-size: 14.5px; }
+
+  /* 320–400px：品牌字标 + 主题切换（3 个按钮）+ 汉堡按钮一共要 384px，
+     320px 屏上会横向溢出。窄屏藏掉品牌文字，只留 logo 图形；
+     主题切换按钮缩一点，图标都还在。 */
+  .brand .mark, .brand .cn { display: none; }
+  .brand { gap: 0; }
+  .nav-right { gap: 6px; }
+  .theme-switch { padding: 3px; gap: 0; }
+  .theme-switch button { width: 26px; height: 24px; font-size: 10.5px; }
 }
 
 /* 触屏设备（平板 / 手机 / 触屏本）：文字链接的行高只有 25px，手指不好点。

@@ -742,6 +742,40 @@ button.fcl-row.open { background: var(--fill-2); }
   .fc-block-head { flex-wrap: wrap; }
   .fc-block-head .fc-btn { margin-left: 0; }
 
+  /* 决策卡的分数块原来在手机上独占 258px，且排在机位名之前 ——
+     第一屏看到的就是一个大数字，不知道自己看的是哪个机位。
+     手机上把「分数 + 等级」和「两个峰值」排成左右两栏：分数只占左边一小块，
+     高度从 258 压到约 150。 */
+  .dh-score {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 5px 16px;
+    padding: 12px 16px;
+  }
+  .dh-big { font-size: 46px; line-height: 1.05; }
+  .dh-big small { font-size: 13px; }
+  .dh-lvl { margin-top: 0; font-size: 13.5px; flex: 0 0 auto; }
+  /* 等级刻度尺（六档小色条）：手机上已经有等级文字，这条只剩装饰 */
+  .dh-scale { display: none; }
+  /* 峰值两块撑满剩余宽度，不再各占半屏 */
+  .dh-moments {
+    flex: 1 1 190px;
+    min-width: 0;
+    margin-top: 0;
+  }
+  .dh-mom { padding: 5px 8px; }
+
+  /* 手机上的小字下限：桌面 9.5–10.5px 的标签在 390px 宽的手机上
+     实际只有 2mm 高，远看就是一坨灰点。统一抬到 12px，
+     代价是这几行会略微变高，但可读性优先。 */
+  .dh-mom .k, .dh-cell .k, .dh-mom .n { font-size: 11px; }
+  .dh-mom .v, .dh-cell .s { font-size: 12px; }
+  .dh-opp .on { font-size: 10.5px; }
+  /* 表格里的小标签同理（.r 分 / .c 等级 / .mlab 鲜亮度 / # 序号） */
+  .fr-row .r, .fr-row .c, .fr-row .mlab, .fr-row .tag { font-size: 11px; }
+
   /* 四个机会指数在手机上再收一档（信息一条不删，只是更靠后） */
   .dh-opp { padding: 6px 10px 7px; gap: 2px; }
   .dh-opp .oh b { font-size: 10px; }
