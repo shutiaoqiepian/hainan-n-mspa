@@ -211,9 +211,6 @@ onBeforeUnmount(() => {
           :row="selected"
           :rank="rank"
           :total="rows.length"
-          :others="others"
-          @select="onSelect"
-          @goto-rank="gotoRank"
           @show-layers="showLayers"
         />
 

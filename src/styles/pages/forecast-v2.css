@@ -164,13 +164,6 @@
   border: 1px solid currentColor;
   background: color-mix(in srgb, currentColor 12%, transparent);
 }
-.dh-scale { margin-top: 12px; width: 100%; }
-.dh-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; gap: 1px; }
-.dh-bar i { flex: 1; display: block; }
-.dh-lab { display: flex; font-size: 9.5px; color: var(--muted-2); margin-top: 4px; }
-.dh-lab span { flex: 1; text-align: center; }
-.dh-lab span:first-child { text-align: left; }
-.dh-lab span:last-child { text-align: right; }
 
 .dh-moments { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; width: 100%; }
 .dh-mom {
@@ -213,14 +206,6 @@
   line-height: 1.2;
 }
 .dh-cell .v em { font-style: normal; font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 2px; }
-.dh-cell .s {
-  font-size: 10px;
-  color: var(--muted-2);
-  line-height: 1.25;
-  /* 说明文字允许折两行：手机两列布局时「本站 0–100，非 SunsetBot 口径」
-     一行放不下，被 ellipsis 截成「本站 0–100，非 SunsetB…」等于没说。 */
-  overflow-wrap: anywhere;
-}
 
 /* 四个机会指数（通透 / 云隙光 / 光柱 / 彩虹）
    ------------------------------------------------------------
@@ -699,7 +684,9 @@ button.fcl-row.open { background: var(--fill-2); }
   .fcd2-cols { grid-template-columns: 1fr; }
   .dh {
     grid-template-columns: 1fr;
-    grid-template-areas: 'score' 'main' 'grid' 'opps' 'status';
+    /* 2026-11-05 换序：原来 score 在最前，手机上第一眼看到的是「5/96 不烧」
+       却不知道是哪个机位。改成先看清机位名，再看分数。 */
+    grid-template-areas: 'main' 'score' 'grid' 'opps' 'status';
   }
   .dh-main { border-right: 0; border-bottom: 1px solid var(--fc-line); }
   .dh-score { border-bottom: 1px solid var(--fc-line); }
@@ -758,8 +745,7 @@ button.fcl-row.open { background: var(--fill-2); }
   .dh-big small { font-size: 13px; }
   .dh-lvl { margin-top: 0; font-size: 13.5px; flex: 0 0 auto; }
   /* 等级刻度尺（六档小色条）：手机上已经有等级文字，这条只剩装饰 */
-  .dh-scale { display: none; }
-  /* 峰值两块撑满剩余宽度，不再各占半屏 */
+    /* 峰值两块撑满剩余宽度，不再各占半屏 */
   .dh-moments {
     flex: 1 1 190px;
     min-width: 0;
@@ -771,8 +757,7 @@ button.fcl-row.open { background: var(--fill-2); }
      实际只有 2mm 高，远看就是一坨灰点。统一抬到 12px，
      代价是这几行会略微变高，但可读性优先。 */
   .dh-mom .k, .dh-cell .k, .dh-mom .n { font-size: 11px; }
-  .dh-mom .v, .dh-cell .s { font-size: 12px; }
-  .dh-opp .on { font-size: 10.5px; }
+  .dh-mom .v,   .dh-opp .on { font-size: 10.5px; }
   /* 表格里的小标签同理（.r 分 / .c 等级 / .mlab 鲜亮度 / # 序号） */
   .fr-row .r, .fr-row .c, .fr-row .mlab, .fr-row .tag { font-size: 11px; }
 
@@ -941,18 +926,11 @@ button.fcl-row.open { background: var(--fill-2); }
   50%      { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-a) 0%, transparent); }
 }
 
-.dh-share-hint {
-  font-size: 11.5px;
-  color: var(--muted-2);
-  letter-spacing: 0.03em;
-  font-variant-numeric: tabular-nums;
-}
 
 @media (max-width: 560px) {
   .dh-share { gap: 8px; }
   .dh-share-btn { width: 100%; justify-content: flex-start; }
-  .dh-share-hint { font-size: 11px; }
-}
+  }
 
 /* ---------- 决策卡里的「云层剖面」速览 ----------
    「能不能烧」的答案就写在 8 个气压层里，但那张表在手机上要滚三屏。
@@ -1087,69 +1065,8 @@ button.fcl-row.open { background: var(--fill-2); }
    决策卡只讲排第一的那个点，手机上排第一眼看到的就是它，
    很容易以为今天只有这一个机位可选。把第 2–4 名缩成胶囊摆进来，
    点一下直接切换，右边的「全部 N 个」滚到完整排行。 */
-.dh-rivals {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-  padding-top: 11px;
-  border-top: 1px dashed var(--fc-line);
-}
-.dh-rivals .k {
-  font-size: 11px;
-  color: var(--muted-2);
-  letter-spacing: 0.08em;
-  flex: none;
-}
-.dh-rivals .chips { display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; }
-.dh-rivals .chips button {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
-  max-width: 40vw;
-  min-height: 26px;
-  padding: 4px 9px;
-  font-family: inherit;
-  font-size: 12px;
-  color: var(--text);
-  background: var(--fill-1);
-  border: 1px solid var(--fc-line);
-  border-radius: 999px;
-  cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition: border-color 0.16s, background 0.16s, transform 0.16s;
-}
-.dh-rivals .chips button b {
-  font-size: 12.5px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.dh-rivals .chips button:hover {
-  border-color: var(--accent-a-line);
-  background: var(--fill-2);
-  transform: translateY(-1px);
-}
-.dh-rivals .all {
-  margin-left: auto;
-  min-height: 26px;
-  padding: 4px 10px;
-  font-family: inherit;
-  font-size: 11.5px;
-  letter-spacing: 0.04em;
-  color: var(--accent-b);
-  background: transparent;
-  border: 1px solid var(--accent-a-line);
-  border-radius: 999px;
-  cursor: pointer;
-}
-.dh-rivals .all:hover { background: var(--accent-a-soft); }
 @media (max-width: 560px) {
-  .dh-rivals .all { margin-left: 0; }
-  .dh-rivals .chips button { max-width: 34vw; }
-}
+    }
 
 @media (prefers-reduced-motion: reduce) {
   .dh-share-btn::before { animation: none; }

@@ -9,13 +9,12 @@ import type { Row } from '@/lib/forecast/types'
 /** 首屏决策卡：分数 + 等级 + 结论 + 两个峰值时刻 + 六格指标 + 四个机会指数
     原来分散在「大标题 / 时间条 / 图例 / 首行卡片」里的信息，合成一张卡。 */
 
-const props = defineProps<{ row: Row; rank: number; total: number; others: Row[] }>()
+/* 2026-11-05 精简：原来还收 others（第 2–4 名）和 select / gotoRank 两个事件，
+   用来在决策卡里放「另外 N 个机位」胶囊。那块已删（下面就是完整排行表），
+   所以一并收窄，避免留死代码。 */
+const props = defineProps<{ row: Row; rank: number; total: number }>()
 
-const emit = defineEmits<{ (e: 'select', name: string): void; (e: 'gotoRank'): void; (e: 'showLayers'): void }>()
-
-/* 决策卡只讲一个机位，很容易被当成「今天只有一个点」。
-   这里把第 2–4 名做成三颗可点的胶囊，并给一个跳到完整排行的入口。 */
-const rivals = computed(() => props.others.slice(0, 3))
+const emit = defineEmits<{ (e: 'showLayers'): void }>()
 
 /**
  * 跳到「大气剖面」页（/cross）的链接。
@@ -122,16 +121,6 @@ const d = computed(() => props.row.detail)
 const m = computed(() => props.row.m)
 const kindWord = computed(() => (state.kind === 'sunrise' ? '日出' : '日落'))
 
-/* 等级尺：六档，当前档位不透明 */
-const BANDS = [
-  { c: '#5b636a', w: '不烧' },
-  { c: '#8f979f', w: '微烧' },
-  { c: '#9ad9b8', w: '小烧' },
-  { c: '#ffd166', w: '中烧' },
-  { c: '#ff9640', w: '大烧' },
-  { c: '#ff6a3d', w: '火烧云' }
-]
-
 const opps = computed(() => {
   const v = r.value
   return [
@@ -210,7 +199,9 @@ function onShare(): void {
         <span class="sep">|</span>蓝调 {{ d.blue }}
       </p>
       <p class="dh-head">{{ d.interpret.headline }}</p>
-      <p class="dh-advice">{{ d.interpret.advice }}</p>
+      <!-- 出发建议 2026-11-05 从首屏撤掉：它和上面那句 headline 语义高度重叠
+           （都是「这次不值得专门跑」）。原文没丢 —— 下方「专业判定与参考 →
+           判定依据：这个分怎么来的」折叠面板里一直有完整的「出发建议」。 -->
 
       <!-- 单机位名片：这一页最需要转发的就是「这个机位这个分数」 -->
       <div class="dh-share">
@@ -221,14 +212,16 @@ function onShare(): void {
             <small>带二维码的图，发群里 / 朋友圈</small>
           </span>
         </button>
-        <span class="dh-share-hint">{{ r.score }} 分 · {{ r.level.name }} · {{ kindWord }} {{ d.time }}</span>
+        <!-- 「5 分 · 不烧 · 日出 06:41」2026-11-05 删除：
+             这三件事在上面分别已经出现过（大分数、等级名、时间行），
+             名片按钮旁边再重复一遍没有信息增量。 -->
       </div>
 
       <!-- 云层剖面速览：8 层云量一根竖条，点开看每一层的判据 -->
       <div class="dh-prof">
         <div class="dh-prof-hd">
           <b>云层剖面</b>
-          <span>{{ profile.layers.length }} 层 · 颜色 = 被夕阳照亮后的色</span>
+          <span>{{ profile.layers.length }} 层 · 颜色 = 被{{ kindWord === '日出' ? '朝阳' : '夕阳' }}照亮后的色</span>
         </div>
         <button class="dh-prof-body" type="button" @click="emit('showLayers')">
           <span class="bars" aria-hidden="true">
@@ -258,7 +251,7 @@ function onShare(): void {
             </b>
             <small>
               <template v-if="profile.topLit">{{ profile.topLit.genus }} {{ profile.topLit.cover }}% · {{ profile.topLit.height >= 1000 ? (profile.topLit.height / 1000).toFixed(1) + ' km' : profile.topLit.height + ' m' }}</template>
-              <template v-else>{{ profile.layers.length }} 层都不够薄，夕阳穿不过去</template>
+              <template v-else>{{ profile.layers.length }} 层都不够薄，{{ kindWord === '日出' ? '朝阳' : '夕阳' }}穿不过去</template>
             </small>
           </span>
           <span class="ico" aria-hidden="true">↓</span>
@@ -266,38 +259,18 @@ function onShare(): void {
         </button>
       </div>
 
-      <!-- 这一页不止一个机位：把第 2–4 名直接摆出来 -->
-      <div v-if="total > 1" class="dh-rivals">
-        <span class="k">另外 {{ total - 1 }} 个机位</span>
-        <div class="chips">
-          <button
-            v-for="o in rivals"
-            :key="o.spot.n"
-            type="button"
-            :title="'切到 ' + o.spot.n + '（朝' + o.spot.face + '，' + o.level.name + '）'"
-            @click="emit('select', o.spot.n)"
-          >
-            {{ o.spot.n }}<b :style="{ color: o.level.color }">{{ o.score }}</b>
-          </button>
-        </div>
-        <button class="all" type="button" @click="emit('gotoRank')">全部 {{ total }} 个 ↓</button>
-      </div>
+      <!-- 「另外 24 个机位」三个胶囊 2026-11-05 删除：
+           紧接着就是「全部 25 个机位」排行表，同样的机位、同样的分数、
+           还多了 AOD 和鲜亮度。这一块纯属把下面那张表提前说一遍。 -->
     </div>
 
     <!-- 中：大分数 + 等级尺 + 两个峰值 -->
     <div class="dh-score">
       <div class="dh-big" :style="{ color: r.level.color }">{{ r.score }}<small>/96</small></div>
       <div class="dh-lvl" :style="{ color: r.level.color }">{{ r.level.name }}</div>
-      <div class="dh-scale">
-        <div class="dh-bar">
-          <i
-            v-for="b in BANDS"
-            :key="b.c"
-            :style="{ background: b.c, opacity: r.level.color === b.c ? 1 : 0.3 }"
-          ></i>
-        </div>
-        <div class="dh-lab"><span v-for="b in BANDS" :key="b.w">{{ b.w }}</span></div>
-      </div>
+      <!-- 六档色尺（不烧/微烧/…/火烧云）2026-11-05 删除：
+           大分数下面已经有等级名（「不烧」），色尺只是把同一件事再画一遍，
+           白占 27px。真要对照全档位，排行表的等级列里一直有。 -->
       <div class="dh-moments">
         <div class="dh-mom">
           <span class="k">最佳时刻</span>
@@ -316,12 +289,14 @@ function onShare(): void {
 
     <!-- 六格关键指标 -->
     <div class="dh-grid">
-      <div v-for="c in cells" :key="c.k" class="dh-cell">
+      <!-- 每格下面的说明（「理想 55–78%」「越少越好」…）是**恒定文字，每天一样**，
+           不是当天数据。2026-11-05 从版面上撤掉、改成 title 提示：
+           信息还在（悬停可看、读屏可读），但不再占 6 行。 -->
+      <div v-for="c in cells" :key="c.k" class="dh-cell" :title="c.s">
         <span class="k">{{ c.k }}</span>
         <span class="v" :style="c.c ? { color: c.c } : undefined">
           {{ c.v == null ? '缺测' : c.v }}<em v-if="c.u">{{ c.u }}</em>
         </span>
-        <span class="s">{{ c.s }}</span>
       </div>
     </div>
 
@@ -362,10 +337,11 @@ function onShare(): void {
 
     <!-- 数据状态（替代原来 179px 的时间条） -->
     <div class="dh-status">
-      <span>预报对象 <b>{{ dateText(d.date, d.weekday) }} {{ kindWord }} {{ d.time }}</b></span>
+      <!-- 【预报对象】和上面的时间行完全重复（日期/星期/日出/时刻都有）；
+           【来源 8 模式】和页面顶部的模式下拉框重复；
+           【格点 18.50°N,110.00°E 同格点共享】是排障用的坐标，
+           而机位详情面板里本来就写着。三条一并撤掉，只留「数据多新」和「完整度」。 -->
       <span>数据 <b>{{ state.updatedAt ? new Date(state.updatedAt).toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '读取中' }}</b><template v-if="nextText"><em>下次约 {{ nextText }}</em></template></span>
-      <span>来源 <b>{{ state.model === 'multi' ? '8 模式（ECMWF/ICON/GFS 计分）' : state.model + ' 单模式' }}</b></span>
-      <span>格点 <b>{{ d.grid || '—' }}</b><em>同格点共享一份气象数据</em></span>
       <span class="q" :class="{ bad: r.quality.status !== 'ok' }">
         数据完整度 <b>{{ r.quality.completeness }}%</b>
         <template v-if="r.quality.status !== 'ok'">（缺 {{ r.quality.missing.join('、') }}）</template>
