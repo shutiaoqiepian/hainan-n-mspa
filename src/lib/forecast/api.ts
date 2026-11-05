@@ -554,7 +554,7 @@ function buildHours(
   return hours
 }
 
-/* 一个机位的完整详情：云种剖面 + 自动解读 + 拍摄题材 + 逐小时 */
+/* 一个机位的完整详情：云种剖面 + 自动解读 + 可能天象 + 逐小时 */
 function buildSpotDetail(o: {
   spot: Spot
   w: RawPoint

@@ -19,8 +19,18 @@ const total = PHENOMENA.length
     <h3 class="fc-pheno-title">摄影圈天象词库<span>{{ total }} 个词条</span></h3>
     <p class="fc-pheno-intro">
       追霞的人不说“层积云覆盖率 40%”，说的是「鱼鳞云」「排骨云」「云被烧穿」「耶稣光」。
-      下面这些词条按「出现条件 → 怎么拍 → 主要平台」整理好，
+      下面这些词条按「评级 → 出现条件 → 怎么拍 → 主要平台」整理好，
       每个机位的<b>详情</b>里只会挑此刻真正可能出现的几条，不必全记。
+    </p>
+
+    <!-- 五个评级是什么意思，一次说清；后面每个词条的名字后面贴的就是这五个词 -->
+    <p class="fc-pheno-rarity">
+      <b>评级</b>按海南一年里能碰到几回算：
+      <em class="ph-local is-每天">每天</em>几乎天天都有 ·
+      <em class="ph-local is-常见">常见</em>一年几十次 ·
+      <em class="ph-local is-少见">少见</em>一年几次 ·
+      <em class="ph-local is-罕见">罕见</em>几年一次 ·
+      <em class="ph-local is-几乎不可能">几乎不可能</em>听说过，没人拍到过
     </p>
 
     <div class="fc-pheno-grid">

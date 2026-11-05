@@ -302,7 +302,7 @@
   font-weight: 600;
 }
 
-/* ---------- 当次题材小卡片 ---------- */
+/* ---------- 当次天象小卡片 ---------- */
 .fc-tipcards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(214px, 1fr));
@@ -325,12 +325,29 @@
   position: relative;
 }
 .fc-tipcard summary::-webkit-details-marker { display: none; }
-.fc-tipcard summary b { font-size: 13px; font-weight: 600; padding-right: 16px; }
+/* 名字 + 稀有度评级排一行；评级叫 ph-local（沿用词库那套 .is-* 配色），
+   网页上两个地方说法必须一致，配色也得一致，否则用户要记两套。 */
+.fc-tipcard summary .name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 16px;
+  min-width: 0;
+}
+.fc-tipcard summary b {
+  font-size: 13px;
+  font-weight: 600;
+  /* 名字太长时省略，不要挤走评级徽章 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fc-tipcard summary .ph-local { flex: 0 0 auto; margin-left: 0; }
 .fc-tipcard summary small {
   font-size: 10.5px;
   color: var(--muted-2);
   /* 一行放不下时折两行，不要截成「耶稣光 / 曙条 / 曙暮…」——
-     这行正是「这个题材具体怎么拍」的索引，截了等于没写。 */
+     这行正是「这个天象具体怎么拍」的索引，截了等于没写。 */
   line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 2;

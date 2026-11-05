@@ -16,7 +16,7 @@
  *      「谁 → 几分 → 什么时候 → 为什么 → 细节」，不是按网页的模块顺序。
  *   2. 分数是主角：1080 宽的图上占右侧整块，用等级色做光晕。
  *   3. 每个数字都有单位、都有小标签，不让人猜。
- *   4. 底部二维码区独立成条，不再和「题材标签」挤在一起。
+ *   4. 底部二维码区独立成条，不再和「天象标签」挤在一起。
  */
 
 import qrcode from '@/vendor/qrcode'
@@ -206,6 +206,31 @@ function chip(
   }
   ctx.fillStyle = p.chipText
   ctx.fillText(text, x + 16, y + h / 2 + size * 0.36)
+  return w
+}
+
+/** 稀有度徽章：细边框 + 同色文字，和 .ph-local 一个样子。
+    名片上不填色，因为要并排贴 4 条，填色块会抢掉分数圆环的注意力。 */
+const RARITY_COLOR: Record<string, string> = {
+  每天: '#9ad9b8',
+  常见: '#9ad9b8',
+  少见: '#e0c07a',
+  罕见: '#d99a8c',
+  几乎不可能: '#d99a8c'
+}
+
+function rarityChip(ctx: TextCtx, rarity: string, x: number, y: number, p: Palette): number {
+  const c = RARITY_COLOR[rarity]
+  if (!c) return 0
+  setFont(ctx, '500', 18)
+  const w = ctx.measureText(rarity).width + 16
+  const h = 30
+  ctx.strokeStyle = alpha(c, 0.42)
+  ctx.lineWidth = 1.5
+  roundRect(ctx, x, y, w, h, h / 2)
+  ctx.stroke()
+  ctx.fillStyle = c
+  ctx.fillText(rarity, x + 8, y + h / 2 + 6)
   return w
 }
 
@@ -461,18 +486,25 @@ function drawSpot(ctx: TextCtx, cv: HTMLCanvasElement, d: ForecastCardInput): vo
   ctx.fillStyle = p.text
   wrapText(ctx, r.detail.interpret.headline, pad + 26, hY + 34, inner - 26, 42, 3)
 
-  /* ===== 7. 拍摄题材 ===== */
+  /* ===== 7. 可能拍到的天象（名字 + 稀有度评级） =====
+     评级和网页上用同一套词（每天/常见/少见/罕见/几乎不可能）。
+     这里的颜色是网页 .ph-local.is-* 那套的加亮版：像素级小字在
+     朋友圈缩略图上会糊，所以宁可高饱和一点。 */
   const tips = r.detail.tips.slice(0, 4)
   if (tips.length) {
     setFont(ctx, '400', 19, '4px')
     ctx.fillStyle = p.muted
-    ctx.fillText('可能拍到的题材', pad, 982)
+    ctx.fillText('可能拍到的天象', pad, 982)
     let tx = pad
     for (const t of tips) {
       setFont(ctx, '500', 23)
       const need = ctx.measureText(t.name).width + 32
-      if (tx + need > W - pad) break
-      tx += chip(ctx, t.name, tx, 996, p, { size: 23 }) + 10
+      /* 名字 chip 放不下就整条跳过：宁可少一条，也不要把评级徽章
+         甩到图片外面去（名片右侧没有留白缓冲）。 */
+      const tagW = 16 + (t.rarity.length * 21) / 1.05
+      if (tx + need + tagW + 6 > W - pad) break
+      tx += chip(ctx, t.name, tx, 996, p, { size: 23 }) + 8
+      tx += rarityChip(ctx, t.rarity, tx, 1002, p) + 10
     }
   }
 

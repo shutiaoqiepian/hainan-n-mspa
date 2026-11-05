@@ -23,7 +23,7 @@ import type { Row } from '@/lib/forecast/types'
 /** 霞光预报
     版面按「决策顺序」分四层：
       ① 决策区（去掉大标题区，合成一张卡）
-      ② 当次题材 + 机位排行 + 各模式怎么看
+      ② 当次天象 + 机位排行 + 各模式怎么看
       ③ 选中机位的气象条件分析（含逐时）
       ④ 专业判定与参考（折叠，默认展开三项）
     不删任何信息，只调整优先级和默认展开状态。 */
@@ -182,12 +182,12 @@ onBeforeUnmount(() => {
         </summary>
         <p class="fc-lede">
           根据云层高度、云种、气溶胶与降水，估算{{ prov }}各机位今天、明天的朝霞与晚霞条件。
-          数值越高，越有可能出现火烧云。点每个机位的「详情」可以看到逐高度云种、气象解读和拍摄题材。
+          数值越高，越有可能出现火烧云。点每个机位的「详情」可以看到逐高度云种、气象解读和可能出现的天象。
         </p>
       </details>
       <p v-else class="fc-lede">
         根据云层高度、云种、气溶胶与降水，估算{{ prov }}各机位今天、明天的朝霞与晚霞条件。
-        数值越高，越有可能出现火烧云。点每个机位的「详情」可以看到逐高度云种、气象解读和拍摄题材。
+        数值越高，越有可能出现火烧云。点每个机位的「详情」可以看到逐高度云种、气象解读和可能出现的天象。
       </p>
     </div>
   </section>
@@ -217,12 +217,12 @@ onBeforeUnmount(() => {
           @show-layers="showLayers"
         />
 
-        <!-- ② 当次题材 -->
+        <!-- ② 当次天象 -->
         <div v-if="selected" class="fc-block fc-reveal fc-o-tips">
           <div class="fc-block-head">
-            <h2>当次能拍的题材</h2>
+            <h2>当次能拍的天象</h2>
             <span class="sub">
-              {{ selected.spot.n }} · 从 {{ phenoTotal }} 条词库里按当前天况挑出的 {{ selected.detail.tips.length }} 条 · 点卡片看怎么拍
+              {{ selected.spot.n }} · 从 {{ phenoTotal }} 条词库里按当前天况挑出的 {{ selected.detail.tips.length }} 条 · 带稀有度评级 · 点卡片看怎么拍
             </span>
           </div>
           <TipCards :tips="selected.detail.tips" @open-all="gotoPhenomena" />

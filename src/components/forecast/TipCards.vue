@@ -3,8 +3,10 @@ import { computed } from 'vue'
 import type { Phototip } from '@/lib/forecast/types'
 import { PHENOMENA } from '@/data/forecast/phenomena'
 
-/** 当次能拍的题材：从词库里按当前天况挑出来的几条，做成小卡片。
-    默认收着标题，点开看「为什么 / 怎么拍」——比原来藏在「详情」里更容易发现。 */
+/** 当次能拍的天象：从词库里按当前天况挑出来的几条，做成小卡片。
+    默认收着标题，点开看「为什么 / 怎么拍」——比原来藏在「详情」里更容易发现。
+    每张卡片带一个稀有度评级（每天 / 常见 / 少见 / 罕见 / 几乎不可能），
+    和词库用的是同一套词、同一套配色，用户不用记两套说法。 */
 
 const props = defineProps<{ tips: Phototip[] }>()
 const emit = defineEmits<{ (e: 'openAll'): void }>()
@@ -19,7 +21,10 @@ const total = PHENOMENA.length
   <div v-if="list.length" class="fc-tipcards">
     <details v-for="t in list" :key="t.key" class="fc-tipcard">
       <summary>
-        <b>{{ t.name }}</b>
+        <div class="name">
+          <b>{{ t.name }}</b>
+          <em class="ph-local" :class="'is-' + t.rarity" :title="'出现稀有度：' + t.rarity">{{ t.rarity }}</em>
+        </div>
         <small>{{ t.alias }}</small>
         <i class="caret" aria-hidden="true">+</i>
       </summary>

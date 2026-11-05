@@ -141,11 +141,16 @@ export interface CloudSheet {
   text: string
 }
 
-/** 一条拍摄提示词条 */
+/** 天象的稀有度评级 —— 词库、当次卡片、名片共用同一套词 */
+export type PhenoRarity = '每天' | '常见' | '少见' | '罕见' | '几乎不可能'
+
+/** 一条天象词条（原先叫「拍摄题材」，2026-11-05 全部改为「天象」） */
 export interface Phototip {
   key: string
   name: string
   alias: string
+  /** 稀有度评级 */
+  rarity: PhenoRarity
   /** 为什么现在可能出现 */
   why: string
   /** 怎么拍 */
@@ -227,7 +232,7 @@ export interface SpotDetail {
   conflicts: Conflict[]
   /** 这个机位落到的模式格点（吸附后的中心坐标） */
   grid: string
-  /** 匹配到的拍摄题材/黑话 */
+  /** 匹配到的天象/黑话 */
   tips: Phototip[]
   /** 逐小时（只有 DETAIL_SPOT 会填） */
   hourly: DetailHour[]

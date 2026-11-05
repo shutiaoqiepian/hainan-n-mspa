@@ -16,7 +16,7 @@
    注意：词条里的「条件」是按我们的数据能判断的近似，不是严格气象判据。
    ============================================================ */
 
-import type { CloudLayer, KindKey, Phototip } from '@/lib/forecast/types'
+import type { CloudLayer, KindKey, PhenoRarity, Phototip } from '@/lib/forecast/types'
 
 export type PhenoGroup = '霞' | '光束' | '冰晶光学' | '云' | '大气' | '平台口语'
 
@@ -56,7 +56,7 @@ export interface Phenomenon {
   /** 主要流传平台 */
   platform: string
   /** 本地（海南）出现概率 */
-  local?: '每天' | '常见' | '少见' | '罕见' | '几乎不可能'
+  local?: PhenoRarity
   /** 0 = 不匹配，1 = 有机会，2 = 很有戏 */
   match: (c: PhenoContext) => number
 }
@@ -925,7 +925,12 @@ const RARITY: Record<string, number> = {
   '几乎不可能': 5, '罕见': 4, '少见': 3, '常见': 2, '每天': 1
 }
 
-/** 这个时刻最值得拍的题材（按“很有戏”优先，取前 5 条） */
+/** 缺省评级：词条没写 local 时按「常见」算（不改动任何一条已有的评级） */
+export function rarityOf(p: Phenomenon): PhenoRarity {
+  return p.local ?? '常见'
+}
+
+/** 这个时刻最值得拍的天象（按“很有戏”优先，取前 5 条） */
 export function matchPhenomena(c: PhenoContext): Phototip[] {
   const hits = PHENOMENA
     .map((p, i) => ({ p, v: p.match(c), i, r: RARITY[p.local ?? '常见'] ?? 2 }))
@@ -948,6 +953,7 @@ export function matchPhenomena(c: PhenoContext): Phototip[] {
       key: h.p.key,
       name: h.p.name,
       alias: h.p.alias,
+      rarity: rarityOf(h.p),
       why: h.p.when,
       shoot: h.p.shoot
     })

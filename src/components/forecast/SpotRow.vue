@@ -80,7 +80,7 @@ function onToggle(): void {
       :class="{ 'is-open': open }"
       type="button"
       :aria-expanded="open ? 'true' : 'false'"
-      :title="open ? '收起详情' : '展开预报详情：云种剖面、气象解读、拍摄题材'"
+      :title="open ? '收起详情' : '展开预报详情：云种剖面、气象解读、可能天象'"
       @click.stop="onToggle"
     >{{ open ? '收起' : '详情' }}</button>
     <button class="fc-fb" :class="{ 'is-done': done }" type="button" :title="fbTitle" :aria-label="fbTitle" @click.stop="onFeedback">{{ done ? '✓' : '✎' }}</button>
