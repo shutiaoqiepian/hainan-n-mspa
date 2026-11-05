@@ -76,6 +76,14 @@ export interface Measure {
   pop: number | null
   t2m: number | null
   td2m: number | null
+  /**
+   * 10 m 风速（m/s）。
+   * 数据源本来就有 `wind_speed_10m`（`prof[]` 里，42/72 小时非空），
+   * 但 2026-11-05 之前从没被提取进 Measure —— 雾判据要用它才补上。
+   * ⚠️ 同一批数据里 `boundary_layer_height` 和 `visibility` 虽然请求了，
+   *    但**全部返回 null**（0/72），所以这两个不能拿来当判据。
+   */
+  wind10: number | null
   vis: number | null
   /** ⚠ 缺测时这里是**计算用的默认值**（0.2），不是观测值；真实与否看 aodMissing */
   aod: number
@@ -139,6 +147,47 @@ export interface CloudSheet {
   genera: string[]
   lit: boolean
   text: string
+}
+
+/** 雾判据里的一条依据 */
+export interface FogBasis {
+  /** 这一条叫什么 */
+  label: string
+  /** ✓ 满足 / ✗ 不满足 / ? 数据不足 / — 不适用 */
+  state: 'ok' | 'no' | 'na' | 'missing'
+  /** 实测值，如「1.0 K」 */
+  value: string
+  /** 要求，如「≤ 1.5 K」 */
+  need: string
+  /** 一句人话解释为什么这条重要 */
+  why: string
+}
+
+/**
+ * 雾的「环境符合度」结果。
+ *
+ * ★ 这不是概率，是「5 条判据满足了几条」的除法。
+ *   我们没有雾的观测数据，算不了真正的概率（用户 2026-11-05 拍板选 A 方案）。
+ *   详见交接文档第 36 节。
+ */
+export interface FogResult {
+  /** 环境符合度 0–100；可用条数为 0 时为 null */
+  pct: number | null
+  /** 满足了 n 条 / 共 m 条可用 */
+  hit: number
+  total: number
+  /** 逐条依据 */
+  basis: FogBasis[]
+  /**
+   * 硬门槛状态：平流雾的「冷面条件」（露点 > 海温）。
+   * 'no' 时这一类雾物理上基本不可能 —— 卡片要明确说出来，
+   * 不能拿「4/5 项」去掩盖一个必要条件不满足。
+   */
+  gate: 'ok' | 'no' | 'missing'
+  /** 数据状态：ok 齐全 / partial 缺海温 / missing 缺关键字段 */
+  dataStatus: 'ok' | 'partial' | 'missing'
+  /** 怎么结合别的数据判断（指导） */
+  guide: string[]
 }
 
 /** 天象的稀有度评级 —— 词库、当次卡片、名片共用同一套词 */

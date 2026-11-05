@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Phototip } from '@/lib/forecast/types'
+import type { Phototip, Row } from '@/lib/forecast/types'
 import { PHENOMENA } from '@/data/forecast/phenomena'
+import FogCard from './FogCard.vue'
 
 /** 当次能拍的天象：从词库里按当前天况挑出来的几条，做成小卡片。
     默认收着标题，点开看「为什么 / 怎么拍」——比原来藏在「详情」里更容易发现。
     每张卡片带一个稀有度评级（每天 / 常见 / 少见 / 罕见 / 几乎不可能），
     和词库用的是同一套词、同一套配色，用户不用记两套说法。 */
 
-const props = defineProps<{ tips: Phototip[] }>()
+/* row 可选：给了就额外渲染「雾」那一条（唯一带百分比的天象）。
+   它是异步取海温的，所以做成独立组件，不混进 tips 数组，
+   也就不参与 matchPhenomena 的排序。 */
+const props = defineProps<{ tips: Phototip[]; row?: Row }>()
 const emit = defineEmits<{ (e: 'openAll'): void }>()
 
 const list = computed(() => props.tips)
@@ -18,7 +22,8 @@ const total = PHENOMENA.length
 </script>
 
 <template>
-  <div v-if="list.length" class="fc-tipcards">
+  <div v-if="list.length || row" class="fc-tipcards">
+    <FogCard v-if="row" :row="row" />
     <details v-for="t in list" :key="t.key" class="fc-tipcard">
       <summary>
         <div class="name">

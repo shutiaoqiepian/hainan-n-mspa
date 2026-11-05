@@ -74,6 +74,82 @@ for (const high of [0, 5, 8, 20, 30, 40, 45, 55, 65, 78, 80, 85, 93, 100]) {
   if (high > 78 && /少于|够铺开/.test(t)) push(`high=${high}`, '方向说反', `高云 ${high}% 被说成偏少`)
 }
 
+/* ============================================================
+   雾文案专项检查（2026-11-05 加）
+   ------------------------------------------------------------
+   为什么单独一段：雾的百分比最容易被写成「成雾概率 80%」，
+   而我们**没有任何雾观测**，那个数字是编的。
+   把这条边界做成机器检查，而不是靠人记（交接文档 §36）。
+   ============================================================ */
+{
+  const fr = await build({
+    entryPoints: [path.join(ROOT, 'src/lib/forecast/fog.ts')],
+    bundle: true, format: 'esm', write: false, platform: 'node',
+    alias: { '@': path.join(ROOT, 'src') }
+  })
+  const { computeFog } = await import(
+    'data:text/javascript;base64,' + Buffer.from(fr.outputFiles[0].text).toString('base64'))
+
+  /* 禁用的词：出现在雾文案里就是「把提示说成了预报」 */
+  const BANNED = ['预报', '概率', '一定', '必然', '将出现', '肯定会', '准没错']
+  /* 至少要有其中一个，表明它还是「提示」口吻 */
+  const NEED_ONE = ['潜势', '符合度', '可能', '参考', '不是']
+
+  /* 穷举：温度/露点/湿度/风/低云/海温 各档 + 两个清晨小时 */
+  let fogN = 0
+  for (const t of [22, 24, 26]) {
+    for (const spread of [0.3, 1.2, 3.0]) {
+      const td = t - spread
+      for (const rh of [88, 94]) {
+        for (const wind of [1, 5, 12]) {
+          for (const low of [10, 40]) {
+            for (const sst of [null, 20.0, 28.7]) {
+              const res = computeFog({ t2m: t, td2m: td, rh, low, wind10: wind, sst, hour: 6 })
+              fogN++
+              const text = res.guide.join(' ')
+              for (const w of BANNED) {
+                if (text.includes(w)) {
+                  push(`T=${t} Td=${td} RH=${rh} 风=${wind} SST=${sst}`, '雾文案禁用词',
+                    `指导里出现了「${w}」—— 雾是潜势提示，不能说成预报/概率`)
+                }
+              }
+              if (!NEED_ONE.some((w) => text.includes(w))) {
+                push(`T=${t} Td=${td} RH=${rh}`, '雾文案缺提示口吻',
+                  '指导里既没写「潜势」也没写「符合度/可能/参考/不是」')
+              }
+              /* 数据状态非 ok 时，必须出现「数据不足/不完整/实验性/没有数据」之一 */
+              if (res.dataStatus !== 'ok') {
+                const okWords = ['数据不足', '不完整', '实验性', '没有数据', '没有海温', '缺测', '没有观测']
+                if (!okWords.some((w) => text.includes(w))) {
+                  push(`dataStatus=${res.dataStatus}`, '雾数据缺失未说明',
+                    '数据不齐时必须明说，不能让人以为是「确定没有雾」')
+                }
+              }
+              /* 必要条件不成立时，指南里必须点明「基本可以排除」 */
+              if (res.gate === 'no' && !text.includes('排除')) {
+                push(`SST=${sst} Td=${td}`, '雾硬门槛未明说',
+                  '冷面条件不满足时必须说清「这一类雾基本可以排除」')
+              }
+              /* 百分比必须能对上「满足几条 ÷ 可用几条」 */
+              const usable = res.basis.filter((b) => b.state === 'ok' || b.state === 'no')
+              if (res.total !== usable.length) {
+                push(`T=${t}`, '雾分母算错', `total=${res.total} 但可判定条数=${usable.length}`)
+              }
+              if (res.pct != null && res.total > 0) {
+                const expect = Math.round((res.hit / res.total) * 100)
+                if (res.pct !== expect) {
+                  push(`T=${t}`, '雾百分比算错', `pct=${res.pct} 应为 ${expect}`)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  console.log(`  雾判据扫描 ${fogN} 种组合`)
+}
+
 console.log(`扫描 ${n} 种参数组合`)
 if (problems.length) {
   console.log(`❌ 发现 ${problems.length} 处问题：`)

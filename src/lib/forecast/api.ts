@@ -212,7 +212,10 @@ export function measureAt(
     aodReal: aodReal,
     aodMissing: aodMissing,
     /* 降水量（mm/小时）只在天气主数据里，剖面那份没有 */
-    precipMm: avg('precipitation')
+    precipMm: avg('precipitation'),
+    /* 10 m 风速：雾判据要用（风太弱成浅雾、太强把雾抬成层云）。
+       数据里本来就有 wind_speed_10m，只是以前没提取。见 types.ts 的 wind10 注释。 */
+    wind10: avg('wind_speed_10m')
   }
 }
 
@@ -725,6 +728,10 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
       m.t2m = profField(pr, 'temperature_2m', idx)
       m.td2m = profField(pr, 'dew_point_2m', idx)
       m.vis = profField(pr, 'visibility', idx)
+      /* 10 m 风速也只在剖面里有（多模式那份 weather 里没有这个字段）。
+         雾判据要用它，所以必须在这里覆盖，否则永远是 null。
+         2026-11-05 实测：`prof[].hourly.wind_speed_10m` 有值（42/72 小时非空）。 */
+      m.wind10 = profField(pr, 'wind_speed_10m', idx)
     }
 
     /* 太阳位置与机位朝向。
