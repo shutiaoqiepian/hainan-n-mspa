@@ -25,13 +25,20 @@ const rivals = computed(() => props.others.slice(0, 3))
  * 精确匹配（resolveIncoming），匹配不到再按经纬度就近找。
  * 时次和方位不带：全国机位只有「当天日落方位」那一个剖面，
  * /cross 会自己选最接近日落的时次。
+ *
+ * ★ 必须带 kind（sunrise / sunset）。
+ *   2026-11-04 用户报「我选的是日出，剖面却是日落」：
+ *   原来这里不传 kind，/cross 又只有日落逻辑，于是从「朝霞」卡片点进去
+ *   看到的仍是西面 254° 的日落剖面 —— 数据没错，但答非所问。
+ *   /cross 读到 kind=sunrise 时会明确告诉用户「这是日落剖面，不是朝霞」。
  */
 const crossHref = computed(() => {
   const sp = props.row.spot
   const q = new URLSearchParams({
     name: sp.n,
     lat: String(sp.lat),
-    lon: String(sp.lon)
+    lon: String(sp.lon),
+    kind: state.kind
   })
   return `cross.html?${q.toString()}`
 })

@@ -93,3 +93,27 @@ export function sunsetMs(lat: number, lon: number, utcDateIso: string): number {
   }
   return NaN
 }
+
+/**
+ * 日出时刻（返回 epoch ms）。
+ *
+ * 和 sunsetMs 是一对：那个从 08:00 UTC 起扫「上穿 → 下穿」找日落；
+ * 这个从**前一天 16:00 UTC** 起扫「下穿 → 上穿」找日出 ——
+ * 北京时间的早晨在北京时间 06:00 左右，对应 UTC 前一天 22:00 上下，
+ * 从 16:00 UTC 起扫能覆盖东八区全部纬度，不会跨过零点漏掉。
+ *
+ * 用途：/cross 只有日落剖面。用户从「朝霞」卡片点进来时，
+ * 我们得算出朝霞在东边多少度、几点，才能把话说清楚，而不是糊一句「不支持」。
+ */
+export function sunriseMs(lat: number, lon: number, utcDateIso: string): number {
+  const d = new Date(utcDateIso)
+  const base = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0) - 8 * 3600 * 1000
+  let prev: number | null = null
+  for (let k = 0; k <= 10 * 60; k++) {
+    const t = base + k * 60000
+    const el = sunPosition(t, lat, lon).el
+    if (prev !== null && prev < -0.833 && el >= -0.833) return t
+    prev = el
+  }
+  return NaN
+}

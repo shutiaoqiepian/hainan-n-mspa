@@ -16,7 +16,7 @@ import { Y_RANGES, beijingDateTime, beijingTime, cloudBands, expandPoints, secti
 import { CHART_GUIDE, QUICK_STEPS, TOOLBAR_GUIDE } from '@/lib/xsec/guide'
 import { fetchOpenMeteoSection } from '@/lib/xsec/openmeteo'
 import { genusOfLevel, type CloudGenusInfo } from '@/lib/xsec/cloudgenus'
-import { sunInPlane, sunsetMs } from '@/lib/xsec/sun'
+import { sunInPlane, sunriseMs, sunsetMs } from '@/lib/xsec/sun'
 import {
   airmass, bandLightWindow, boundaryHeightKm, describeMin, terminatorKm,
   terminatorSpeedKmMin, terrainHorizonDeg, transmittance
@@ -72,6 +72,13 @@ const card = ref<HTMLElement | null>(null)
 /** 从预报页点进来时带的机位（可能不在 8 个代表机位里） */
 const fromName = ref('')
 const fromNote = ref('')
+/** 用户是从「朝霞」卡片点进来的吗？（URL 带 kind=sunrise）
+ *  2026-11-04 起每个全国机位都有日出剖面，正常情况会直接显示朝霞剖面。
+ *  只有当日出数据缺失（老索引 / 当轮生成失败）时，才退回日落并明确提示，
+ *  绝不静默顶替 —— 用户报过「我选的是日出，图却是日落」，不能再犯。 */
+const sunriseAsked = ref(false)
+/** 想要日出但没拿到日出数据 → 退回了日落，需要提示 */
+const sunriseFallback = ref(false)
 /** 环境上下文：真实 DEM 地形 + AOD（独立缓存，失败不影响云场） */
 const xctx = ref<XsecContext | null>(null)
 /** 环境上下文（DEM/AOD）加载失败时的提示 */
@@ -117,10 +124,67 @@ const spotMeta = computed(() => {
   return idx.spots.find((s) => s.id === spotId.value) ?? idx.spots[0] ?? null
 })
 
-/** 全国索引里按机位 id 查文件；没有返回 null */
-function nationalFile(id: string): string | null {
+/** 全国索引里按机位 id 查文件；没有返回 null。
+ *
+ *  2026-11-04 起每个机位在索引里有**两条**（日落 / 日出），用 kind 区分。
+ *  不传 kind 时优先日落（向后兼容老索引里只有一条的情况）。
+ *  日出缺失（老数据、或当轮日出生成失败）时返回 null —— 调用方负责退回日落
+ *  并明确告诉用户，绝不静默顶替。 */
+function nationalFile(id: string, kind: 'sunrise' | 'sunset' = 'sunset'): string | null {
   if (!id) return null
-  return national.value?.spots.find((s) => s.id === id)?.file ?? null
+  const all = national.value?.spots.filter((s) => s.id === id) ?? []
+  if (!all.length) return null
+  // 老索引没有 kind 字段 → 全部视为日落
+  const want = all.find((s) => (s.kind ?? 'sunset') === kind)
+  if (want) return want.file
+  return kind === 'sunset' ? all[0].file : null
+}
+
+/** 这个全国机位有没有日出剖面 */
+function hasSunrise(id: string): boolean {
+  return nationalFile(id, 'sunrise') !== null
+}
+
+/** 有多少全国机位带日出剖面（用于说明「每机位几个剖面」）。
+ *  不能只看第一个机位 —— 老索引里排序靠前的那个可能恰好没有日出数据。 */
+const sunriseCoverage = computed(() => {
+  const all = national.value?.spots ?? []
+  const ids = new Set(all.map((s) => s.id))
+  const withSun = new Set(all.filter((s) => (s.kind ?? 'sunset') === 'sunrise').map((s) => s.id))
+  return { total: ids.size, withSun: withSun.size }
+})
+
+/** 全国机位列表（按 id 去重）。
+ *  2026-11-04 起索引里每个机位有日落 + 日出两条，
+ *  直接渲染 national.spots 会把每个机位显示两遍（224 → 448 个按钮）。 */
+const nationalSpotsUnique = computed(() => {
+  const seen = new Set<string>()
+  const out: NonNullable<typeof national.value>['spots'] = []
+  for (const s of national.value?.spots ?? []) {
+    if (seen.has(s.id)) continue
+    seen.add(s.id)
+    out.push(s)
+  }
+  return out
+})
+
+/** 在同一机位的「朝霞 / 晚霞」两份剖面之间切换。
+ *  只对全国机位有效（它们才有两份文件）；海南试点 8 机位只有日落。 */
+function switchKind(kind: 'sunrise' | 'sunset'): void {
+  const id = nationalSpotId.value
+  if (!id) return
+  const f = nationalFile(id, kind)
+  if (!f) return
+  sunriseAsked.value = kind === 'sunrise'
+  sunriseFallback.value = false
+  /* 把时次重置成「最接近事件时刻」的那个。
+     不重置的话，从晚霞 t=2（18:00）切到朝霞还停在 t=2（08:00），
+     离日出 06:41 已经过去 1 个多小时，图上就看不到「日出那一刻」了。 */
+  tIdx.value = -1
+  void pickSpotById(id, f).then(() => {
+    if (nearestEventIdx.value >= 0) tIdx.value = nearestEventIdx.value
+    syncSunOffset()
+  })
 }
 
 function pickNational(id: string): void {
@@ -161,7 +225,7 @@ const validMs = computed(() => new Date(validIso.value).getTime())
 const sunOffsetMin = ref(0)
 /** URL 带的太阳时间偏移（等机位加载完再应用，避免被 syncSunOffset 覆盖） */
 const pendingSunOffset = ref<number | null>(null)
-/** 太阳时刻：日落 + 偏移；没有日落时刻时退回所选时次 */
+/** 太阳时刻：事件时刻（日出或日落，见 eventAt）+ 偏移；没有事件时刻时退回所选时次 */
 const sunTimeMs = computed(() => {
   const setMs = sunsetAt.value
   if (!Number.isFinite(setMs)) return validMs.value
@@ -174,13 +238,37 @@ const sun = computed(() => {
   return sunInPlane(sunTimeMs.value, f.spot.lat, f.spot.lon, az.value)
 })
 
-const sunsetAt = computed(() => {
+/** 这份数据是日出剖面还是日落剖面？
+ *  2026-11-04 起全国机位同时出两份（<id>.json / <id>-sunrise.json），
+ *  老数据没有 kind 字段，一律按日落处理。
+ *  整页的太阳几何都依赖「事件时刻」，所以必须按 kind 选对，否则
+ *  拿日出剖面配日落时刻，算出来的太阳高度是负的、整张图像素全黑。 */
+const fileKind = computed<'sunrise' | 'sunset'>(() => {
+  const f = activeFile.value
+  const k = (f as { kind?: string } | null)?.kind
+  return k === 'sunrise' ? 'sunrise' : 'sunset'
+})
+const isSunriseFile = computed(() => fileKind.value === 'sunrise')
+
+/** 事件时刻（日出或日落，取决于当前文件）。原名 sunsetAt，名字已不符，故改中性名。 */
+const eventAt = computed(() => {
   const f = activeFile.value
   if (!f || !validIso.value) return NaN
-  return sunsetMs(f.spot.lat, f.spot.lon, validIso.value)
+  return isSunriseFile.value
+    ? sunriseMs(f.spot.lat, f.spot.lon, validIso.value)
+    : sunsetMs(f.spot.lat, f.spot.lon, validIso.value)
 })
+/** 向后兼容的别名（下面还有多处引用，语义一样） */
+const sunsetAt = eventAt
 
-const sunDown = computed(() => Number.isFinite(sunsetAt.value) && sunTimeMs.value >= sunsetAt.value)
+/** 太阳是否已经落到地平线下（用于「此刻没有直射光」的提示）。
+    日出剖面里太阳是**升上来**的方向：日出前才在地平线下，
+    所以判据要反过来 —— 用「是否在地平线下」这个物理事实，而不是「是否过了某个时刻」。 */
+const sunDown = computed(() => {
+  const a = sun.value
+  if (a) return a.el < 0
+  return Number.isFinite(sunsetAt.value) && sunTimeMs.value >= sunsetAt.value
+})
 
 /**
  * 数据年龄。
@@ -209,8 +297,8 @@ const dataAge = computed(() => {
  */
 const stale = computed(() => Number.isFinite(dataAge.value) && dataAge.value > 12)
 
-/** 与日落时刻最接近的那个时次高亮 */
-const nearestSunsetIdx = computed(() => {
+/** 与**事件时刻**（日出或日落）最接近的那个时次高亮 */
+const nearestEventIdx = computed(() => {
   const f = gfsFile.value
   if (!f || !Number.isFinite(sunsetAt.value)) return -1
   let best = -1
@@ -331,11 +419,17 @@ const termSpeed = computed(() => {
 const boundaryAtOrigin = computed(() =>
   sun.value ? boundaryHeightKm(0, sun.value.el, sun.value.deviationDeg) : 0
 )
-/** 参考时刻相对当地地面日落的分钟数（负 = 日落前） */
-const minutesFromSunset = computed(() => {
-  const t = sunsetAt.value
+/** 参考时刻（所选时次）相对事件时刻（日出/日落）的分钟数。
+    负 = 事件前。
+    ★ 日出剖面会给出 1000+ 分钟的巨大偏移（如 04:00 相对 06:41 是 -161 分），
+      而滑杆只有 ±20 分；如果没有这个界限，滑杆显示的分钟数和实际太阳位置
+      就会对不上（实测：日出图显示「日落后 1279 分」、太阳高度 -38°）。
+      这里把超出 ±20 的值视为「时次不在事件附近」，返回 null 让滑杆归零。 */
+const minutesFromEvent = computed(() => {
+  const t = eventAt.value
   if (!Number.isFinite(t) || !Number.isFinite(validMs.value)) return null
-  return (validMs.value - t) / 60000
+  const m = (validMs.value - t) / 60000
+  return Math.abs(m) <= 20 ? m : null
 })
 
 /** 受光判断专用的云带：判据 ≥1 mg/kg（与图上着色起点一致；结构卡仍用 ≥10） */
@@ -456,12 +550,17 @@ function resolveIncoming(q: URLSearchParams): { id: string; national: boolean; n
 
 /* ---------------- 加载 ---------------- */
 
-function readUrl(): { spot: string; t: number; az: number; sun: number | null } {
+function readUrl(): { spot: string; t: number; az: number; sun: number | null; kind: 'sunrise' | 'sunset' | '' } {
   const q = new URLSearchParams(location.search)
   const spot = q.get('spot') ?? ''
   const t = Number(q.get('t'))
   const a = Number(q.get('az'))
   const sun = Number(q.get('sun'))
+  /* 从预报页「朝霞 / 晚霞」卡片点进来时会带 kind。
+     2026-11-04 起全国机位同时有日出和日落两份剖面，kind 决定加载哪一份。
+     详见 nationalFile() 的注释与 sunriseFallback 提示。 */
+  const k = q.get('kind')
+  const kind = k === 'sunrise' || k === 'sunset' ? k : ''
   return {
     spot,
     /* ★ 没带 t 时给 -1，而不是 0。
@@ -471,7 +570,8 @@ function readUrl(): { spot: string; t: number; az: number; sun: number | null } 
        （Number(null) === 0，所以原来「没带参数」和「明确要第 0 个」分不开。） */
     t: q.has('t') && Number.isFinite(t) ? t : -1,
     az: Number.isFinite(a) && a >= 0 ? a : 265,
-    sun: q.has('sun') && Number.isFinite(sun) ? Math.round(sun) : null
+    sun: q.has('sun') && Number.isFinite(sun) ? Math.round(sun) : null,
+    kind
   }
 }
 
@@ -496,6 +596,10 @@ function writeUrl(): void {
   const q = new URLSearchParams()
   q.set('spot', spotId.value)
   q.set('t', String(tIdx.value))
+  /* ★ 写上 kind，否则刷新 / 分享链接会丢掉「朝霞还是晚霞」，
+     别人打开只看到晚霞，还以为自己点错了（用户报过这个）。
+     只在真有日出剖面时才写，避免给没有日出数据的机位造出假参数。 */
+  if (isSunriseFile.value) q.set('kind', 'sunrise')
   /* ★ 用「已加载文件的 azimuths」判断，不能用 azChoices：
      azChoices 在文件还没加载时回退成 5 个预设备选，会让全国机位也被写上 az。 */
   const azs = gfsFile.value?.azimuths ?? []
@@ -507,7 +611,7 @@ function writeUrl(): void {
 }
 
 function syncSunOffset(): void {
-  const m = minutesFromSunset.value
+  const m = minutesFromEvent.value
   sunOffsetMin.value = m !== null && Number.isFinite(m) ? Math.round(m) : 0
 }
 
@@ -520,7 +624,7 @@ async function pickSpotById(id: string, file: string): Promise<void> {
     gfsFile.value = f
     if (!f.azimuths.includes(az.value)) az.value = f.spot.defaultAzimuth
     if (!f.times.some((t) => t.t === tIdx.value)) {
-      tIdx.value = nearestSunsetIdx.value >= 0 ? nearestSunsetIdx.value : 0
+      tIdx.value = nearestEventIdx.value >= 0 ? nearestEventIdx.value : 0
     }
     /* 和 pickSpot 保持一致：Open-Meteo 模式下换了机位要重新拉一次，
        否则图上还是上一个机位的空气。 */
@@ -550,7 +654,7 @@ async function pickSpot(id: string): Promise<void> {
     gfsFile.value = f
     if (!f.azimuths.includes(az.value)) az.value = f.spot.defaultAzimuth
     if (!f.times.some((t) => t.t === tIdx.value)) {
-      tIdx.value = nearestSunsetIdx.value >= 0 ? nearestSunsetIdx.value : 0
+      tIdx.value = nearestEventIdx.value >= 0 ? nearestEventIdx.value : 0
     }
     if (isOm.value) await loadOm()
     syncSunOffset()
@@ -656,12 +760,18 @@ async function init(): Promise<void> {
     tIdx.value = u.t
     az.value = u.az
     pendingSunOffset.value = u.sun
+    sunriseAsked.value = u.kind === 'sunrise'
 
     /* 先看这个 id 是不是全国机位 */
     const nat = await nationalReady
     if (u.spot && nat?.spots.some((s) => s.id === u.spot)) {
       nationalSpotId.value = u.spot
-      const f = nationalFile(u.spot)
+      // 从「朝霞」卡片点进来就加载日出剖面；没有日出数据时退回日落并说明。
+      const wantKind: 'sunrise' | 'sunset' = sunriseAsked.value ? 'sunrise' : 'sunset'
+      const srFile = nationalFile(u.spot, 'sunrise')
+      const f = (wantKind === 'sunrise' ? srFile : null) ?? nationalFile(u.spot, 'sunset')
+      // 想要日出但没有日出数据 → 退回日落，并明确告知（不静默顶替）
+      sunriseFallback.value = wantKind === 'sunrise' && !srFile
       if (f) await pickSpotById(u.spot, f)
       applyPendingSun()
       return
@@ -673,7 +783,10 @@ async function init(): Promise<void> {
     /* 从预报页带名字进来、且名字命中全国机位时，走全国分支 */
     if (!u.spot && incoming.national && incoming.id) {
       nationalSpotId.value = incoming.id
-      const f = nationalFile(incoming.id)
+      const wantKind: 'sunrise' | 'sunset' = sunriseAsked.value ? 'sunrise' : 'sunset'
+      const srFile = nationalFile(incoming.id, 'sunrise')
+      const f = (wantKind === 'sunrise' ? srFile : null) ?? nationalFile(incoming.id, 'sunset')
+      sunriseFallback.value = wantKind === 'sunrise' && !srFile
       if (f) await pickSpotById(incoming.id, f)
       applyPendingSun()
       return
@@ -710,10 +823,8 @@ watch([spotId, tIdx, az], () => {
   if (spotId.value) writeUrl()
   if (isOm.value) void loadOm()
   /* 换时次时把太阳时间滑杆同步到该时次相对日落的分钟数 */
-  const m = minutesFromSunset.value
-  if (m !== null && Number.isFinite(m)) {
-    sunOffsetMin.value = Math.round(m)
-  }
+  const m = minutesFromEvent.value
+  sunOffsetMin.value = m !== null && Number.isFinite(m) ? Math.round(m) : 0
 })
 
 /* 太阳时间滑杆**不**写 URL：它是拖动状态，不是内容标识。
@@ -767,11 +878,14 @@ async function toggleFull(): Promise<void> {
 
 /* ---------------- 文案工具 ---------------- */
 
-const SUNSET_TEXT = computed(() => {
-  const t = sunsetAt.value
+/** 事件时刻文案（日出或日落，跟随当前文件）。原名 SUNSET_TEXT，见 eventAt 说明。 */
+const EVENT_TEXT = computed(() => {
+  const t = eventAt.value
   if (!Number.isFinite(t)) return '—'
   return beijingTime(new Date(t).toISOString())
 })
+/** 「日出」/「日落」两个字，界面文案里到处要用 */
+const EVENT_WORD = computed(() => (isSunriseFile.value ? '日出' : '日落'))
 </script>
 
 <template>
@@ -796,6 +910,11 @@ const SUNSET_TEXT = computed(() => {
 
       <template v-else-if="index && gfsFile">
         <p v-if="fromNote" class="xsec-from-note">{{ fromNote }}</p>
+        <!-- 想要朝霞、但这一份没有日出数据 → 退回日落，必须说清楚 -->
+        <p v-if="sunriseFallback" class="xsec-from-note xsec-rise-fallback">
+          <b>⚠ 这份数据里没有日出剖面</b>，下面显示的是<b>日落</b>剖面（西面）。
+          日出剖面需要等下一次数据更新生成。
+        </p>
 
         <!-- 机位切换 -->
         <div class="xsec-spots" role="tablist" aria-label="代表机位">
@@ -819,13 +938,20 @@ const SUNSET_TEXT = computed(() => {
           <div class="xsec-national-head">
             <span class="xsec-group-label">全国机位</span>
             <span class="xsec-hint">
-              {{ national.spots.length }} 个 · 按当天日落方位生成 1 个剖面 ·
-              {{ national.times.length }} 个时次 · 起报 {{ beijingDateTime(national.cycle) }}
+              {{ nationalSpotsUnique.length }} 个 ·
+              <template v-if="sunriseCoverage.withSun === sunriseCoverage.total">
+                每机位两套剖面（晚霞 + 朝霞）
+              </template>
+              <template v-else-if="sunriseCoverage.withSun > 0">
+                其中 {{ sunriseCoverage.withSun }} 个有朝霞剖面
+              </template>
+              <template v-else>只有晚霞剖面</template>
+              · {{ national.times.length }} 个时次 · 起报 {{ beijingDateTime(national.cycle) }}
             </span>
           </div>
           <div class="xsec-spots xsec-spots-national" role="tablist" aria-label="全国机位">
             <button
-              v-for="s in national.spots"
+              v-for="s in nationalSpotsUnique"
               :key="s.id"
               type="button"
               class="xsec-spot xsec-spot-small"
@@ -895,6 +1021,26 @@ const SUNSET_TEXT = computed(() => {
 
         <!-- 工具条 -->
         <div class="xsec-toolbar">
+          <!-- 朝霞 / 晚霞：页面内直接切换，不必回预报页重进 -->
+          <div v-if="hasSunrise(nationalSpotId) || isSunriseFile" class="xsec-group">
+            <span class="xsec-group-label">剖面</span>
+            <div class="xsec-seg">
+              <button
+                type="button"
+                class="xsec-seg-btn"
+                :class="{ 'is-on': !isSunriseFile }"
+                @click="switchKind('sunset')"
+              >晚霞（日落）</button>
+              <button
+                type="button"
+                class="xsec-seg-btn"
+                :class="{ 'is-on': isSunriseFile }"
+                :disabled="!hasSunrise(nationalSpotId)"
+                @click="switchKind('sunrise')"
+              >朝霞（日出）</button>
+            </div>
+          </div>
+
           <div class="xsec-group">
             <span class="xsec-group-label">数据源</span>
             <div class="xsec-seg">
@@ -925,13 +1071,13 @@ const SUNSET_TEXT = computed(() => {
                 :key="t.t"
                 type="button"
                 class="xsec-seg-btn"
-                :class="{ 'is-on': t.t === tIdx, 'is-sunset': t.t === nearestSunsetIdx }"
+                :class="{ 'is-on': t.t === tIdx, 'is-sunset': t.t === nearestEventIdx }"
                 @click="selectTime(t.t)"
               >
                 {{ beijingTime(t.utc) }}
               </button>
             </div>
-            <span class="xsec-hint">日落约 {{ SUNSET_TEXT }}</span>
+            <span class="xsec-hint">{{ EVENT_WORD }}约 {{ EVENT_TEXT }}</span>
           </div>
 
           <div class="xsec-group">
@@ -943,20 +1089,20 @@ const SUNSET_TEXT = computed(() => {
                 min="-20"
                 max="20"
                 step="1"
-                aria-label="太阳时间相对日落的分钟数"
+                aria-label="太阳时间相对日出/日落的分钟数"
               />
               <span class="xsec-hint">
-                日落{{ sunOffsetMin >= 0 ? '后' : '前' }} {{ Math.abs(sunOffsetMin) }} 分
+                {{ EVENT_WORD }}{{ sunOffsetMin >= 0 ? '后' : '前' }} {{ Math.abs(sunOffsetMin) }} 分
               </span>
             </div>
           </div>
 
           <div class="xsec-group">
             <span class="xsec-group-label">方位</span>
-            <!-- 全国机位只有 1 个方位（当天日落方位）：不显示按钮，直接说明，
+            <!-- 全国机位只有 1 个方位（当天事件方位）：不显示按钮，直接说明，
                  免得用户以为能切、点了却发现是高亮的假按钮。 -->
             <span v-if="singleAz" class="xsec-hint xsec-az-single">
-              {{ azChoices[0] }}°（当天日落方位，全国机位只生成这一个剖面）
+              {{ azChoices[0] }}°（当天{{ EVENT_WORD }}方位，这份剖面只生成这个方位）
             </span>
             <div v-else class="xsec-seg">
               <button
@@ -1081,6 +1227,11 @@ const SUNSET_TEXT = computed(() => {
             <div class="xsec-card-head">
               <div>
                 <strong>{{ activeFile.spot.name }}</strong>
+                <!-- 朝霞 / 晚霞：一眼看出这份剖面是哪个方向、哪个事件 -->
+                <span
+                  class="xsec-kind-tag"
+                  :title="isSunriseFile ? '日出（朝霞）剖面：太阳从东边升起' : '日落（晚霞）剖面：太阳从西边落下'"
+                >{{ isSunriseFile ? '朝霞' : '晚霞' }}</span>
                 <span class="xsec-sep">·</span>
                 <span>{{ activeFile.spot.area }} / 朝 {{ activeFile.spot.face }}</span>
                 <span class="xsec-sep">·</span>
@@ -1198,10 +1349,10 @@ const SUNSET_TEXT = computed(() => {
                 高度角 {{ sun.el.toFixed(1) }}° · 方位 {{ sun.az.toFixed(0) }}° ·
                 与剖面相差 {{ sun.deviationDeg.toFixed(0) }}°（剖面内投影 {{ sun.inPlaneEl.toFixed(0) }}°）
               </dd>
-              <dt>距日落</dt>
+              <dt>距{{ EVENT_WORD }}</dt>
               <dd>
-                日落 {{ SUNSET_TEXT }}（北京）·
-                太阳时间 {{ sunOffsetMin >= 0 ? '日落后' : '日落前' }} {{ Math.abs(sunOffsetMin) }} 分
+                {{ EVENT_WORD }} {{ EVENT_TEXT }}（北京）·
+                太阳时间 {{ sunOffsetMin >= 0 ? EVENT_WORD + '后' : EVENT_WORD + '前' }} {{ Math.abs(sunOffsetMin) }} 分
                 <span class="xsec-dim">（太阳位置按分钟计算，云场仍取所选时次）</span>
               </dd>
               <dt>地形视线</dt>

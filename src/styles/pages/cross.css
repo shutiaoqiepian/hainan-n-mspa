@@ -924,3 +924,25 @@
 @media (max-width: 900px) {
   .xsec-swipe-hint { display: flex; }
 }
+
+/* 想要朝霞但没有日出数据时的提示：用警告色，和普通说明条区分开 */
+.xsec-rise-fallback {
+  border-color: rgba(240, 170, 60, 0.45);
+  background: rgba(240, 170, 60, 0.10);
+  color: var(--text-1);
+}
+
+/* 图表标题旁的「朝霞 / 晚霞」标识：一眼看出这份剖面是哪个方向 */
+.xsec-kind-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+  border: 1px solid var(--accent-a-line);
+  background: var(--accent-a-soft);
+  color: var(--accent-a);
+}

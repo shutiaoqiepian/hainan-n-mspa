@@ -261,20 +261,76 @@ def sunset_utc_for_local_date(local_date, lat, lon):
     raise RuntimeError("日落搜索失败（不应发生）")
 
 
-def pick_cycle_and_hours(now_utc, spot_lat, spot_lon, force_cycle=None):
-    """选最新可用 GFS 起报，并给出要取的 4 个整点 UTC 时刻。"""
-    # 目标日落：今天还没过就今天，否则明天（留 1 小时余量）
+def sunrise_utc_for_local_date(local_date, lat, lon):
+    """求当地日出的 UTC 时刻（搜索前一天 16:00 UTC 起 10 小时，1 分钟精度）。
+
+    ★ 2026-11-04 加：原来整条管道只认日落。
+      用户从「朝霞」卡片点进 /cross，看到的是西面 254° 的日落剖面，
+      数据没错但答非所问 —— 因为早晨的时刻根本没存过。
+
+      搜索窗口为什么从前一天 16:00 UTC 起：
+        东八区日出在北京时间 06:00 左右 ≈ UTC 前一天 22:00。
+        从当天 00:00 UTC 起搜会直接错过跨零点的那一段。
+    """
+    base = datetime(local_date.year, local_date.month, local_date.day, 0, 0, tzinfo=timezone.utc) \
+        - timedelta(hours=8)
+    prev = None
+    for k in range(0, 601):  # 10 小时，1 分钟步长
+        t = base + timedelta(minutes=k)
+        el = sun_pos_ms(t.timestamp() * 1000, lat, lon)["el"]
+        if prev is not None and prev < -0.833 <= el:
+            return t
+        prev = el
+    raise RuntimeError("日出搜索失败（不应发生）")
+
+
+def _hours_around(ev_utc, span_before=2, n=4):
+    """以事件时刻（日出/日落）为基准取 n 个整点，返回真正的 datetime 列表。
+
+    ★ 为什么返回 datetime 而不是「小时列表 + 日期偏移」：
+      跨零点的窗口**装不进同一个 UTC 日期**。
+      喀什 11 月日出约 UTC 01:29，往前 2 小时就落到前一天 UTC 23:29 ——
+      这个窗口横跨两个日期，任何「同一天 + 小时平移」的写法都会算错。
+      我在这里连写错三版（while 互抵 / 只平移一次 / 整窗平移），根因都是同一个：
+      不该先把时刻拆成「日期 + 小时」再拼回去。
+      直接用 timedelta 在绝对时刻上加减，跨日由 datetime 自己处理，不可能错。
+    """
+    base = ev_utc.replace(minute=0, second=0, microsecond=0) - timedelta(hours=span_before)
+    return [base + timedelta(hours=i) for i in range(n)]
+
+
+def pick_cycle_and_hours(now_utc, spot_lat, spot_lon, force_cycle=None, kind="sunset"):
+    """选最新可用 GFS 起报，并给出要取的 4 个整点 UTC 时刻。
+
+    kind: "sunset"（默认，保持原行为）或 "sunrise"。
+
+    ★ 2026-11-04 加 kind 参数：原来这个函数写死日落，
+      早晨的时次永远拿不到，/cross 也就永远画不出朝霞剖面。
+      两种 kind 共用同一套「选起报」逻辑，只是目标事件和日期判定不同。
+
+    日期判定：
+      sunset —— 今天日落还没过就今天，否则明天（留 30 分钟余量）
+      sunrise —— 明天日出（因为今天早上的日出大概率已经过了，
+                 要预览「明天早上」才符合用户预期；若此刻还在今天日出前
+                 6 小时内，则仍给今天早上）
+    """
     local_now = now_utc + timedelta(hours=8)
     today = local_now.date()
-    ts_today = sunset_utc_for_local_date(today, spot_lat, spot_lon)
-    target_date = today if now_utc < ts_today - timedelta(minutes=30) else today + timedelta(days=1)
-    sunset = sunset_utc_for_local_date(target_date, spot_lat, spot_lon)
-    h0 = int(math.floor(sunset.hour + sunset.minute / 60.0)) - 2
-    if h0 < 0 or h0 + 3 > 23:
-        raise RuntimeError(f"日落时刻 {sunset} 不在可取样范围（h0={h0}）")
-    hours = [h0 + i for i in range(4)]
-    valid = [datetime(target_date.year, target_date.month, target_date.day, h, 0, tzinfo=timezone.utc)
-             for h in hours]
+
+    if kind == "sunrise":
+        sr_today = sunrise_utc_for_local_date(today, spot_lat, spot_lon)
+        # 今天的日出还没到（留 30 分钟余量）→ 用今天；否则用明天
+        target_date = today if now_utc < sr_today - timedelta(minutes=30) else today + timedelta(days=1)
+        event = sunrise_utc_for_local_date(target_date, spot_lat, spot_lon)
+    else:
+        ts_today = sunset_utc_for_local_date(today, spot_lat, spot_lon)
+        target_date = today if now_utc < ts_today - timedelta(minutes=30) else today + timedelta(days=1)
+        event = sunset_utc_for_local_date(target_date, spot_lat, spot_lon)
+
+    # 直接用绝对时刻：跨日交给 datetime 处理。
+    # （原来这里是「target_date + 小时」拼装，日出跨零点时会整整错一天 ——
+    #   23:00 查日出给出后天早晨，就是这个原因。）
+    valid = _hours_around(event)
 
     candidates = []
     if force_cycle:

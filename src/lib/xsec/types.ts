@@ -158,14 +158,18 @@ export interface XsecNationalIndex {
   levelFields: XsecField[]
   azimuthPolicy: string
   times: XsecTime[]
+  /** 日出时次（2026-11-04 起才有；老索引没有这个字段） */
+  sunriseTimes?: XsecTime[]
   spots: Array<{
     prov: string
     id: string
     name: string
-    /** 相对 data/cross/ 的路径，如 "hn/hn-000.json" */
+    /** 相对 data/cross/ 的路径，如 "hn/hn-000.json"（日落）或 "hn/hn-000-sunrise.json"（日出） */
     file: string
     bytes: number
     azimuth: number
+    /** 哪个事件；老数据没有这个字段，按 'sunset' 处理 */
+    kind?: 'sunrise' | 'sunset'
   }>
   errors: Array<Record<string, string>>
   note: string
