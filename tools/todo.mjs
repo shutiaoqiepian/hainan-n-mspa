@@ -44,6 +44,30 @@ const ROOT = process.cwd()
 /** @type {TodoItem[]} */
 
 export const ITEMS = [
+  /* ---------- 仓库体积（长期，§35） ---------- */
+  {
+    id: 'repo-size',
+    title: 'Git 仓库体积按 1.61 MB/天增长，到 1 GB 约 21 个月，要分级做预案',
+    state: 'pending',
+    trigger: {
+      text: 'GitHub 报告的仓库体积 > 300 MB（现在 49.5 MB），或克隆超过 60 秒',
+      metric: 'repoSize'
+    },
+    why:
+      '不是「现在就疼」的问题：49.5 MB 且只涨 1.61 MB/天，21 个月内不会撞 1 GB。' +
+      '但 Git 删不掉历史（git rm 只再存一份「文件不存在」），真要缩必须重写全部哈希（§33.3），' +
+      '所以必须提前降速，不能等到撞了才动。先做最便宜的 A 级措施即可。',
+    how: [
+      '先量：跑 npm run todo -- --all 看实际体积，或直接 curl api.github.com/repos/.../ 的 size 字段',
+      'A 级（最省事，优先做）：预报缓存写入前逐省比对，只 git add 内容真变了的文件。实际每轮只有少数省份在变，预计省 60–80% 的预报写入',
+      'B 级（体积 > 600 MB 再做）：data/forecast 与 data/cross 改成「只留最新一份」，先删旧再写新',
+      'C 级（体积 > 900 MB）：数据迁到 Cloudflare R2，仓库只留源码；R2 免费额度 10 GB，几年内不产生费用',
+      '⚠️ 不要用 git rm 来「清理体积」，没用；只有 git filter-repo 重写历史才真能缩，见 §33.3'
+    ],
+    doc: '交接文档 35（含实测锚点、压缩比 25 倍的原因、第 35.6 节体积观察记录表）',
+    files: ['tools/todo.mjs', '.github/workflows/forecast-cache.yml', '.github/workflows/xsec-cache.yml']
+  },
+
   /* ---------- 等数据 ---------- */
   {
     id: 'profile-data-source',
@@ -438,7 +462,34 @@ async function evaluate(item) {
     }
   }
 
+  if (item.trigger.metric === 'repoSize') {
+    return await evaluateRepoSize()
+  }
+
   return { due: null, detail: '未知判定方式' }
+}
+
+/**
+ * 查 GitHub 上的仓库体积。需要联网；离线时返回 due=null（不误报）。
+ * 阈值见 ITEMS 里 repo-size 那条的 trigger.text。
+ */
+async function evaluateRepoSize() {
+  const THRESHOLD_MB = 300
+  try {
+    const res = await fetch('https://api.github.com/repos/shutiaoqiepian/hainan-n-mspa', {
+      headers: { 'User-Agent': 'mspa-todo' },
+      signal: AbortSignal.timeout(8000)
+    })
+    if (!res.ok) return { due: null, detail: `查询失败 HTTP ${res.status}，需人工到 GitHub 仓库首页看` }
+    const d = await res.json()
+    const mb = Math.round((d.size / 1024) * 10) / 10
+    return {
+      due: mb >= THRESHOLD_MB,
+      detail: `仓库 ${mb} MB（触发线 ${THRESHOLD_MB} MB，约 21 个月后到 1 GB）`
+    }
+  } catch {
+    return { due: null, detail: '离线或超时，需人工判断（阈值 300 MB）' }
+  }
 }
 
 /* ---------- CLI ---------- */
