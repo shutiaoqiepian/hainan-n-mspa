@@ -290,6 +290,40 @@ export interface SpotDetail {
 /** 兼容旧引用：Detail 就是 SpotDetail */
 export type Detail = SpotDetail
 
+/**
+ * 中云「云底照亮」几何 + 云种分类的结果（2026-11-05 新增）。
+ *
+ * 两个用途，别混：
+ *   ① **界面**：告诉用户「几点几分到几点几分，中云的云底正在被低角度阳光从下方照亮」——
+ *      这是摄影上真正决定「去早了还是去晚了」的那个数。
+ *   ② **评分**：只有 lift 和 litMinutes 进算法（见 midcloud.ts 的保守参数）。
+ *
+ * ★ 不要把它叫「概率」。窗口是几何算出来的确定值，不是概率。
+ */
+export interface MidLight {
+  /** 中云云底高度（m，估算）；用于算阴影角，缺测为 null */
+  baseM: number | null
+  /** 该高度的地球阴影角（度）：太阳低于地平线这么多，云底才进阴影 */
+  shadowAngleDeg: number | null
+  /** 云底被照亮的窗口起点（北京时间 HH:MM）；算不出为 null */
+  litFrom: string | null
+  /** 窗口终点（北京时间 HH:MM） */
+  litTo: string | null
+  /** 窗口长度（分钟） */
+  litMinutes: number | null
+  /** 云种标签，如「透光高积云」 */
+  genus: string
+  /** 透光系数 0–1 */
+  translucency: number
+  /**
+   * 画布抬升量 0–1（0 = 没补，评分与历史口径完全一致）。
+   * 评分的做法是 h' = h + (1 − h) × lift，只增不减、永远不超过 1。
+   */
+  lift: number
+  /** 判据一句话 */
+  why: string
+}
+
 /** 数据质量：把「天气不好」和「没有数据」分开 */
 export interface DataQuality {
   /** 关键字段完整度 0–100 */
@@ -338,6 +372,12 @@ export interface Row {
   aodRefMass?: number | null
   /** 该时次的 9 层气压云量（%），供影子分数做「垂直连续云」判断；缺测为 null */
   levelCover?: Array<{ hPa: number; coverPct: number | null; heightM: number | null }> | null
+  /**
+   * 中云「云底照亮」窗口 + 云种分类（2026-11-05 新增）。
+   * 只有在能算出中云云底高度时才给；缺测保持 undefined，
+   * 界面必须显示「数据不足」而不是「不烧」。
+   */
+  midLight?: MidLight
   /** 正点前后一小时里「平滑值最高」的那个小时的分数与时刻（最佳时刻） */
   peakScore: number
   peakTime: string

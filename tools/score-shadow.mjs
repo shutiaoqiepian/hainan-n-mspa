@@ -154,7 +154,8 @@ async function main() {
         sunEl: r.sunEl ?? undefined,
         horizonBlock: r.horizonBlock ?? null,
         rainRelief: r.rainRelief ?? null,
-        aodRefMass: r.aodRefMass ?? null
+        aodRefMass: r.aodRefMass ?? null,
+        midLift: r.midLift ?? null
       }
       /* 9 层云量不在快照里 → 用剖面摘要的云水（≥1 mg/kg 视为 100%，否则 0）近似 */
       let levelsApprox = null

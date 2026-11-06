@@ -168,6 +168,23 @@ const layerSummary = computed(() => {
   if (!t) return '8 层均无云'
   return '最高有云：' + t.genus + ' ' + t.cover + '% · ' + km(t.height) + ' / ' + t.level + ' hPa'
 })
+/* ---------- 中云「云底照亮」（2026-11-06） ----------
+   这是摄影上最实用的一个数：中云的云底只在日出/日落前后那几分钟被低角度阳光
+   从下方照亮，去早了它还是灰的、去晚了光已经在云后面了。
+   几何推导见 src/lib/forecast/baselit.ts，判据见 midcloud.ts。 */
+const midLit = computed(() => props.row.midLight ?? null)
+const midLitText = computed(() => {
+  const x = midLit.value
+  if (!x) return ''
+  const parts: string[] = []
+  parts.push(x.genus)
+  if (x.baseM != null) parts.push('云底约 ' + (x.baseM / 1000).toFixed(1) + ' km')
+  if (x.litFrom && x.litTo) parts.push('被照亮 ' + x.litFrom + '–' + x.litTo + '（' + x.litMinutes + ' 分钟）')
+  else parts.push('照亮窗口算不出')
+  return parts.join(' · ')
+})
+const midLitTitle = computed(() => midLit.value?.why ?? '')
+
 const modelSummary = computed(
   () => '一致度 ' + consistency.value + '% · 分歧 ±' + props.row.spread + ' 分 · 完整度 ' + props.row.quality.completeness + '%'
 )
@@ -273,6 +290,11 @@ const hoursSummary = computed(() => {
 
           <p v-show="!narrow || layersOpen" class="fcl-legend">
             低云 &lt;2 km · 中云 2–6 km · 高云 &gt;6 km ·「可被照亮」= 薄到夕阳能从底下透过并染色。云属由「云量 + 湿度 + 温度 + 降水」推得，不是实测。
+          </p>
+
+          <p v-if="midLit" v-show="!narrow || layersOpen" class="fcl-midlit" :title="midLitTitle">
+            <b>中云云底照亮</b>：{{ midLitText }}
+            <s>· 透光 {{ Math.round(midLit.translucency * 100) }}%<template v-if="midLit.lift > 0">，已计入评分</template></s>
           </p>
 
           <div v-if="d.conflicts.length" class="fcd2-warn">

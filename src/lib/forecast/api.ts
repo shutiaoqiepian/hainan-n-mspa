@@ -4,6 +4,8 @@ import { ALL_MODELS, MODELS, MULTI_MODELS } from '@/data/forecast/models'
 import { DETAIL_SPOT, dataFileFor, spotsFor } from '@/data/forecast/spots'
 import { cloudProfile, syntheticProfile } from './clouds'
 import { conflictsOf, interpret } from './interpret'
+import { MID_RH_LEVELS, midCanvasPlan } from './midcloud'
+import type { MidEvaluation } from './midcloud'
 import {
   airmass, clarityOf, clarityLabel, clamp, crepuscularOf, lclMeters, pillarOf, profileOf,
   rainbowHint, rainbowOf, scoreOf, scoreOfAt, vividLabel, vividnessOf
@@ -12,7 +14,7 @@ import { state } from './state'
 import { faceMatch, sunPosition } from './sun'
 import { localDateStr, nextUpdateMs, parseIso } from './time'
 import type {
-  CacheData, CloudLayer, DataQuality, Detail, DetailHour, HorizonCols, Interpretation, KindKey, Measure, Phototip, RawData, RawPoint, RawSeries, Row, Spot, SpotDetail, StaticFile, SunPos
+  CacheData, CloudLayer, DataQuality, Detail, DetailHour, HorizonCols, Interpretation, KindKey, Measure, MidLight, Phototip, RawData, RawPoint, RawSeries, Row, Spot, SpotDetail, StaticFile, SunPos
 } from './types'
 
 /* ---------- 工具 ---------- */
@@ -45,6 +47,14 @@ function addMin(t: string, delta: number): string {
   const d = new Date(2000, 0, 1, Number(p[0]), Number(p[1]))
   d.setMinutes(d.getMinutes() + delta)
   return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2)
+}
+
+/** ms → 北京时间 HH:MM。
+ *  ⚠ 不要用 `new Date(ms).getHours()`：那取的是**运行环境**时区，
+ *  用户在海口以外的电脑上会看到错的「几点几分」。这里显式加 8 小时再走 UTC 方法。 */
+function bjClock(ms: number): string {
+  const d = new Date(ms + 8 * 3600 * 1000)
+  return ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2)
 }
 
 /* ---------- 坐标去重 ----------
@@ -484,9 +494,10 @@ export const PROFILE_VARS = [
   'boundary_layer_height', 'cape', 'precipitation', 'wind_speed_10m'
 ].join(',')
 
-/* 剖面里的单点值：多模式时键名带后缀，优先取不带后缀的 */
-function profField(pr: RawPoint, name: string, idx: number): number | null {
-  const ph = pr.hourly
+/* 剖面里的单点值：多模式时键名带后缀，优先取不带后缀的。
+   允许传 null：没有剖面数据时直接返回 null，调用方不用到处写守卫。 */
+function profField(pr: RawPoint | null | undefined, name: string, idx: number): number | null {
+  const ph = pr?.hourly
   if (!ph) return null
   const a = ph[name] || ph[name + '_ecmwf_ifs025']
   if (!a) return null
@@ -734,6 +745,26 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
       m.wind10 = profField(pr, 'wind_speed_10m', idx)
     }
 
+    /* ---- 剖面里的几个标量 + 云底（提前到这里：中云「云底照亮」窗口要用到）---- */
+    let cape: number | null = null
+    let z850: number | null = null
+    let t850: number | null = null
+    let td850: number | null = null
+    if (pr && pr.hourly) {
+      cape = profField(pr, 'cape', idx)
+      z850 = profField(pr, 'geopotential_height_850hPa', idx)
+      t850 = profField(pr, 'temperature_850hPa', idx)
+      td850 = profField(pr, 'dew_point_850hPa', idx)
+    }
+
+    /* 云底：地面 LCL 当中低云底；850hPa 层推中层云底 */
+    const cbLow = lclMeters(m.t2m, m.td2m)
+    let cbMid: number | null = null
+    if (z850 != null && t850 != null && td850 != null) {
+      const lcl850 = lclMeters(t850, td850)
+      cbMid = lcl850 != null ? Math.round(z850 - lcl850) : null
+    }
+
     /* 太阳位置与机位朝向。
        以前评分用整点、详情用精确日落时刻，两处方位最多差 30 分钟，
        行内「太阳方位」和详情面板会打架。现在统一用精确时刻。 */
@@ -744,6 +775,40 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
     if (sun) face = faceMatch(spot, sun.az)
 
     const sunExact: SunPos | null = sun
+
+    /* ---------- 中云「云底照亮」几何（2026-11-05 新增）----------
+       云底被低角度阳光从下方照亮的窗口长度 = θ / 太阳下沉速率，
+       θ = arccos(R/(R+h)) 是该云底高度的地球阴影角（见 baselit.ts 的推导与表）。
+       窗口长度只用来给「中云补画布」打折：现象越短暂，小时级模式数据越担保不了它。
+       另外它直接告诉用户「几点到几点」，这是摄影上最实用的一个数。 */
+    const midBaseM = ((): number | null => {
+      /* 优先级：850 hPa 的 LCL 推算 → 但只有落进中云高度带才认；
+         否则用 700 hPa 位势高度（中云的标准层，约 3.1 km）。 */
+      if (cbMid != null && cbMid >= 2000 && cbMid <= 6000) return cbMid
+      const z700 = profField(pr, 'geopotential_height_700hPa', idx)
+      if (z700 != null) return clamp(Math.round(z700), 1500, 6000)
+      if (cbMid != null) return clamp(cbMid, 1500, 6000)
+      return null
+    })()
+
+    const midPlan = midCanvasPlan({
+      eventMs: ms,
+      lat: spot.lat,
+      lon: spot.lon,
+      kind: state.kind,
+      midBaseM: midBaseM
+    })
+    const midLit = midPlan.window
+
+    /** 某小时 700/600/500 hPa 里最大的相对湿度（缺测为 null） */
+    const midRhAt = (k: number): number | null => {
+      let best: number | null = null
+      for (const lv of MID_RH_LEVELS) {
+        const v = profField(pr, 'relative_humidity_' + lv + 'hPa', k)
+        if (v != null && Number.isFinite(v) && (best == null || v > best)) best = v
+      }
+      return best
+    }
 
     /* 每个模式各算一遍：平均值当结果，标准差当“可信度” */
     let perModelScores: number[] = []
@@ -792,6 +857,25 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
     /* 目标时刻的两个修正系数（只记录，不改变计算）——影子分数要用同一口径 */
     let obsRelief = 0
 
+    /* ---------- 中云补画布（C 方案 + B 的保守）----------
+       同一个机位的三个小时，中云量、湿度、降水、云种各不相同，所以要逐小时算。
+       抬升量 0 表示「不补」——此时不传 midLift，评分与历史口径逐位一致。 */
+    const midEvalCache = new Map<number, MidEvaluation>()
+
+    const midEvalAt = (k: number, mm: Measure): MidEvaluation => {
+      let ev = midEvalCache.get(k)
+      if (!ev) {
+        ev = midPlan.evaluate({
+          mid: mm.mid,
+          rhMid: midRhAt(k),
+          precipMm: precipAt(k),
+          pop: mm.pop
+        })
+        midEvalCache.set(k, ev)
+      }
+      return ev
+    }
+
     const hourScore = (k: number): number => {
       const hit = hourScoreCache.get(k)
       if (hit != null) return hit
@@ -808,7 +892,8 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
         sunEl: hourSunEl(k),
         aodRefMass: refMass,
         horizonBlock,
-        rainRelief: relief
+        rainRelief: relief,
+        midLift: midEvalAt(k, mm).lift
       })
       hourScoreCache.set(k, v)
       return v
@@ -857,29 +942,10 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
     const peakScore = finish(peakVal)
 
     /* ---- 其它几种“值得跑”的条件 ---- */
-    let cape: number | null = null
-    let z850: number | null = null
-    let t850: number | null = null
-    let td850: number | null = null
-    if (pr && pr.hourly) {
-      cape = profField(pr, 'cape', idx)
-      z850 = profField(pr, 'geopotential_height_850hPa', idx)
-      t850 = profField(pr, 'temperature_850hPa', idx)
-      td850 = profField(pr, 'dew_point_850hPa', idx)
-    }
-
     const pop = m.pop ?? 0
     const rainNear = rainbowHint(spot, times, idx, prof, (k) => measureAt(w, null, k, mids).pop)
     const clarity = clarityOf(m)
     const rainbow = rainbowOf(m, sun, cape, rainNear)
-
-    /* 云底：地面 LCL 当中低云底；850hPa 层推中层云底 */
-    const cbLow = lclMeters(m.t2m, m.td2m)
-    let cbMid: number | null = null
-    if (z850 != null && t850 != null && td850 != null) {
-      const lcl850 = lclMeters(t850, td850)
-      cbMid = lcl850 != null ? Math.round(z850 - lcl850) : null
-    }
 
     /* 云层剖面与云种（SunsetBot 大气截面图的同款思路） */
     const prof2 = cloudProfile(pr, idx, { pop, cape, sunEl: sun ? sun.el : null })
@@ -892,6 +958,26 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
       sheets = syn.sheets
       genusText = syn.genusText
     }
+
+    /* ---------- 中云「云底照亮」结果（给界面，也记录进了评分的那个抬升量）---------- */
+    const obsMid = midEvalAt(idx, m)
+    const obsMidOp = obsMid.opacity
+    /* 高云超过 55%（fHigh 的甜区起点）时，scoreOfAt 里那道闸会让 lift 不起作用。
+       这里把「没起作用」如实记成 0，否则界面会写「已计入评分」但分数其实一点没动。 */
+    const obsMidLift = m.high != null && Number.isFinite(m.high) && m.high <= 55 ? obsMid.lift : 0
+    const midLight: MidLight | undefined = midBaseM == null && obsMidOp.key === 'clear'
+      ? undefined
+      : {
+          baseM: midBaseM,
+          shadowAngleDeg: midLit ? Math.round(midLit.shadowAngleDeg * 100) / 100 : null,
+          litFrom: midLit ? bjClock(midLit.startMs) : null,
+          litTo: midLit ? bjClock(midLit.endMs) : null,
+          litMinutes: midLit ? midLit.minutes : null,
+          genus: obsMidOp.label,
+          translucency: obsMidOp.translucency,
+          lift: Math.round(obsMidLift * 100) / 100,
+          why: obsMidOp.why
+        }
 
     /* 光柱与云隙光分开算（用精确时刻的太阳高度） */
     const crep = crepuscularOf(m, sunExact, { face, cloudBase: cbLow })
@@ -1019,6 +1105,7 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
       /* 逐层云量（来自剖面请求，ECMWF 单模式）。只在有剖面数据时给，缺测保持 null，
          绝不把"没有这一层"写成 0% —— 影子分数的垂直连续性判断依赖这个区分。 */
       levelCover: buildLevelCover(pr, idx),
+      midLight: midLight,
       quality: qualityOf(m),
       peakScore: peakScore,
       peakTime: peakTime,

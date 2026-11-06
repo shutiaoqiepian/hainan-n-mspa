@@ -34,6 +34,9 @@ Vue 3 + TypeScript + Vite 多页应用，部署在 Cloudflare Pages（构建命�
 
 1. **不改 `scoreOf()` 的公式**，只在外面加物理修正。
    历史快照（`data/obs/forecast-*.json`）必须能用同一套代码复算。
+   → 具体做法是往 `ScoreOpts` 里加**可选**开关（`midLift` / `horizonBlock` / `rainRelief` …），
+   不传时 `scoreOfAt` 必须与 `scoreOf` 逐位一致。2026-11-06 的中云抬升就是这么加的：
+   `h' = h + (1−h)×lift`，`lift=0` 时结果完全不变（`tools/test-midcloud.mjs` 在守这条）。
 2. **宁可漏报，不可误报。**
    任何让全站分数系统性上浮 / 下浮的改动，一票否决。
    （曾因此否掉过「峰值窗口当主分数」（+2.37 均值、30 个机位等级翻转）
@@ -79,6 +82,16 @@ npm run build
 node tools/test-boundaries.mjs                      # 32 项边界
 node tools/test-physics.mjs                         # 23 项物理
 ```
+
+改了**中云画布 / 云底照亮窗口**（`baselit.ts`、`midcloud.ts`、`MID_CANVAS`）额外跑：
+
+```bash
+node tools/test-baselit.mjs     # 40 项：地球阴影角 / 窗口长度 / 算不出必须 null
+node tools/test-midcloud.mjs    # 47 项：云种三档 / lift 边界 / 只增不减 / 历史基准
+node tools/ab-midcloud.mjs      # 影响面：必须「平均上浮 < 1 分」且「降低 0 条」
+```
+> `MID_CANVAS` 里任何一个常数都是实测反推的，不是拍的。改了就重跑 `ab-midcloud.mjs`，
+> 没通过就别提交。理由与全部数字见交接文档第 38 章。
 
 改了 `data/forecast/*.json` 的读写、机位表、或缓存格式，额外跑：
 

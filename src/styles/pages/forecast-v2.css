@@ -563,6 +563,14 @@ button.fcl-row.open { background: var(--fill-2); }
 .fcl-note b { color: var(--text-2); }
 .fcl-note .muted, .muted { color: var(--muted-2); }
 .fcl-legend { margin: 8px 0 0; font-size: 10.5px; color: var(--muted-2); line-height: 1.5; }
+/* 中云云底照亮窗口：摄影上最实用的一个数（几点到几分去拍） */
+.fcl-midlit {
+  margin: 6px 0 0; padding: 6px 8px; border-radius: 6px;
+  background: var(--surface-2); border-left: 2px solid var(--warn);
+  font-size: 11.5px; line-height: 1.55; color: var(--text-2);
+}
+.fcl-midlit b { color: var(--text); font-weight: 600; }
+.fcl-midlit s { text-decoration: none; color: var(--muted-2); }
 .fcd2-warn { margin-top: 8px; }
 .fcd2-warn p { margin: 4px 0; font-size: 11.5px; color: var(--warn); line-height: 1.5; }
 

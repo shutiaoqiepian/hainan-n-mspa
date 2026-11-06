@@ -83,6 +83,9 @@ export async function computeFor(prov: string, fixture: string) {
       horizonBlock: r.horizonBlock ?? null,
       rainRelief: r.rainRelief ?? null,
       aodRefMass: r.aodRefMass ?? null,
+      /* 中云画布抬升量（0–1）。2026-11-06 起线上第一层分数含它，
+         不存下来就没法用同一口径复算（shadow / 影子分数要用）。 */
+      midLift: r.midLight && r.midLight.lift > 0 ? Math.round(r.midLight.lift * 100) / 100 : null,
       aodRefEl: r.aodRefEl ?? null,
       /* 9 层气压云量：影子分数判断「薄卷云 / 厚层云」用；缺测保留 null */
       levelCover: r.levelCover ?? null,

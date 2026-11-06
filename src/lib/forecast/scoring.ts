@@ -100,6 +100,18 @@ export interface ScoreOpts {
   horizonBlock?: number | null
   /** 雨停转好系数 0–1：1 = 两小时内停过雨且现在不再下，0 = 无此项 */
   rainRelief?: number | null
+  /**
+   * 中云的「画布抬升量」0–1（C 方案，见 midcloud.ts）。
+   * 不传 / 传 0 → 与历史分数逐位一致（所有历史快照都能复算）。
+   *
+   * ★ 这是唯一会**抬高**分数的选项，所以只增不减的规则写在本函数里：
+   *     h' = h + (1 − h) × lift
+   *   · lift = 0 时 h' = h，与不传完全一样；
+   *   · h' 永远 ≤ 1，且高云本来就好（h 接近 1）时几乎抬不动；
+   *   · 为什么不是「把中云量加进高云量」：那样会跨过 fHigh 的 55% 平台跳台阶，
+   *     实测一次 +61 分，太猛。详见 midcloud.ts 的 MidEvaluation.lift。
+   */
+  midLift?: number | null
 }
 
 /**
@@ -116,7 +128,17 @@ export function scoreOfAt(m: Measure, opts: ScoreOpts = {}): number {
   const rh = num(m.rh, 90, 0, 100)
   const aodRaw = num(m.aod, 0.4, 0, 5)
 
-  const h = clamp(fHigh(high), 0, 1)
+  /* 画布可用度 h。默认只由高云决定，与历史完全一致。
+     传了 midLift 才把「能透光的中云」折算进来（只增不减、永远 ≤ 1）。 */
+  const h0 = clamp(fHigh(high), 0, 1)
+  const lift = opts.midLift != null && Number.isFinite(opts.midLift) ? clamp(opts.midLift, 0, 1) : 0
+  /* 中云只能在「高云画布不够」时补。高云超过甜区顶点（>78%，厚卷层云压满整天）时，
+     问题不是画布少，而是整片云挡光 —— 加中云救不回来，反而会造出假高分。
+     55% 是 fHigh 平台的起点；55–78% 区间 fHigh 恒为 1，本来也抬不动。 */
+  const canLift = high <= 55
+  const h = lift > 0 && canLift ? clamp(h0 + (1 - h0) * lift, 0, 1) : h0
+
+  /* 没有高云画布、中云也帮不上 → 0 分（与历史一致） */
   if (h <= 0) return 0
 
   const lowF = 0.3 + 0.7 * fLow(low)

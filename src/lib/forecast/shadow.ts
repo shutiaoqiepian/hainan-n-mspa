@@ -57,6 +57,14 @@ export interface ShadowInput {
   rainRelief?: number | null
   /** 该小时降水量（mm） */
   precipMm?: number | null
+  /**
+   * 中云画布抬升量 0–1（2026-11-06 新增，见 midcloud.ts）。
+   * 它进的是**线上第一层**的分数，所以影子分数的基线必须同样带上它，
+   * 否则「线上第一层有中云救援、影子基线没有」—— 两边口径又不一致，
+   * 会重演首版「拿裸分当基线」那个坑。
+   * 老快照没有这个字段 → 传 null，等于不启用（与当时的线上口径一致）。
+   */
+  midLift?: number | null
   /** 前 3 小时累计降水量（mm）；没有就只用当前小时 */
   precipPrev3hMm?: number | null
 }
@@ -169,7 +177,8 @@ export function scoreShadow(input: ShadowInput): ShadowResult {
     aodRefEl: input.aodRefEl,
     aodRefMass: input.aodRefMass,
     horizonBlock: input.horizonBlock,
-    rainRelief: input.rainRelief
+    rainRelief: input.rainRelief,
+    midLift: input.midLift ?? null
   })
   const c = continuityFactor(input.levels)
   const t = terrainFactor(input.terrainBlocks)
