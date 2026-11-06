@@ -19,6 +19,7 @@
  *   4. 底部二维码区独立成条，不再和「天象标签」挤在一起。
  */
 
+import { SCORE_MAX } from '@/data/forecast/levels'
 import qrcode from '@/vendor/qrcode'
 import { roundRect } from './canvas'
 import type { Row } from '@/lib/forecast/types'
@@ -263,7 +264,7 @@ function drawQR(ctx: CanvasRenderingContext2D, text: string, x: number, y: numbe
 
 /** 白主题下等级色要压暗，否则浅黄/浅绿在白卡上几乎看不见 */
 const LIGHT_LEVEL: Record<string, string> = {
-  火烧云: '#b93a1c',
+  世纪大烧: '#b93a1c',
   大烧: '#b45309',
   中烧: '#9a6a10',
   小烧: '#1b7a4c',
@@ -332,7 +333,7 @@ function drawSpot(ctx: TextCtx, cv: HTMLCanvasElement, d: ForecastCardInput): vo
   ctx.lineWidth = 16
   ctx.stroke()
 
-  const frac = Math.max(0, Math.min(1, r.score / 96))
+  const frac = Math.max(0, Math.min(1, r.score / SCORE_MAX))
   if (frac > 0) {
     ctx.beginPath()
     ctx.arc(ringX, ringY, ringR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac)
@@ -349,10 +350,11 @@ function drawSpot(ctx: TextCtx, cv: HTMLCanvasElement, d: ForecastCardInput): vo
   ctx.fillText(String(r.score), ringX, ringY + 24)
   ctx.fillStyle = p.muted
   setFont(ctx, '400', 22)
-  ctx.fillText('满分 96', ringX, ringY - 46)
+  ctx.fillText('满分 ' + SCORE_MAX, ringX, ringY - 46)
   ctx.fillStyle = lc
-  setFont(ctx, '600', 27, '5px')
-  ctx.fillText(r.level.name, ringX, ringY + 66)
+  /* 档位写区间（「小烧到中烧」）时字更长，压小一号，别顶出圆环 */
+  setFont(ctx, '600', r.grade.isRange ? 23 : 27, r.grade.isRange ? '2px' : '5px')
+  ctx.fillText(r.grade.text, ringX, ringY + 66)
   ctx.textAlign = 'left'
 
   /* 机位名 */
@@ -631,14 +633,16 @@ function drawList(ctx: TextCtx, cv: HTMLCanvasElement, d: ForecastCardInput): vo
       '% · AOD ' + fx(r.m.aod) + ' · 通透 ' + r.clarity + ' · 云隙光 ' + r.rays
     ctx.fillText(fit(ctx, meta, inner - 320), pad + 100, y + 88)
 
-    /* 分数 */
+    /* 分数 + 档位（上下两行，都右对齐）
+       ★ 2026-11-06 从「一横排」改成「上下两行」：最高档改名「世纪大烧」（4 字）、
+         档位还会写成区间「小烧到中烧」（5 字），横排放不下，会和 54px 的分数叠字。 */
     ctx.textAlign = 'right'
     setFont(ctx, '700', 54)
     ctx.fillStyle = lc
-    ctx.fillText(String(r.score), W - pad - 96, y + 68)
-    setFont(ctx, '500', 23, '2px')
+    ctx.fillText(String(r.score), W - pad - 24, y + 56)
+    setFont(ctx, '500', 20, '1px')
     ctx.fillStyle = p.text2
-    ctx.fillText(r.level.name, W - pad - 24, y + 64)
+    ctx.fillText(r.grade.text, W - pad - 24, y + 86)
     ctx.textAlign = 'left'
 
     y += rowH

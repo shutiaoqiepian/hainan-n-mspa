@@ -18,6 +18,25 @@ export interface Level {
   color: string
 }
 
+/**
+ * 分数对应的**区间档位**（2026-11-06 新增，见 levels.ts 的 gradeRangeOf）。
+ * 分数是确定数，但压在等级分界上的时候，只报一个档次会显得过于肯定，
+ * 所以按 ±RANGE_DELTA 分算出「小烧到中烧」这种区间写法。
+ */
+export interface GradeRange {
+  /** 区间下沿的等级 */
+  low: Level
+  /** 区间上沿的等级 */
+  high: Level
+  /** 「小烧到中烧」；不在分界附近时就是等级名本身 */
+  text: string
+  isRange: boolean
+  /** 区间跨过的那条分界（isRange 时有效），给提示文字用 */
+  boundary: number
+  /** 「为什么写成区间」的解释，给悬停提示用；不是区间时是空串 */
+  why: string
+}
+
 /** AOD 通透度分级（参照 SunsetBot 团队的对照表） */
 export interface AodBand {
   max: number
@@ -344,6 +363,8 @@ export interface Row {
   m: Measure
   score: number
   level: Level
+  /** 区间档位：「小烧到中烧」/「小烧」——界面上形容一次预报用这个，而不是 level.name */
+  grade: GradeRange
   aodName: string
   profLabel: string
   rainbow: boolean

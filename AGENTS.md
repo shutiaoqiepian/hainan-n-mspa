@@ -79,9 +79,21 @@ grep -rn "挂起决定" src/
 ```bash
 node node_modules/vue-tsc/bin/vue-tsc.js --noEmit   # vue-tsc 不在 PATH 里
 npm run build
-node tools/test-boundaries.mjs                      # 32 项边界
+node tools/test-boundaries.mjs                      # 53 项：边界 + 六档映射 + 区间档位
 node tools/test-physics.mjs                         # 23 项物理
+node tools/test/text-lint.mjs                       # 预测页文案穷举自检（7680 + 324 组合）
 ```
+
+改了**分数上限 / 等级阈值 / 区间写法**（`levels.ts`、`SCORE_MAX`、`RANGE_DELTA`）额外跑：
+
+```bash
+node tools/grade-dist.mjs --save=/tmp/base.json     # 改之前先存一份
+# …改完…
+node tools/grade-dist.mjs --base=/tmp/base.json     # 逐条 diff：升/降/等级翻转各几条
+```
+> 等级表只允许在 `src/data/forecast/levels.ts` 写一份。tools 里不要再抄 `[[92,'世纪大烧'],…]`
+> 这种数组 —— 2026-11-06 改档名时，仓库里有 6 处抄写全都要手改一遍。
+> 阈值与区间半径的理由见交接文档第 39 章。
 
 改了**中云画布 / 云底照亮窗口**（`baselit.ts`、`midcloud.ts`、`MID_CANVAS`）额外跑：
 

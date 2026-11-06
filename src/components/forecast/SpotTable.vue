@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { KINDS } from '@/data/forecast/levels'
+import { KINDS, SCORE_MAX } from '@/data/forecast/levels'
 import { isDone, openFeedback } from '@/lib/forecast/feedback'
 import { openSpotCard } from '@/lib/forecast/card-ui'
 import { state } from '@/lib/forecast/state'
@@ -75,10 +75,15 @@ const kindWord = computed(() => KINDS[state.kind].word)
         <i v-if="r.rainbow" class="tag" title="可能有彩虹">🌈</i>
       </span>
       <span class="fr-bar col-bar">
-        <i :style="{ width: Math.max(2, r.score / 96 * 100) + '%', background: r.level.color }"></i>
+        <i :style="{ width: Math.max(2, r.score / SCORE_MAX * 100) + '%', background: r.level.color }"></i>
       </span>
       <span class="fr-score" :style="{ color: r.level.color }">{{ r.score }}</span>
-      <span class="fr-lvl c" :style="{ color: r.level.color }">{{ r.level.name }}</span>
+      <span
+        class="fr-lvl c"
+        :class="{ 'is-range': r.grade.isRange }"
+        :style="{ color: r.level.color }"
+        :title="r.grade.why || r.level.name"
+      >{{ r.grade.text }}</span>
       <span class="fr-dim col-cloud">{{ n0(r.m.high) }} / {{ n0(r.m.mid) }} / {{ n0(r.m.low) }}</span>
       <span class="fr-dim col-aod r">{{ fx(r.m.aod) }}</span>
       <span class="fr-dim col-vivid r" style="color: var(--accent-b)">

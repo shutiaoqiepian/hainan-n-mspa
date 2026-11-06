@@ -74,7 +74,7 @@ function onToggle(): void {
       <div v-if="row.faceOff && row.sunAz != null" class="fc-faceoff">⚠ 朝向不符：机位朝{{ row.spot.face }}，太阳方位 {{ row.sunAz }}°</div>
       <div v-if="row.rainbow" class="fc-tag">🌈 可能有彩虹</div>
     </div>
-    <div class="fc-level" :style="{ color: row.level.color }">{{ row.level.name }}</div>
+    <div class="fc-level" :style="{ color: row.level.color }" :title="row.grade.why || row.level.name">{{ row.grade.text }}</div>
     <button
       class="fc-detail-btn"
       :class="{ 'is-open': open }"

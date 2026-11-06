@@ -1,4 +1,4 @@
-import { aodBand } from '@/data/forecast/levels'
+import { SCORE_MAX, aodBand } from '@/data/forecast/levels'
 import type { CloudLayer, Measure, Profile, RawPoint, Spot, SunPos } from '@/lib/forecast/types'
 import { sunElevation } from './sun'
 
@@ -170,7 +170,7 @@ export function scoreOfAt(m: Measure, opts: ScoreOpts = {}): number {
 
   /* 兜底：任何意外都不让 NaN 流到界面上 */
   if (!Number.isFinite(score)) return 0
-  return Math.round(Math.min(96, score))
+  return Math.round(Math.min(SCORE_MAX, score))
 }
 
 /** 基线评分（未加物理修正项），保留给历史对照与测试 */

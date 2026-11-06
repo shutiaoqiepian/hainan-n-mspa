@@ -163,6 +163,8 @@
   border-radius: 999px;
   border: 1px solid currentColor;
   background: color-mix(in srgb, currentColor 12%, transparent);
+  /* 区间写法「小烧到中烧」比单档名长一倍，不许折行把胶囊撑成两行 */
+  white-space: nowrap;
 }
 
 .dh-moments { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; width: 100%; }
@@ -406,7 +408,10 @@
 .fr-bar { height: 5px; border-radius: 3px; background: var(--fill-2); position: relative; overflow: hidden; }
 .fr-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; display: block; }
 .fr-score { font-size: 15px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
-.fr-lvl { font-size: 11.5px; text-align: center; border-radius: 999px; padding: 2px 0; border: 1px solid currentColor; letter-spacing: 0.06em; }
+.fr-lvl { font-size: 11.5px; text-align: center; border-radius: 999px; padding: 2px 0; border: 1px solid currentColor; letter-spacing: 0.06em; white-space: nowrap; }
+/* 区间写法「小烧到中烧」比单档名长一倍：压缩字距并去掉 letter-spacing，
+   保证 360px 窄屏的 54px 列里也不撑破（实测 5 字 × 10px = 50px）。 */
+.fr-lvl.is-range { font-size: 10px; letter-spacing: 0; }
 .fr-dim { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .fr-dim .mlab { display: none; }
 .r { text-align: right; }
@@ -610,6 +615,17 @@ button.fcl-row.open { background: var(--fill-2); }
 .fcbox .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: linear-gradient(90deg, var(--accent-a), var(--accent-b)); }
 .fcbox .sg { font-size: 10.5px; color: var(--muted-2); }
 .fcd2-note { margin: 6px 0 0; font-size: 11.5px; color: var(--muted-2); line-height: 1.5; }
+/* 「档位为什么写成区间」（2026-11-06）：和 fcd2-note 同一档文字，左侧一条提示色 */
+.fcd2-range {
+  margin: 6px 0 0;
+  padding: 5px 9px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border-left: 2px solid var(--accent-b);
+  border-radius: 0 6px 6px 0;
+}
 
 /* ---------- 逐时表 ---------- */
 .fc-hours2 { margin-top: var(--fc-gap-card); border: 1px solid var(--fc-line); border-radius: 12px; background: var(--fill-1); padding: var(--fc-gap-in) 14px; }
@@ -803,6 +819,8 @@ button.fcl-row.open { background: var(--fill-2); }
   .fr-name b { font-size: 13px; }
   .fr-row.fr-line .fr-score { grid-area: score; font-size: 14.5px; }
   .fr-row.fr-line .fr-lvl { grid-area: lvl; font-size: 11px; }
+  /* 区间写法要压得比单档名更小才放得下 5 个字（54–60px 的列宽） */
+  .fr-row.fr-line .fr-lvl.is-range { font-size: 10px; letter-spacing: 0; }
   .fr-row.fr-line .col-vivid { grid-area: meta; text-align: left; font-size: 11px; }
   .fr-row.fr-line .col-vivid .mlab {
     display: inline;

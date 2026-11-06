@@ -324,6 +324,9 @@ const hoursSummary = computed(() => {
               <span class="st">朝向 / 云层结构</span><span class="arw">→</span>
               <b :style="{ color: row.level.color }">{{ row.score }}</b><span class="st">最终分</span>
             </div>
+            <!-- 档位为什么写成区间（2026-11-06）：分数压在等级分界附近时，
+                 「小烧」和「中烧」其实都说得通，这里把距离和分界点摊开讲清楚。 -->
+            <p v-if="row.grade.isRange" class="fcd2-range">{{ row.grade.why }}。</p>
             <div class="fcbox">
               <span class="nm">8 模式一致度</span>
               <span class="bar"><i :style="{ width: consistency + '%' }"></i></span>

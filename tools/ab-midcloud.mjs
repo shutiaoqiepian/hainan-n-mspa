@@ -42,6 +42,7 @@ export { measureAt, hourIndex } from '@/lib/forecast/api'
 export { scoreOfAt, airmass, clamp } from '@/lib/forecast/scoring'
 export { sunPosition } from '@/lib/forecast/sun'
 export { midCanvasPlan, MID_RH_LEVELS, MID_CANVAS } from '@/lib/forecast/midcloud'
+export { LEVELS, levelOf } from '@/data/forecast/levels'
 `, 'utf8')
   const outfile = path.join(tmp, 'm.mjs')
   await build({
@@ -53,8 +54,9 @@ export { midCanvasPlan, MID_RH_LEVELS, MID_CANVAS } from '@/lib/forecast/midclou
 
 const M = await load()
 
-const LEVELS = [[92, '火烧云'], [82, '大烧'], [66, '中烧'], [48, '小烧'], [30, '微烧'], [0, '不烧']]
-const levelOf = (s) => LEVELS.find(([m]) => s >= m)[1]
+/* 等级表直接用源码里的那份，别在这里抄第二份 ——
+   2026-11-06 改档名时，仓库里 6 处抄写的 LEVELS 全都要手改一遍。 */
+const levelOf = (s) => M.levelOf(s).name
 
 const MID = ['ecmwf_ifs025', 'icon_seamless', 'gfs_seamless']
 

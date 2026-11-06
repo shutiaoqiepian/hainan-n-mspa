@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { SCORE_MAX } from '@/data/forecast/levels'
 import { state } from '@/lib/forecast/state'
 import { openSpotCard } from '@/lib/forecast/card-ui'
 import { clarityLabel, pillarLabel, rainbowLabel, raysLabel } from '@/lib/forecast/scoring'
@@ -266,8 +267,14 @@ function onShare(): void {
 
     <!-- 中：大分数 + 等级尺 + 两个峰值 -->
     <div class="dh-score">
-      <div class="dh-big" :style="{ color: r.level.color }">{{ r.score }}<small>/96</small></div>
-      <div class="dh-lvl" :style="{ color: r.level.color }">{{ r.level.name }}</div>
+      <div class="dh-big" :style="{ color: r.level.color }">{{ r.score }}<small>/{{ SCORE_MAX }}</small></div>
+      <!-- 档位用**区间写法**：分数压在分界上时写「小烧到中烧」，不写死一个名字。
+           颜色仍按点数等级取（和排行表、名片一致），悬停给出为什么写成区间。 -->
+      <div
+        class="dh-lvl"
+        :style="{ color: r.level.color }"
+        :title="r.grade.why || undefined"
+      >{{ r.grade.text }}</div>
       <!-- 六档色尺（不烧/微烧/…/火烧云）2026-11-05 删除：
            大分数下面已经有等级名（「不烧」），色尺只是把同一件事再画一遍，
            白占 27px。真要对照全档位，排行表的等级列里一直有。 -->

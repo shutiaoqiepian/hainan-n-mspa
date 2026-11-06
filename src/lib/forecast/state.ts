@@ -122,7 +122,7 @@ export function shareRow(r: Row): void {
               '&s=' + encodeURIComponent(r.spot.n)
   const word = dayWord(state.day) + KINDS[state.kind].word
   const text = '【' + word + '】' + r.spot.n +
-               ' 霞光指数 ' + r.score + '（' + r.level.name + '）' +
+               ' 霞光指数 ' + r.score + '（' + r.grade.text + '）' +
                ' · ' + r.m.time + ' ' + KINDS[state.kind].word +
                '\n' + url
   copyText(text).then(

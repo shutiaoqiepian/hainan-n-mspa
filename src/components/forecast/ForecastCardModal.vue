@@ -149,7 +149,7 @@ function onCopyText(): void {
     cardUi.mode === 'spot'
       ? [
           '【霞光预报】' + dateText(d.date, d.weekday) + ' ' + dayText.value + kindWord.value + ' ' + d.time,
-          r.spot.n + '：' + r.score + ' 分（' + r.level.name + '）· 朝' + r.spot.face,
+          r.spot.n + '：' + r.score + ' 分（' + r.grade.text + '）· 朝' + r.spot.face,
           '高云 ' + Math.round(r.m.high ?? 0) + '% · 中云 ' + Math.round(r.m.mid ?? 0) + '% · 低云 ' +
             Math.round(r.m.low ?? 0) + '% · AOD ' + r.m.aod.toFixed(2) + ' · 降雨 ' + Math.round(r.m.pop ?? 0) + '%',
           '最佳时刻 ' + r.peakTime + '（' + r.peakScore + ' 分）· 鲜艳度峰值 ' + r.vividPeakTime +
@@ -162,7 +162,7 @@ function onCopyText(): void {
       : [
           '【霞光预报】' + dateText(d.date, d.weekday) + ' ' + dayText.value + kindWord.value + ' ' + d.time,
           cardUi.top
-            .map((x, i) => i + 1 + '. ' + x.spot.n + ' ' + x.score + ' 分（' + x.level.name + '）')
+            .map((x, i) => i + 1 + '. ' + x.spot.n + ' ' + x.score + ' 分（' + x.grade.text + '）')
             .join('\n'),
           '完整预报 → ' + spotUrl.value
         ]

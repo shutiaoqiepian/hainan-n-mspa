@@ -1,4 +1,4 @@
-import { KINDS, aodBand, levelOf } from '@/data/forecast/levels'
+import { KINDS, SCORE_MAX, aodBand, gradeRangeOf, levelOf } from '@/data/forecast/levels'
 import { matchPhenomena } from '@/data/forecast/phenomena'
 import { ALL_MODELS, MODELS, MULTI_MODELS } from '@/data/forecast/models'
 import { DETAIL_SPOT, dataFileFor, spotsFor } from '@/data/forecast/spots'
@@ -625,7 +625,7 @@ function buildSpotDetail(o: {
         itCache = interpret({
           kind: state.kind,
           score: o.score,
-          levelName: levelOf(o.score).name,
+          levelName: gradeRangeOf(o.score).text,
           m: o.m,
           sun: o.sun,
           spread: o.spread,
@@ -934,7 +934,7 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
       if (prof) s = clamp(Math.round(s * prof.mod), 0, 100)
       /* 时效折扣 */
       if (state.day === 1) s = Math.round(s * 0.95)
-      return clamp(s, 0, 96)
+      return clamp(s, 0, SCORE_MAX)
     }
 
     const baseScore = smoothedAt(idx)
@@ -1116,6 +1116,7 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
       vividPeakLabel: vividBest.label,
       perModel: perModel,
       level: levelOf(score),
+      grade: gradeRangeOf(score),
       aodName: aodBand(m.aod).name,
       profLabel: prof ? prof.label : '',
       hues: layers.map((l) => hueByLevel.get(l.level) ?? '无'),

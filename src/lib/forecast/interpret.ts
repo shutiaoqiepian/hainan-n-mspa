@@ -6,7 +6,7 @@
    全部由规则拼出，没有新的数据假设；数字都说清单位。
    ============================================================ */
 
-import { aodBand } from '@/data/forecast/levels'
+import { LEVELS, SCORE_MAX, aodBand } from '@/data/forecast/levels'
 import type { CloudLayer, Conflict, Interpretation, KindKey, Measure, SunPos } from './types'
 import { clamp, fAod, fHigh, fLow, fWet } from './scoring'
 
@@ -29,6 +29,15 @@ export interface InterpretInput {
 }
 
 const pct = (v: number | null): string => Math.round(v ?? 0) + '%'
+
+/* 结论句式用的三个门槛，直接取自等级阈值，不再写死 82/66/48 ——
+   改档位（比如这次把最高档改名）时，文案不会和等级表失步。 */
+const bound = (name: string, dflt: number): number =>
+  LEVELS.find((l) => l.name === name)?.min ?? dflt
+const B_TOP = bound('大烧', 82)   // 82
+const B_GOOD = bound('中烧', 66)  // 66
+const B_OK = bound('小烧', 48)    // 48
+const B_MAX = bound('世纪大烧', 92) // 92
 
 export function interpret(i: InterpretInput): Interpretation {
   const pros: string[] = []
@@ -229,17 +238,19 @@ export function interpret(i: InterpretInput): Interpretation {
      ★ 三种情况分别说，不再一律套「最弱的是 X」：
        · 有短板（系数 <0.7）→ 点名短板，这是用户最需要知道的信息
        · 没短板但分数不高 → 说明是「各项都平平、没有拖累也没有加成」
-         这才是真实原因（乘法结构里，全项 0.85 也会把 96 分压到 50 分）
+         这才是真实原因（乘法结构里，全项 0.85 也会把满分压到 50 分左右）
        · 分数高 → 说最强项，而不是把「降水 10%」这种常态当优点 */
   const hasWeak = weakest !== null
   let headline: string
-  if (i.score >= 82) {
+  if (i.score >= B_MAX) {
+    headline = '这是「世纪大烧」档：' + strongPhrase() + '，各项都在线，一年里也没几次'
+  } else if (i.score >= B_TOP) {
     headline = '条件到顶了：' + strongPhrase() + '，各项都在线，值得专程跑一趟'
-  } else if (i.score >= 66) {
+  } else if (i.score >= B_GOOD) {
     headline = hasWeak
       ? '可以跑：' + strongPhrase() + '；主要短板是' + weakPhrase(weakest)
       : '可以跑：' + strongPhrase() + '；' + noWeak
-  } else if (i.score >= 48) {
+  } else if (i.score >= B_OK) {
     headline = hasWeak
       ? '就近可以去：' + weakPhrase(weakest) + '，是拉低分数的主因'
       : '就近可以去：' + noWeak + '，分数不高是各项都只到中等，不是哪一项特别差'
@@ -285,15 +296,15 @@ function adviceOf(i: InterpretInput, low: number, pop: number, ell: number | nul
     ? '建议提前 30–40 分钟到位：天先亮、太阳后出，最艳的一段常在日出前 10 分钟'
     : '建议提前 40 分钟到位，太阳落下地平线后 10–15 分钟常有二次爆发（回光返照）'
 
-  if (i.score >= 82) {
+  if (i.score >= B_TOP) {
     return '这是一年里排得上号的条件，' + timing + '。' +
       (pop >= 40 ? '带好雨具，阵雨可能打乱计划，但也可能换来雨后的通透霞。' : '机位会很挤，建议早点去占位置。')
   }
-  if (i.score >= 66) {
+  if (i.score >= B_GOOD) {
     return '条件不错，' + timing + '。' +
       (low > 40 ? '低云偏多，优先选视野开阔、地平线不被挡的位置（地势高一点、或前方没有遮挡）。' : '按预报正常拍就能出片。')
   }
-  if (i.score >= 48) {
+  if (i.score >= B_OK) {
     /* ★ 不再重复 headline 里的「重点赌云缝」——上面已经说过了 */
     return '值得顺路看看，' + timing + '。盯住云缝：太阳穿过低云缝隙的那一两分钟，颜色才出得来。'
   }
@@ -336,9 +347,9 @@ export function conflictsOf(m: Measure, ecmwf: { high: number | null; mid: numbe
 
 /** 供别处检查：分数和文案口径别打架 */
 export function scoreBandOf(score: number): 'top' | 'good' | 'ok' | 'low' {
-  return score >= 82 ? 'top' : score >= 66 ? 'good' : score >= 48 ? 'ok' : 'low'
+  return score >= B_TOP ? 'top' : score >= B_GOOD ? 'good' : score >= B_OK ? 'ok' : 'low'
 }
 
 export function clampScore(v: number): number {
-  return clamp(Math.round(v), 0, 96)
+  return clamp(Math.round(v), 0, SCORE_MAX)
 }

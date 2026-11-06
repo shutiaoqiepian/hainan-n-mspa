@@ -12,7 +12,7 @@ export const FB_KEY = 'mspa_fb_v1'
 /** 弹窗里那 7 个按钮（顺序即旧版 DOM 顺序）。
    注意最后一个：提交值是「没去」，按钮文案是「我没去」——旧版就是这样 */
 export const FB_VALUES = [
-  { v: '火烧云', label: '火烧云' },
+  { v: '世纪大烧', label: '世纪大烧' },
   { v: '大烧', label: '大烧' },
   { v: '中烧', label: '中烧' },
   { v: '小烧', label: '小烧' },
@@ -78,7 +78,7 @@ export function closeFeedback(): void {
 export function fbSubText(): string {
   const r = fb.row
   if (!r) return ''
-  return r.spot.n + ' · ' + r.date + ' · 系统给出 ' + r.score + ' 分（' + r.level.name + '）'
+  return r.spot.n + ' · ' + r.date + ' · 系统给出 ' + r.score + ' 分（' + r.grade.text + '）'
 }
 
 export function selectValue(v: string): void {
@@ -100,7 +100,7 @@ export function submitFeedback(): void {
   body.set('form-name', 'sunset-feedback')
   body.set('spot', r.spot.n)
   body.set('score', String(r.score))
-  body.set('level', r.level.name)
+  body.set('level', r.grade.text)
   body.set('mode', KINDS[state.kind].word)
   body.set('date', r.date || '')
   body.set('actual', fb.value)
@@ -111,7 +111,7 @@ export function submitFeedback(): void {
 
   const oneLine = '霞光反馈｜' + dayWord(state.day) + KINDS[state.kind].word +
                   '｜' + r.spot.n + '｜' + (r.date || '') +
-                  '｜系统 ' + r.score + ' 分（' + r.level.name + '）' +
+                  '｜系统 ' + r.score + ' 分（' + r.grade.text + '）' +
                   '｜实际：' + fb.value +
                   (note ? '｜备注：' + note : '') +
                   (nick ? '｜来自：' + nick : '')

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { SCORE_MAX } from '@/data/forecast/levels'
 import type { Row } from '@/lib/forecast/types'
 
 /** 各模式怎么看：8 个模式各自报的逐层云量与对应分数。
@@ -100,7 +101,7 @@ const shortText = computed(() => {
         <span class="fcm-c">{{ n0(p.low) }}<template v-if="p.low != null">%</template></span>
         <span class="fcm-s" :style="{ color: p.color }">{{ p.score == null ? '缺测' : p.score }}</span>
         <span class="fcm-bar">
-          <i :style="{ width: (p.score == null ? 0 : Math.max(2, p.score / 96 * 100)) + '%', background: p.color }"></i>
+          <i :style="{ width: (p.score == null ? 0 : Math.max(2, p.score / SCORE_MAX * 100)) + '%', background: p.color }"></i>
           <em>{{ p.diffText }}</em>
         </span>
         <span class="fcm-u">{{ p.main ? '计分' : '参考' }}</span>

@@ -28,6 +28,7 @@
  *   · 本项目尚未有足够样本证明影子分数更准 —— 在 `tools/score-shadow.mjs` 出对照结论前，
  *     它**只出现在快照里，不出现在任何页面**。
  */
+import { SCORE_MAX } from '@/data/forecast/levels'
 import { clamp, scoreOfAt } from './scoring'
 import type { Measure } from './types'
 
@@ -70,7 +71,7 @@ export interface ShadowInput {
 }
 
 export interface ShadowResult {
-  /** 影子分数 0–96（与 scoreOf 同一值域，便于直接比较） */
+  /** 影子分数 0–100（与 scoreOf 同一值域，便于直接比较） */
   score: number
   /** 基线（= 线上 scoreOfAt 的结果），便于逐条差份 */
   base: number
@@ -166,7 +167,7 @@ export function precipFactor(
 
 /**
  * 影子分数。**不写回任何地方**，由调用方决定是否存快照。
- * 结构与 scoreOf 一致：先算基线，再乘三个修正，最后 clamp 到 0–96。
+ * 结构与 scoreOf 一致：先算基线，再乘三个修正，最后 clamp 到 0–100。
  */
 export function scoreShadow(input: ShadowInput): ShadowResult {
   /* 基线必须与线上"完全同一口径"：把 snapshot 里已有的 rawScore + 修正项原样传回，
@@ -189,7 +190,7 @@ export function scoreShadow(input: ShadowInput): ShadowResult {
   const factor = damp(c.f) * damp(t.f) * damp(p.f)
 
   /* 基线为 0 就不要靠乘法修正"修出"分数：火烧云的前提是高云本身有戏 */
-  const adjusted = base === 0 ? 0 : clamp(base * factor, 0, Math.min(base, 96))
+  const adjusted = base === 0 ? 0 : clamp(base * factor, 0, Math.min(base, SCORE_MAX))
   return {
     score: Math.round(adjusted),
     base,

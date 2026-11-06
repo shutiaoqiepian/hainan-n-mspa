@@ -181,7 +181,7 @@ export function scoreOfContinuous(m: MeasureLike): number {
   const wetF = 0.55 + 0.45 * fWetContinuous(pop, rh)
 
   const raw = h * lowF * midF * aodF * wetF
-  return Math.round(Math.min(96, 100 * Math.pow(clamp(raw, 0, 1), 1.8)))
+  return Math.round(Math.min(100, 100 * Math.pow(clamp(raw, 0, 1), 1.8)))
 }
 
 /** 阶梯版（仅用于对照，和生产实现一致） */
@@ -203,5 +203,5 @@ export function scoreOfStep(m: MeasureLike): number {
   const wetF = 0.55 + 0.45 * (popStep(pop) * rhStep(rh))
 
   const raw = h * lowF * midF * aodF * wetF
-  return Math.round(Math.min(96, 100 * Math.pow(clamp(raw, 0, 1), 1.8)))
+  return Math.round(Math.min(100, 100 * Math.pow(clamp(raw, 0, 1), 1.8)))
 }

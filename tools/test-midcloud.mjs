@@ -105,7 +105,7 @@ for (let l = 0; l <= 100; l++) {
   prev = s
 }
 check('lift 从 0 增到 1，分数单调不减', monotone)
-check('lift = 1 也不会超过 96', M.scoreOfAt(base, { midLift: 1 }) <= 96)
+check('lift = 1 也不会超过 100', M.scoreOfAt(base, { midLift: 1 }) <= 100)
 check('lift 会真的抬分（+10 以上）', M.scoreOfAt(base, { midLift: 0.4 }) - noLift >= 10, M.scoreOfAt(base, { midLift: 0.4 }) - noLift)
 
 /* 高云已经压满（>78%，厚卷层云）时不许抬 —— 那时的问题不是画布少，是整片挡光 */
