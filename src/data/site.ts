@@ -14,11 +14,6 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { key: 'about', label: '关于', href: 'about.html' },
   { key: 'gallery', label: '作品集', href: 'gallery.html' },
   { key: 'forecast', label: '霞光预报', href: 'forecast.html' },
-  /* 大气剖面（/cross）是「这个分数为什么这样」的解释层。
-     2026-11-04 加进导航：在那之前它只能从预报页某个机位的详情点进去，
-     相当于「藏起来的第二个工具」，主人反馈太不显眼。
-     放在霞光预报之后：它是预报的深入解释，不是独立业务线。 */
-  { key: 'cross', label: '大气剖面', href: 'cross.html' },
   { key: 'members', label: '成员', href: 'members.html' },
   { key: 'join', label: '加入我们', href: 'join.html' }
 ]

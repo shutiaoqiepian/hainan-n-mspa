@@ -118,12 +118,6 @@ const LAYER_ITEMS = [
 
 /* ---------------- 派生数据 ---------------- */
 
-const spotMeta = computed(() => {
-  const idx = index.value
-  if (!idx) return null
-  return idx.spots.find((s) => s.id === spotId.value) ?? idx.spots[0] ?? null
-})
-
 /** 全国索引里按机位 id 查文件；没有返回 null。
  *
  *  2026-11-04 起每个机位在索引里有**两条**（日落 / 日出），用 kind 区分。
@@ -816,7 +810,19 @@ async function init(): Promise<void> {
       applyPendingSun()
       return
     }
-    await pickSpot(u.spot || incoming.id || (index.value.spots[0]?.id ?? ''))
+    /* 无参访问（导航栏点进来）→ 默认落到「全国机位」第一个，与决策卡进的那套一致
+       （单方位、3 时次）。海南试点 8 机位不再作为默认入口，仅在全国索引缺失时兜底。 */
+    const defaultNational = national.value?.spots[0]?.id ?? ''
+    if (u.spot || incoming.id) {
+      await pickSpot(u.spot || incoming.id)
+    } else if (defaultNational) {
+      nationalSpotId.value = defaultNational
+      const f = nationalFile(defaultNational)
+      if (f) await pickSpotById(defaultNational, f)
+      else await pickSpot(index.value.spots[0]?.id ?? '')
+    } else {
+      await pickSpot(index.value.spots[0]?.id ?? '')
+    }
     applyPendingSun()
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
@@ -861,11 +867,6 @@ watch(source, (v) => {
 })
 
 /* ---------------- 交互 ---------------- */
-
-function selectSpot(id: string): void {
-  if (id === spotId.value) return
-  void pickSpot(id)
-}
 
 function selectTime(t: number): void {
   tIdx.value = t
@@ -952,27 +953,14 @@ const lightBoundaryWord = computed(() => (isSunriseFile.value ? '朝阳光照明
           日出剖面需要等下一次数据更新生成。
         </p>
 
-        <!-- 机位切换 -->
-        <div class="xsec-spots" role="tablist" aria-label="代表机位">
-          <button
-            v-for="s in index.spots"
-            :key="s.id"
-            type="button"
-            class="xsec-spot"
-            :class="{ 'is-on': s.id === spotId }"
-            role="tab"
-            :aria-selected="s.id === spotId"
-            @click="selectSpot(s.id)"
-          >
-            <span class="xsec-spot-name">{{ s.name }}</span>
-            <span class="xsec-spot-tag">{{ s.tag }}</span>
-          </button>
-        </div>
+        <!-- 海南试点 8 机位（代表机位）2026-11-08 起移除：
+             主入口统一为全国 224 机位（单方位，与决策卡点进来那套一致），
+             试点 5 方位数据仅在全国索引缺测时兜底，不再作为可点选的入口。 -->
 
-        <!-- 全国 224 机位（3 时次 × 1 方位；口径与试点不同，单独一段） -->
+        <!-- 机位选择（全国 224 机位 · 每机位按当天日落方位生成 1 个剖面） -->
         <div v-if="national" class="xsec-national">
           <div class="xsec-national-head">
-            <span class="xsec-group-label">全国机位</span>
+            <span class="xsec-group-label">机位</span>
             <span class="xsec-hint">
               {{ nationalSpotsUnique.length }} 个 ·
               <template v-if="sunriseCoverage.withSun === sunriseCoverage.total">
