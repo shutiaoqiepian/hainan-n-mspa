@@ -37,6 +37,15 @@ node tools/check-gaps.mjs        # 这周有没有缺数据（只看 accuracy-tr
 Vue 3 + TypeScript + Vite 多页应用，部署在 Cloudflare Pages（构建命令 `npm run build`，输出 `dist/`；
 **`dist/` 不进仓库**，本地构建一次即可，别把它加回 Git）。
 
+> **构建产物纪律（2026-11-07 起，务必遵守）**
+> 线上发布的是 `dist/`（线上实测确认）。所以：
+> - 根目录 `*.html` 和 `assets/` **不进 Git**（已 `.gitignore`）。它们是构建中间产物，
+>   由 `prebuild` 的 `tools/restore-shells.mjs` 从 `src/shells/` 生成。
+> - **改页面 `<head>` / SEO / 标题 → 改 `src/shells/*.html`**，不要改根目录。
+> - `tools/publish-root.ts` 已删除（它只做「把 dist 覆盖回根目录」，前提不成立）。
+> - `npm run build` 之后 `git status` 是干净的，`git add -A` 安全。
+> - 详见交接文档第 5 章。
+
 三块业务：**摄影作品**、**摄影师社群**、**霞光预测**。
 不要把它改造成通用企业官网或普通天气网站。
 

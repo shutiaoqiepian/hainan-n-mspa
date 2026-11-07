@@ -44,14 +44,15 @@ Cloudflare Pages 的构建配置需要是：
 | 构建命令（Build command） | `npm run build` |
 | 输出目录（Build output directory） | `dist` |
 
-- 仓库根目录**不再**是可直接发布的目录，线上内容一律来自 `dist/`
+- 仓库根目录**不再**是可直接发布的目录，线上内容一律来自 `dist/`（2026-11-07 线上实测确认）
 - **`dist/` 不进仓库**（`.gitignore` 已忽略）。线上由 Cloudflare 每次构建时生成，
   本地跑一次 `npm run build` 就能拿到同样的东西，不需要也不应该在 Git 历史里留副本
-- 构建产物同时写回仓库根目录（`tools/publish-root.ts`），那份是给「输出目录=仓库根」
-  的旧部署配置兜底的（⚠️ 2026-11-07 线上实测确认：线上其实发布 `dist/`，这份是历史遗留）。
-  ⚠️ 根目录的 `*.html` 和 `assets/` **目前仍是跟踪状态**，
-  所以 `npm run build` 之后 `git status` 会出现一批哈希文件名变动 —— **那些不要提交**，
-  见 `交接文档.md` 第 5.0 / 5.1 节
+- **根目录的 `*.html` 和 `assets/` 也不再跟踪**（2026-11-07 清理）。
+  它们是构建中间产物：`prebuild` 的 `tools/restore-shells.mjs` 从 `src/shells/` 生成，
+  原 `tools/publish-root.ts` 插件已移除。
+  ➜ **改页面 `<head>` / SEO / 标题一律改 `src/shells/*.html`**，不要改根目录。
+  清完后 `npm run build` 之后 `git status` 保持干净，`git add -A` 是安全的
+  （见 `交接文档.md` 第 5 章）
 - `images/`、`data/`、`robots.txt`、`sitemap.xml`、`_headers` 仍留在仓库根目录，
   由 `tools/plugins/root-static.ts` 在开发时直通、构建时原样拷进 `dist/`
   （这样图片压缩脚本、GitHub Action 写缓存、`.gitignore` 规则都不用改）
@@ -65,7 +66,7 @@ Cloudflare Pages 的构建配置需要是：
 ├── index.html / about.html / gallery.html / forecast.html / members.html / join.html / login.html / 404.html / cross.html
 │                              # 九个入口：<head> 里保留全部 SEO / og 元信息，<body> 只有 #app 挂载点
 ├── src/
-│   ├── shells/                # HTML 源文件（改 head 改这里，别改根目录成品）
+│   ├── shells/                # ★ HTML 源文件（改 head/SEO 改这里；根目录那份是自动生成的中间产物）
 │   ├── entries/               # 每个 HTML 一个入口，调用 createPage(页面组件)
 │   ├── app/                   # AppShell（导航+main+页脚+轻提示）与 createPage
 │   ├── pages/                 # 九个页面组件（含 CrossSectionPage）

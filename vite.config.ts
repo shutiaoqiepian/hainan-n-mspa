@@ -2,7 +2,6 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 import { rootStatic } from './tools/plugins/root-static'
-import { publishRoot } from './tools/publish-root'
 
 /** 每个 HTML 都是独立入口：多页应用，产物文件名与线上 URL 一一对应 */
 const PAGES = ['index', 'about', 'gallery', 'forecast', 'members', 'join', 'login', '404', 'cross']
@@ -23,8 +22,7 @@ export default defineConfig({
         }
       }
     }),
-    ...rootStatic(),
-    publishRoot()
+    ...rootStatic()
   ],
   resolve: {
     alias: {
@@ -33,9 +31,13 @@ export default defineConfig({
   },
   build: {
     /**
-     * 产物放到独立的 dist/，同时也要写一份到仓库根目录——根目录那份是给线上看的。
-     * 仓库根目录仍保留源 HTML（含 <head> 元信息），只是构建时被同名的成品覆盖。
-     * 这样 Cloudflare Pages 沿用旧配置（无构建命令、输出目录=仓库根）也能发布正确内容。
+     * 产物只放 dist/。线上 Cloudflare Pages 跑 npm run build 后发布 dist/
+     * （2026-11-07 线上实测确认：只有 dist 里存在的文件能访问到）。
+     *
+     * 仓库根目录的 *.html 只是「构建入口的临时副本」：prebuild 的 restore-shells
+     * 从 src/shells/ 复制过来，供下面 rollupOptions.input 当入口用。
+     * 它们**不进 Git**（.gitignore 已忽略），也不再被产物覆盖
+     * （2026-11-07 移除了 publish-root 插件，见交接文档第 5 章）。
      */
     assetsDir: 'assets',
     target: 'es2020',
