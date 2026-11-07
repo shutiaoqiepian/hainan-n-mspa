@@ -48,9 +48,10 @@ Cloudflare Pages 的构建配置需要是：
 - **`dist/` 不进仓库**（`.gitignore` 已忽略）。线上由 Cloudflare 每次构建时生成，
   本地跑一次 `npm run build` 就能拿到同样的东西，不需要也不应该在 Git 历史里留副本
 - 构建产物同时写回仓库根目录（`tools/publish-root.ts`），那份是给「输出目录=仓库根」
-  的旧部署配置兜底的。⚠️ 根目录的 `*.html` 和 `assets/` **目前仍是跟踪状态**，
+  的旧部署配置兜底的（⚠️ 2026-11-07 线上实测确认：线上其实发布 `dist/`，这份是历史遗留）。
+  ⚠️ 根目录的 `*.html` 和 `assets/` **目前仍是跟踪状态**，
   所以 `npm run build` 之后 `git status` 会出现一批哈希文件名变动 —— **那些不要提交**，
-  见 `交接文档.md` 第 32.4 节
+  见 `交接文档.md` 第 5.0 / 5.1 节
 - `images/`、`data/`、`robots.txt`、`sitemap.xml`、`_headers` 仍留在仓库根目录，
   由 `tools/plugins/root-static.ts` 在开发时直通、构建时原样拷进 `dist/`
   （这样图片压缩脚本、GitHub Action 写缓存、`.gitignore` 规则都不用改）
