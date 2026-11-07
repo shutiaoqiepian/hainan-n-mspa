@@ -8,11 +8,12 @@
 
 技术栈：**Vue 3 + TypeScript + Vite**（多页应用），构建产物仍是纯静态文件，没有后端、没有数据库。
 每个页面都有自己的 HTML 入口，URL 与旧版完全一致（`index.html` / `about.html` / `gallery.html` /
-`forecast.html` / `members.html` / `join.html` / `404.html` / `cross.html`）。
+`forecast.html` / `members.html` / `join.html` / `login.html` / `404.html` / `cross.html`）。
 
 其中 `cross.html` 是 **2026-11-01 新增的大气水平—垂直剖面**：
-从 NOAA GFS 0.25° 取真实三维云水/云冰，画「沿镜头方向切开 50 km 的空气断面」。
-它是**解释层**，不参与霞光评分的计算。数据由 `.github/workflows/xsec-cache.yml` 每天 4 次构建。
+从 NOAA GFS 0.25° 取真实三维云水/云冰，画「沿镜头方向切开 320 km 的空气断面」，
+覆盖全国 224 个机位 / 34 个省级单元。
+它是**解释层**，不参与霞光评分的计算。数据由 `.github/workflows/xsec-cache.yml` 定时构建。
 
 > 接手开发请看 **[交接文档.md](交接文档.md)**：目录职责、四条不能违反的硬规矩、
 > 回归比对工具、部署链路与踩坑记录都在里面。
@@ -60,31 +61,36 @@ Cloudflare Pages 的构建配置需要是：
 
 ```
 .
-├── index.html / about.html / gallery.html / forecast.html / members.html / join.html / 404.html / cross.html
-│                              # 七个入口：<head> 里保留全部 SEO / og 元信息，<body> 只有 #app 挂载点
+├── index.html / about.html / gallery.html / forecast.html / members.html / join.html / login.html / 404.html / cross.html
+│                              # 九个入口：<head> 里保留全部 SEO / og 元信息，<body> 只有 #app 挂载点
 ├── src/
+│   ├── shells/                # HTML 源文件（改 head 改这里，别改根目录成品）
 │   ├── entries/               # 每个 HTML 一个入口，调用 createPage(页面组件)
 │   ├── app/                   # AppShell（导航+main+页脚+轻提示）与 createPage
-│   ├── pages/                 # 七个页面组件
-│   ├── components/            # layout / media / members / forecast / gallery …
-│   ├── composables/           # useReveal（滚动淡入）、useToast、useLightbox、useCopyText
-│   ├── data/                  # 站点文案、作品清单、成员名录、预报机位与模式
-│   ├── lib/                   # 预报算法（scoring/sun/api…）、名片 canvas 绘制
+│   ├── pages/                 # 九个页面组件（含 CrossSectionPage）
+│   ├── components/            # layout / media / members / forecast / xsec …
+│   ├── composables/           # useReveal、useToast、useLightbox、useCopyText、useWhitespace
+│   ├── data/                  # 站点文案、作品清单、成员名录、机位/模式/等级/天象词库
+│   ├── lib/                   # forecast（评分核心）/ xsec（大气剖面）/ card / auth …
 │   ├── vendor/                # 第三方库（qrcode.js，Kazuhiko Arase, MIT）
-│   └── styles/                # 由旧 style.css 按原行序切分的样式模块
+│   └── styles/                # base / components / layout / pages + index.css
 ├── images/                    # 压缩后的照片（长边 ≤1800px）+ thumbs/ 缩略图（800px）
-├── data/forecast/             # 预报静态缓存，按省一个文件（Actions 每天 8 次写，跟着模式发布时刻）
-├── tools/                     # build-cache.mjs、图片压缩脚本、回归比对脚本
+├── data/forecast/             # 预报静态缓存，34 省级单元一省一文件
+├── data/cross/                # 大气剖面缓存（224 机位）
+├── data/obs/                  # 历史快照（只增不改）
+├── tools/                     # 40+ 脚本（测试/数据管线/回归/剖面/观测）
 ├── robots.txt / sitemap.xml / _headers
 └── LICENSE
 ```
+
+> 完整目录职责见 [`交接文档.md`](交接文档.md) 第 2 章（2026-11-07 实测重写）。
 
 ## 功能
 
 - **首页 / 关于 / 成员 / 加入我们** — 社团介绍、成员名录、入群与投稿指南
 - **作品集** — 瀑布流作品墙，按分类筛选，点击看大图（灯箱）；图片走缩略图，原图另开
-- **霞光预报** — 25 个海南机位（海口 10 个，按朝向细分到东向朝霞 / 西向晚霞），
-  覆盖 **今天·明天 × 日出·日落** 四个时段，切换不重新请求；
+- **霞光预报** — 覆盖全国 **34 个省级单元 / 224 个机位**（含机场观测点，用于同址校验），
+  分 **今天·明天 × 日出·日落** 四个时段，切换不重新请求；
   评分是高云 × 低云 × 中云 × AOD × 降水 的乘法结构，再按太阳方位角与模式分歧修正；
   数据来自 [Open-Meteo](https://open-meteo.com/)（免费、无需 Key）
 
@@ -142,11 +148,11 @@ LEGACY_REF=<commit> node tools/compare-legacy.mjs      # 换一个基线提交
 
 ## 添加预报机位
 
-机位表是 `src/data/forecast/spots.json`（页面和 `tools/build-cache.mjs` 共用这一份，
+机位表是 `src/data/forecast/spots.ts`（页面和 `tools/build-cache.mjs` 共用这一份，
 不再有两份副本对账的麻烦）。加一行：
 
-```json
-{ "n": "机位名", "lat": 20.026, "lon": 110.285, "face": "西", "area": "海口", "prov": "hn" }
+```ts
+{ n: '机位名', lat: 20.026, lon: 110.285, face: '西', area: '海口', prov: 'hn' },
 ```
 
 - `face`：`东` / `东南` / `南` / `西南` / `西` / `西北` / `北` / `山顶`
