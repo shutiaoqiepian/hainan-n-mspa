@@ -1,5 +1,6 @@
 <script setup lang="ts">
 /** 方法说明：时间口径 / 四个机会 / 云种剖面 / 多模式 / 怎么算的 / AOD 分级 / 云底高度，纯静态（旧版 .fc-note） */
+import Legend from '@/components/forecast/Legend.vue'
 </script>
 
 <template>
@@ -36,6 +37,7 @@
           再按<b>太阳方位角</b>判断机位朝向对不对得上，并用日落前后各一小时做<b>平滑</b>，
           减少单点噪声。
         </p>
+        <Legend />
         <p>
           <b>AOD 分级</b>参照
           <a href="https://www.sunsetbot.top/halo/" target="_blank" rel="noopener">SunsetBot 团队公开发布的对照表</a>：

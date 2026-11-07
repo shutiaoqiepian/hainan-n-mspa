@@ -412,6 +412,52 @@
 /* 区间写法「小烧到中烧」比单档名长一倍：压缩字距并去掉 letter-spacing，
    保证 360px 窄屏的 54px 列里也不撑破（实测 5 字 × 10px = 50px）。 */
 .fr-lvl.is-range { font-size: 10px; letter-spacing: 0; }
+/* 表头「等级」点击展开的六档图例（2026-11-07 补回入口）。
+   不用浮层：.fc-rank 有 overflow:hidden，绝对定位会被裁剪，
+   所以做成表格内的一行，桌面/手机都点开看，行为一致。 */
+.fr-lvl-hd { cursor: pointer; user-select: none; }
+.fr-lvl-hd i {
+  font-style: normal;
+  font-size: 9px;
+  margin-left: 3px;
+  opacity: 0.65;
+  display: inline-block;
+  transition: transform 0.15s;
+}
+.fr-lvl-hd.on i { transform: rotate(180deg); }
+.fr-lvl-hd:hover { color: var(--text); }
+.fr-lvlexp {
+  padding: 10px 14px 12px;
+  border-bottom: 1px solid var(--fc-line);
+  background: var(--fill-2);
+}
+.fr-lvlexp-in {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-bottom: 8px;
+}
+.fr-lvlexp-it {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.fr-lvlexp-it i {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.fr-lvlexp-it b { font-weight: 600; color: var(--text); }
+.fr-lvlexp-it em { font-style: normal; color: var(--muted-2); font-size: 11px; font-variant-numeric: tabular-nums; }
+.fr-lvlexp-note {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted-2);
+  line-height: 1.6;
+}
 .fr-dim { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .fr-dim .mlab { display: none; }
 .r { text-align: right; }

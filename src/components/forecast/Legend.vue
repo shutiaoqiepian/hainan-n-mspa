@@ -1,17 +1,12 @@
 <script setup lang="ts">
 /** 等级图例：六档颜色与分数阈值。
  *  2026-11-06 起不再手写阈值，直接从 LEVELS 生成 —— 上次「最高档改名」就得手改
- *  六行 HTML，改漏一行就会和图例打架。 */
-import { LEVELS, SCORE_MAX } from '@/data/forecast/levels'
+ *  六行 HTML，改漏一行就会和图例打架。
+ *  2026-11-07 起派生逻辑抽到 levels.ts 的 levelBands()，这里只渲染。
+ *  （顺带修掉一个旧 bug：最低档「不烧」原来写成 '<0'，正确是 '0–29'。） */
+import { SCORE_MAX, levelBands } from '@/data/forecast/levels'
 
-const bands = LEVELS.map((l, i) => {
-  const up = i === 0 ? SCORE_MAX : LEVELS[i - 1].min - 1
-  return {
-    name: l.name,
-    color: l.color,
-    range: i === LEVELS.length - 1 ? '<' + l.min : l.min + '–' + up
-  }
-})
+const bands = levelBands()
 </script>
 
 <template>

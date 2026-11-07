@@ -34,6 +34,22 @@ export function levelOf(score: number): Level {
   return LEVELS[LEVELS.length - 1]
 }
 
+/* 六档的「显示区间」（供图例使用）：名字 + 颜色 + 分数段。
+   从 LEVELS 派生 —— 等级表本身仍只写 LEVELS 一份，这里只是把「第 i 档上界
+   是第 i-1 档下界减 1」这条规则算出来，不抄阈值。 */
+export interface LevelBand {
+  name: string
+  color: string
+  range: string
+}
+
+export function levelBands(): LevelBand[] {
+  return LEVELS.map((l, i) => {
+    const hi = i === 0 ? SCORE_MAX : LEVELS[i - 1].min - 1
+    return { name: l.name, color: l.color, range: l.min + '–' + hi }
+  })
+}
+
 /* ---------- 区间形容词 ----------
    问题：分数是 0–100 里的一个确定数，但 66 分和 67 分在等级上分属中烧/小烧两侧。
    只报一个档次，会给人「预报很确定」的错觉；追霞圈的口语本来就是区间

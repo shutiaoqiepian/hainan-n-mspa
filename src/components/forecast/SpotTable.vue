@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { KINDS, SCORE_MAX } from '@/data/forecast/levels'
+import { computed, ref } from 'vue'
+import { KINDS, SCORE_MAX, levelBands } from '@/data/forecast/levels'
 import { isDone, openFeedback } from '@/lib/forecast/feedback'
 import { openSpotCard } from '@/lib/forecast/card-ui'
 import { state } from '@/lib/forecast/state'
@@ -19,6 +19,11 @@ const emit = defineEmits<{
   (e: 'select', name: string): void
   (e: 'toggleAll'): void
 }>()
+
+/* 六档图例（点表头「等级」展开一行）。数据从 levels.ts 的 levelBands() 派生，
+   等级表本身仍只在 LEVELS 一份，这里不抄阈值。 */
+const bands = levelBands()
+const lvlOpen = ref(false)
 
 const visible = computed(() => (props.showAll ? props.rows : props.rows.slice(0, 8)))
 const rest = computed(() => props.rows.slice(8))
@@ -51,12 +56,37 @@ const kindWord = computed(() => KINDS[state.kind].word)
       <span>机位</span>
       <span class="col-bar">分数</span>
       <span class="r">分</span>
-      <span class="c">等级</span>
+      <span
+        class="c fr-lvl-hd"
+        :class="{ on: lvlOpen }"
+        role="button"
+        tabindex="0"
+        :aria-expanded="lvlOpen ? 'true' : 'false'"
+        title="点击查看六档分数线"
+        @click="lvlOpen = !lvlOpen"
+        @keydown.enter.prevent="lvlOpen = !lvlOpen"
+        @keydown.space.prevent="lvlOpen = !lvlOpen"
+      >
+        等级<i aria-hidden="true">▾</i>
+      </span>
       <span class="col-cloud">高 / 中 / 低云</span>
       <span class="col-aod r">AOD</span>
       <span class="col-vivid r">鲜亮度</span>
       <span class="col-spread r">分歧</span>
       <span></span>
+    </div>
+
+    <!-- 六档图例（点表头「等级」展开）。不用浮层：.fc-rank 有 overflow:hidden，
+         绝对定位会被裁剪，所以做成表格内的一行，桌面/手机都点开看。 -->
+    <div v-if="lvlOpen" class="fr-lvlexp">
+      <div class="fr-lvlexp-in">
+        <span v-for="b in bands" :key="b.name" class="fr-lvlexp-it">
+          <i :style="{ background: b.color }"></i>
+          <b>{{ b.name }}</b>
+          <em>{{ b.range }}</em>
+        </span>
+      </div>
+      <p class="fr-lvlexp-note">分数压在分界上时写成区间（如「小烧到中烧」）；0–{{ SCORE_MAX }} 是本站口径，非任何官方分级。</p>
     </div>
 
     <div
