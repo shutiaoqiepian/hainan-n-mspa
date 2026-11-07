@@ -76,3 +76,8 @@ dist/*
 
 # 验证脚本的截图产物（可随时重新生成，不入库）
 tools/obs/out/
+
+# 一次性分析/扫描脚本（2026-11-07 起）。
+# 约定见 docs/ALGORITHM-COLLAB.md 第六节规则 8：临时脚本用 _tmp- 前缀，不进正式工具列表。
+# 这些脚本的结论应写进文档（docs/analysis/ 或台账），脚本本身用完即删。
+tools/_tmp-*.mjs
