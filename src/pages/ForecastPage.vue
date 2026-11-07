@@ -58,6 +58,10 @@ const rank = computed(() => {
 
 const showAll = ref(false)
 
+/* 「全部机位」折叠面板：默认收起，点地区信息右侧的入口展开。
+   2026-11-08 上移到决策卡上方，减少首屏纵向高度。 */
+const rankOpen = ref(false)
+
 /* 天象词库的规模从数据直接读，不写死数字。
    原来页面里有 4 处写死「60 条」，词库扩到 68 条后全部变成错的，
    这种数字只要手写就一定会过期。 */
@@ -85,12 +89,6 @@ const others = computed(() => {
   return rows.value.filter((r) => r.spot.n !== cur.spot.n).slice(0, 3)
 })
 
-function gotoRank(): void {
-  const el = document.getElementById('fc-rank')
-  if (!el) return
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
-
 /* 决策卡上的「云层剖面」→ 滚到气象分析里的那 8 行，并把判据全部摊开。
    SpotPanel 监听一个自定义事件，比把 ref 传下去干净。 */
 function showLayers(): void {
@@ -103,11 +101,14 @@ function onSelect(name: string): void {
   state.openSpot = name
 }
 
-/* 分享链接里带的机位：滚到那一行（旧版在每次 render 末尾做） */
+/* 分享链接里带的机位：先展开折叠的排行面板，再滚到那一行（旧版在每次 render 末尾做） */
 function scrollToShare(): void {
   if (!state.shareSpot) return
-  const hl = document.querySelector('.fc-rank .hl')
-  if (hl instanceof HTMLElement) hl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  if (!rankOpen.value) rankOpen.value = true
+  void nextTick(() => {
+    const hl = document.querySelector('.fc-rank .hl')
+    if (hl instanceof HTMLElement) hl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
 }
 
 watch(
@@ -195,7 +196,7 @@ onBeforeUnmount(() => {
   <section class="section fc-section">
     <div class="wrap">
       <!-- 查询条件 + 数据状态，合成一条工具条 -->
-      <Controls />
+      <Controls :rank-open="rankOpen" :rank-total="rows.length" @toggle-rank="rankOpen = !rankOpen" />
 
       <div v-if="state.loading" class="fc-empty">正在获取{{ prov }}各地的云层与气溶胶数据…</div>
       <div v-else-if="state.error" class="fc-empty">
@@ -204,6 +205,22 @@ onBeforeUnmount(() => {
       <div v-else-if="!rows.length" class="fc-empty">这个区域暂时没有可用的预报点。</div>
 
       <template v-else>
+        <!-- ② 机位排行：折叠式，默认收起，位于决策卡上方（点地区信息右侧入口展开） -->
+        <div v-if="rankOpen" id="fc-rank" class="fc-block fc-reveal fc-o-rank fc-rank-fold">
+          <div class="fc-block-head">
+            <h2>全部 {{ rows.length }} 个机位</h2>
+            <span class="sub">按分数排序 · 点任意一行看它的完整分析</span>
+            <button class="fc-btn primary" type="button" @click="onListCard">▣ 生成今日名片</button>
+          </div>
+          <SpotTable
+            :rows="rows"
+            :selected="selected"
+            :show-all="showAll"
+            @select="onSelect"
+            @toggle-all="showAll = !showAll"
+          />
+        </div>
+
         <!-- ① 决策区 -->
         <DecisionHero
           v-if="selected"
@@ -223,22 +240,6 @@ onBeforeUnmount(() => {
             </span>
           </div>
           <TipCards :tips="selected.detail.tips" :row="selected" @open-all="gotoPhenomena" />
-        </div>
-
-        <!-- ② 机位排行 -->
-        <div id="fc-rank" class="fc-block fc-reveal fc-o-rank">
-          <div class="fc-block-head">
-            <h2>全部 {{ rows.length }} 个机位</h2>
-            <span class="sub">按分数排序 · 点任意一行看它的完整分析</span>
-            <button class="fc-btn primary" type="button" @click="onListCard">▣ 生成今日名片</button>
-          </div>
-          <SpotTable
-            :rows="rows"
-            :selected="selected"
-            :show-all="showAll"
-            @select="onSelect"
-            @toggle-all="showAll = !showAll"
-          />
         </div>
 
         <!-- ② 各模式怎么看 -->

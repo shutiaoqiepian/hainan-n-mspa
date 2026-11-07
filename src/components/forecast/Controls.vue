@@ -9,6 +9,10 @@ import type { ProvKey } from '@/lib/forecast/types'
 
 /** 日期 / 时段 / 模式切换（旧版 .fc-controls） */
 
+/* 全部机位折叠入口：按钮放在地区信息（AreaChips）右侧，状态由预报页持有 */
+defineProps<{ rankOpen: boolean; rankTotal: number }>()
+const emit = defineEmits<{ (e: 'toggleRank'): void }>()
+
 function pickDay(d: number): void {
   state.day = d
   load()
@@ -71,6 +75,20 @@ function pickModel(e: Event): void {
         </select>
       </label>
     </div>
-    <AreaChips />
+    <div class="fc-side">
+      <AreaChips />
+      <button
+        v-if="rankTotal > 0"
+        class="fc-rank-toggle"
+        :class="{ 'is-on': rankOpen }"
+        type="button"
+        :aria-expanded="rankOpen ? 'true' : 'false'"
+        aria-controls="fc-rank"
+        @click="emit('toggleRank')"
+      >
+        {{ rankOpen ? '收起机位' : '全部机位 ' + rankTotal }}
+        <i aria-hidden="true">{{ rankOpen ? '▴' : '▾' }}</i>
+      </button>
+    </div>
   </div>
 </template>

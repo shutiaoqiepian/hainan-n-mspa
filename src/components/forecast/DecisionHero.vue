@@ -333,11 +333,13 @@ function onShare(): void {
         <i aria-hidden="true">{{ oppsOpen ? '收起判据' : '展开判据' }}</i>
       </button>
       <div v-show="!narrow || oppsOpen" class="dh-opps">
-        <div v-for="o in opps" :key="o.k" class="dh-opp">
-          <div class="oh"><b>{{ o.k }}</b><span :style="{ color: o.c }">{{ o.v }}</span></div>
+        <div v-for="o in opps" :key="o.k" class="dh-opp" :title="o.note">
+          <div class="oh">
+            <b>{{ o.k }}</b>
+            <span :style="{ color: o.c }">{{ o.v }}</span>
+            <em :style="{ color: o.c }">{{ o.w }}</em>
+          </div>
           <div class="ob"><i :style="{ width: Math.max(0, Math.min(100, o.v)) + '%', background: o.c }"></i></div>
-          <div class="ow" :style="{ color: o.c }">{{ o.w }}</div>
-          <div class="on">{{ o.note }}</div>
         </div>
       </div>
     </div>
