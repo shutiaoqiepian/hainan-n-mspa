@@ -21,7 +21,7 @@ const rows = computed(() =>
       color:
         p.score == null ? 'var(--muted-2)'
           : p.score >= 92 ? '#ff6a3d' : p.score >= 82 ? '#ff9640' : p.score >= 66 ? '#ffd166'
-            : p.score >= 48 ? '#9ad9b8' : p.score >= 30 ? '#8f979f' : '#5b636a'
+            : p.score >= 48 ? '#9ad9b8' : p.score >= 24 ? '#8f979f' : '#5b636a'
     }
   })
 )

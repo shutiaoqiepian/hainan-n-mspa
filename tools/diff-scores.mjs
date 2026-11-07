@@ -8,7 +8,7 @@ import path from 'node:path'
 const OLD = process.argv[2] || '.cmp-old'
 const NEW = 'data/obs'
 
-const LV = [[92, '世纪大烧'], [82, '大烧'], [66, '中烧'], [48, '小烧'], [30, '微烧'], [0, '不烧']]
+const LV = [[92, '世纪大烧'], [82, '大烧'], [66, '中烧'], [48, '小烧'], [24, '微烧'], [0, '不烧']]
 const lv = (s) => LV.find(([m]) => s >= m)[1]
 
 const files = readdirSync(NEW).filter((f) => f.startsWith('forecast-') && f.endsWith('.json'))

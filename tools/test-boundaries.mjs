@@ -100,8 +100,8 @@ const exp = [
   [91, '大烧'], [82, '大烧'],
   [81, '中烧'], [66, '中烧'],
   [65, '小烧'], [48, '小烧'],
-  [47, '微烧'], [30, '微烧'],
-  [29, '不烧'], [0, '不烧']
+  [47, '微烧'], [24, '微烧'],
+  [23, '不烧'], [0, '不烧']
 ]
 for (const [s, name] of exp) {
   check(s + ' → ' + name, M.levelOf(s).name === name, M.levelOf(s).name)
@@ -115,10 +115,11 @@ const ORDER = ['世纪大烧', '大烧', '中烧', '小烧', '微烧', '不烧']
 const ig = (s) => M.gradeRangeOf(s)
 check('区间半径是 5 分', D === 5, String(D))
 check('0 分 → 不烧（顶端/底端不写成区间）', ig(0).text === '不烧' && !ig(0).isRange, ig(0).text)
-check('29 分 → 不烧到微烧（离 30 只有 1 分）', ig(29).isRange && ig(29).text === '不烧到微烧', ig(29).text)
-check('35 分 → 微烧（离 30 正好 5 分，边界开区间，不算跨档）', !ig(35).isRange && ig(35).text === '微烧', ig(35).text)
-check('36 分 → 微烧', !ig(36).isRange && ig(36).text === '微烧', ig(36).text)
-check('44 分 → 微烧到小烧（离 48 只有 4 分）', ig(44).isRange && ig(44).text === '微烧到小烧', ig(44).text)
+check('18 分 → 不烧（离微烧线 24 还有 6 分，不跨档）', !ig(18).isRange && ig(18).text === '不烧', ig(18).text)
+check('19 分 → 不烧到微烧（离 24 只有 5 分）', ig(19).isRange && ig(19).text === '不烧到微烧', ig(19).text)
+check('29 分 → 微烧（离 24 正好 5 分，边界开区间，不算跨档）', !ig(29).isRange && ig(29).text === '微烧', ig(29).text)
+check('42 分 → 微烧', !ig(42).isRange && ig(42).text === '微烧', ig(42).text)
+check('43 分 → 微烧到小烧（离 48 只有 5 分）', ig(43).isRange && ig(43).text === '微烧到小烧', ig(43).text)
 check('53 分 → 小烧（离 48 正好 5 分，不算）', !ig(53).isRange && ig(53).text === '小烧', ig(53).text)
 check('52 分 → 小烧到微烧（离 48 有 4 分）', ig(52).isRange && ig(52).text === '微烧到小烧', ig(52).text)
 check('60 分 → 小烧（离两条分界都 ≥6 分）', !ig(60).isRange && ig(60).text === '小烧', ig(60).text)

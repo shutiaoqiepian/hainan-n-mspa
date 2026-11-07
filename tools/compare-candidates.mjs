@@ -41,7 +41,7 @@ export {
 /** 与生产 levels.ts 一致的等级 */
 const LEVELS = [
   { min: 92, name: '世纪大烧' }, { min: 82, name: '大烧' }, { min: 66, name: '中烧' },
-  { min: 48, name: '小烧' }, { min: 30, name: '微烧' }, { min: 0, name: '不烧' }
+  { min: 48, name: '小烧' }, { min: 24, name: '微烧' }, { min: 0, name: '不烧' }
 ]
 const levelOf = (s) => LEVELS.find((l) => s >= l.min) ?? LEVELS[LEVELS.length - 1]
 
