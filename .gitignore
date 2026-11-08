@@ -81,3 +81,6 @@ tools/obs/out/
 # 约定见 docs/ALGORITHM-COLLAB.md 第六节规则 8：临时脚本用 _tmp- 前缀，不进正式工具列表。
 # 这些脚本的结论应写进文档（docs/analysis/ 或台账），脚本本身用完即删。
 tools/_tmp-*.mjs
+
+# TRAE 目录
+.marscode/

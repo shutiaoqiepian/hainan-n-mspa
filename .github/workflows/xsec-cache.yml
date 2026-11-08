@@ -135,8 +135,8 @@ jobs:
 
       - name: 有变化才提交
         run: |
-          git config user.name "18N-MSPA Bot"
-          git config user.email "bot@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -n "$(git status --porcelain data/cross/)" ]; then
             git add data/cross/
             git commit -m "chore: update cross-section cache"
