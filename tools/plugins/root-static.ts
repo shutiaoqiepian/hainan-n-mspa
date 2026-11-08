@@ -5,8 +5,8 @@ import { extname, join, relative, resolve, sep } from 'node:path'
 
 /** 仓库根目录下的大体积静态资源：图片、预报缓存 */
 const DIRS = ['images', 'data']
-/** 仓库根目录下的单文件静态资源：Cloudflare Pages 头配置、爬虫文件 */
-const FILES = ['_headers', 'robots.txt', 'sitemap.xml']
+/** 仓库根目录下的单文件静态资源：Cloudflare Pages 头配置、爬虫文件、微信域名验证文件 */
+const FILES = ['_headers', 'robots.txt', 'sitemap.xml', 'a6809bfbd48060b8861226be0e283f4e.txt']
 
 /**
  * 不发布到线上的子目录。
