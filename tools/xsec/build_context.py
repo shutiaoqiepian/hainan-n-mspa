@@ -9,7 +9,7 @@
     混进 hn-*.json 会让「数据来源」说不清楚，也会让 CI 失败面变大。
     所以：data/cross/context.json 独立生成，失败不影响 GFS 剖面。
 
-数据源（均已实测，见 docs/阶段七-01）：
+数据源（均已实测，见 docs/handoff/stages/阶段七-01-太阳几何与照明引擎-实现报告.md）：
     1. 地形：主源 Open-Meteo Elevation API
        https://api.open-meteo.com/v1/elevation?latitude=..&longitude=..
        底层是 Copernicus DEM GLO-30（Open-Meteo 文档），输出的是**DEM 高度**，

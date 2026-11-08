@@ -15,8 +15,12 @@
 覆盖全国 224 个机位 / 34 个省级单元。
 它是**解释层**，不参与霞光评分的计算。数据由 `.github/workflows/xsec-cache.yml` 定时构建。
 
-> 接手开发请看 **[交接文档.md](交接文档.md)**：目录职责、四条不能违反的硬规矩、
-> 回归比对工具、部署链路与踩坑记录都在里面。
+## 开发文档
+
+- **文档总索引**：[`docs/README.md`](docs/README.md) —— 先看这里，按主题定位该读哪份
+- **当前交接文档**：[`docs/handoff/交接文档.md`](docs/handoff/交接文档.md) —— 目录职责、四条不能违反的硬规矩、回归比对工具、部署链路与踩坑记录
+- **AI / 开发者入口**：[`AGENTS.md`](AGENTS.md) —— 开工前必做、硬约束、改完必跑
+- 阶段记录与专项调研在 [`docs/handoff/`](docs/handoff/) 下（`stages/`、`topics/`、`archive/`）；新交接文档一律放这里
 
 ## 本地开发
 
@@ -52,7 +56,7 @@ Cloudflare Pages 的构建配置需要是：
   原 `tools/publish-root.ts` 插件已移除。
   ➜ **改页面 `<head>` / SEO / 标题一律改 `src/shells/*.html`**，不要改根目录。
   清完后 `npm run build` 之后 `git status` 保持干净，`git add -A` 是安全的
-  （见 `交接文档.md` 第 5 章）
+  （见 `docs/handoff/交接文档.md` 第 5 章）
 - `images/`、`data/`、`robots.txt`、`sitemap.xml`、`_headers` 仍留在仓库根目录，
   由 `tools/plugins/root-static.ts` 在开发时直通、构建时原样拷进 `dist/`
   （这样图片压缩脚本、GitHub Action 写缓存、`.gitignore` 规则都不用改）
@@ -85,7 +89,7 @@ Cloudflare Pages 的构建配置需要是：
 └── LICENSE
 ```
 
-> 完整目录职责见 [`交接文档.md`](交接文档.md) 第 2 章（2026-11-07 实测重写）。
+> 完整目录职责见 [`docs/handoff/交接文档.md`](docs/handoff/交接文档.md) 第 2 章（2026-11-07 实测重写）。
 
 ## 功能
 

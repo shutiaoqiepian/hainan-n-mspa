@@ -3,7 +3,7 @@
  *
  *   node tools/probe-openmeteo-vars.mjs
  *
- * 输出一张「变量 → 有/没有」的表，并写进 docs/数据源核实-OpenMeteo实测.md。
+ * 输出一张「变量 → 有/没有」的表，并写进 docs/handoff/topics/数据源核实-OpenMeteo实测.md。
  * 这是「不凭记忆列 API」的证据。
  */
 
@@ -202,8 +202,8 @@ async function main() {
   md += '- **水平方向**：接口只接受「点列表」，不接受路径/区域；\n'
   md += '  要画水平—垂直截面，必须自己在路径上取 ~20–40 个点逐点请求。\n'
 
-  await writeFile(path.join(ROOT, 'docs/数据源核实-OpenMeteo实测.md'), md, 'utf8')
-  console.log('\n报告已写入 docs/数据源核实-OpenMeteo实测.md')
+  await writeFile(path.join(ROOT, 'docs/handoff/topics/数据源核实-OpenMeteo实测.md'), md, 'utf8')
+  console.log('\n报告已写入 docs/handoff/topics/数据源核实-OpenMeteo实测.md')
 }
 
 main().catch((e) => { console.error('失败：', e); process.exit(1) })

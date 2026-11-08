@@ -119,7 +119,7 @@ onMounted(() => {
         <p class="login-side-note">
           这些功能都需要一个「后端」（能存账号、能做校验的服务器），
           本站现在还是纯静态站点，所以登录先空着占位。
-          真要做时的方案对比写在 <code>交接文档.md</code> 的「登录预留」一节。
+          真要做时的方案对比写在 <code>docs/handoff/交接文档.md</code> 的「登录预留」一节。
         </p>
       </aside>
     </div>

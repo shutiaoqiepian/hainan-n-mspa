@@ -2,7 +2,7 @@
 
 > 日期：2026-11-07
 > 任务：DSH 指派「学习文献」——读 `research/README.md`、`research/scoring-thresholds.md`、
->       `research/rays.md`、`docs/阶段六-00参考资料原文整理与可行性审查.md`，
+>       `research/rays.md`、`docs/handoff/stages/阶段六-00参考资料原文整理与可行性审查.md`，
 >       对照重标自己的 `docs/analysis/sky-glow-literature.md`。
 > 结论先行：**天空霞方向 A 级依据 = 0 条，当前只能算 C 级（经验/启发式）。**
 >       可以做成 v2 实验版，但界面上绝对不能说「准确率/概率」，上线前必须用 A 级样本验证误报不劣于 v1。

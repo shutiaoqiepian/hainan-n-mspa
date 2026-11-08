@@ -3,7 +3,7 @@
  *
  * 为什么用 GIBS：NASA GIBS 把 MODIS/AIRS 的 L2 产品做成了**免注册的瓦片服务**，
  * 一个点只要 1 张 256×256 PNG（几 KB），不用下载 GB 级 HDF5、不用账号。
- * 这绕开了 docs/卫星云顶温度-可行性探查.md 里"代价太高"的那条路。
+ * 这绕开了 docs/handoff/topics/卫星云顶温度-可行性探查.md 里"代价太高"的那条路。
  *
  * 数据链路（每一步都可复核）：
  *   MODIS_Terra_Cloud_Top_Height_Day  ← MOD/MYD 云顶高度产品（米）

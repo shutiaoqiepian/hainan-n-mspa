@@ -7,10 +7,10 @@
     https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/
 
 为什么用 Python 而不是 Node：
-    GRIB2 解码目前没有成熟的 Node 等价物（见 docs/阶段三 §2.6）。
+    GRIB2 解码目前没有成熟的 Node 等价物（见 docs/handoff/stages/阶段三-免费气象数据源调研.md §2.6）。
     前端只读本脚本产出的 JSON，浏览器里绝不解 GRIB。
 
-两套下载方式，互为回退（实测对比见 docs/阶段四）：
+两套下载方式，互为回退（实测对比见 docs/handoff/stages/阶段四-大气剖面技术方案.md）：
     A. filter_gfs_0p25.pl 服务端裁剪 —— 一次请求 8 变量 × 9 层 ≈ 40 KB
     B. 静态文件 .idx 偏移 + HTTP Range —— 每层 0.4~1.4 MB，全网格 1440×721
     A 一旦返回 HTML / 条数不对 / 超时 → 自动回退 B。B 只切海南 23×17 窗口。

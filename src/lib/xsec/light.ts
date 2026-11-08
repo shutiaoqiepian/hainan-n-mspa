@@ -16,7 +16,7 @@
  *       el + dSun/R = −dip(h_b),   dip(h) = acos(R/(R+h))
  *   ⇒ 点 (dSun, h) 受直射光 ⇔ el + dSun/R > −dip(h)
  *     （h_b 展开到一阶即原文 h = l²/(2R)：el=0 时 h_b = dSun²/(2R)，与
- *      docs/阶段六-03 的 image76/image86 公式一致，单元测试里有回归。）
+ *      docs/handoff/stages/阶段六-03litgeo-verify-验证报告.md 的 image76/image86 公式一致，单元测试里有回归。）
  *
  * 已知局限（页面必须同步展示，不能藏着）：
  *   1. 太阳高度角用现有 `sunPosition()`（NOAA 低精度，±0.01° 量级），未含大气折射
@@ -120,7 +120,7 @@ export function transmittance(aod: number | null, elDeg: number): number | null 
 /**
  * 沿某个方位的地形「视线高度角」（°，从机位看出去的最高地形仰角，含曲率修正）。
  * elev[i] = 距机位 i·stepKm 处的 DEM 高度（m）；缺测跳过。
- * 公式：atan2(Δh, d) − d/(2R)（docs/阶段六-03 的 image136 公式）。
+ * 公式：atan2(Δh, d) − d/(2R)（docs/handoff/stages/阶段六-03litgeo-verify-验证报告.md 的 image136 公式）。
  */
 export function terrainHorizonDeg(
   elev: Array<number | null>,

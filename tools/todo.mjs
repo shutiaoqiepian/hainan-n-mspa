@@ -65,7 +65,7 @@ export const ITEMS = [
       '不论选哪个，Legend.vue 已经改成从 LEVELS 自动生成，直接复用即可'
     ],
     doc: '交接文档 39.6',
-    files: ['src/components/forecast/Legend.vue', 'src/components/forecast/DecisionHero.vue', '交接文档.md']
+    files: ['src/components/forecast/Legend.vue', 'src/components/forecast/DecisionHero.vue', 'docs/handoff/交接文档.md']
   },
   {
     id: 'century-tier-threshold',
@@ -160,7 +160,7 @@ export const ITEMS = [
       '攒够 30–50 个「有雾」样本后，用逻辑回归做第一次校准，出可靠性图',
       '⚠️ 校准前界面永远叫「环境符合度」，不能叫概率（text-lint 已经在管这条）'
     ],
-    doc: '交接文档 36.11；调研报告 docs/平流雾调研-海南.md §7',
+    doc: '交接文档 36.11；调研报告 docs/handoff/topics/平流雾调研-海南.md §7',
     files: ['src/components/forecast/FeedbackModal.vue', 'src/lib/forecast/feedback.ts']
   },
   {
@@ -183,7 +183,7 @@ export const ITEMS = [
       '两套判据按机位类型分流：沿海算平流雾，内陆算辐射雾，都算的话两条都显示但标清区别',
       '⚠️ 视觉上必须区分开 —— 摄影圈的「云海」（辐射雾/层积云）和「海雾」不是一回事（调研报告 §5.3）'
     ],
-    doc: '调研报告 docs/平流雾调研-海南.md §7 第 3 条；交接文档 36.11',
+    doc: '调研报告 docs/handoff/topics/平流雾调研-海南.md §7 第 3 条；交接文档 36.11',
     files: ['src/lib/forecast/fog.ts', 'src/components/forecast/FogCard.vue']
   },
 
@@ -263,13 +263,13 @@ export const ITEMS = [
       '仍缺的一环：GFS 剖面没有历史快照，无法和卫星逐日比对。',
     how: [
       '已完成：tools/obs/sample-cth.mjs（GIBS 瓦片→有云占比+4 档高度）+ compare-cth.mjs + probe-sources.mjs',
-      '已完成：docs/阶段七-03-卫星云顶高度-可行性落地.md（数据链路、实测、诚实边界）',
+      '已完成：docs/handoff/stages/阶段七-03-卫星云顶高度-可行性落地.md（数据链路、实测、诚实边界）',
       '已完成：每天存剖面摘要（tools/obs/snapshot-xsec.mjs，CI 已接）与卫星取样（每日存档、幂等去重）',
       '已完成：跨模式对照 tools/obs/compare-models.mjs（首批实测：850/700 hPa 云量差 21–23%，300 hPa RH 差 15%）',
       '待做：攒到 30 天样本后做「模式高估/低估高云」的定量分析（见 tools/todo.mjs 的 xsec-cth-30day）',
       'CDS/ERA5 原始压力层仍需账号，作为第三重交叉验证',
     ],
-    doc: 'docs/阶段七-03-卫星云顶高度-可行性落地.md',
+    doc: 'docs/handoff/stages/阶段七-03-卫星云顶高度-可行性落地.md',
     files: ['tools/obs/sample-cth.mjs', 'tools/obs/compare-cth.mjs', 'tools/obs/probe-sources.mjs']
   },
   {
@@ -289,7 +289,7 @@ export const ITEMS = [
       '看高估/低估是否与季节、天气型（晴空/中云/高云）相关，而不是只看总体均值',
       '结论只用于标注「这一层不可信」，不直接改 scoreOf()；要改评分必须单独立项 + A 级证据',
     ],
-    doc: 'docs/阶段七-04-验证数据每日采集.md §5',
+    doc: 'docs/handoff/stages/阶段七-04-验证数据每日采集.md §5',
     files: ['tools/obs/snapshot-xsec.mjs', 'tools/obs/sample-cth.mjs']
   },
   {
@@ -308,9 +308,9 @@ export const ITEMS = [
       '用 tools/xsec/review_tcdc.py 的多轮次/分相审查跑满一个季节（至少 30 天、4 个起报/天）',
       '液态/冰晶分开标定：暖云用 CLWMR、冰云用 ICMR，各自给自己的阈值与 PPV',
       '若有 CDS 账号，再与 ERA5 的 clwc/ciwc 做量级对照（台账 xsec-era5-validate）',
-      '结论回写 docs/阶段六-03 §7 与 docs/阶段五-02 §3，达到"可引用"标准前继续保持经验性表述',
+      '结论回写 docs/handoff/stages/阶段六-03litgeo-verify-验证报告.md §7 与 docs/handoff/stages/阶段五-02大气剖面-GFS数据管线与验证.md §3，达到"可引用"标准前继续保持经验性表述',
     ],
-    doc: 'docs/阶段六-03litgeo-verify-验证报告.md §7',
+    doc: 'docs/handoff/stages/阶段六-03litgeo-verify-验证报告.md §7',
     files: ['tools/xsec/review_tcdc.py']
   },
   {
@@ -325,13 +325,13 @@ export const ITEMS = [
       '任务书要求把「几何照明、光路消光、云体分布、最终观感」分开处理，不能混成一个分数。' +
       '现有评分不回答"什么时候烧、在天空哪儿烧、为什么翻车"，这正是几何引擎要补的。',
     how: [
-      '按 docs/阶段六-01 的模块划分实现纯函数（earth/sunlight/timing/aerosol/viewing）',
-      '把 docs/阶段六-03 的 51 项检查改写成正式单测（node --test 或现有 test-*.mjs 风格）',
+      '按 docs/handoff/stages/阶段六-01光线几何引擎-技术设计.md 的模块划分实现纯函数（earth/sunlight/timing/aerosol/viewing）',
+      '把 docs/handoff/stages/阶段六-03litgeo-verify-验证报告.md 的 51 项检查改写成正式单测（node --test 或现有 test-*.mjs 风格）',
       '全部纯函数 + 单测；不 import scoring、不写 forecast state',
       '先只做 /cross 的只读叠加图层（V1），再评估独立 0–500 km 光照图（V2）',
       '输出必须带 confidence/flags，页面明示哪些是估算',
     ],
-    doc: 'docs/阶段六-01光线几何引擎-技术设计.md',
+    doc: 'docs/handoff/stages/阶段六-01光线几何引擎-技术设计.md',
     files: []
   },
   {
@@ -351,7 +351,7 @@ export const ITEMS = [
       '衍射层用原文 5 组核半径（5.65µm→1.677° … 21.59µm→0.439°）做单测',
       '渲染/前端最后做，且页面上固定写明模型假设与局限',
     ],
-    doc: 'docs/阶段六-02大气光学实验室-技术设计.md',
+    doc: 'docs/handoff/stages/阶段六-02大气光学实验室-技术设计.md',
     files: []
   },
   {
@@ -373,7 +373,7 @@ export const ITEMS = [
       '先跑 14 个分区验证机位（海岸/山地/高原/盆地/岛屿/高纬），通过后再全量',
       '实测 CI 时间与 git 日增长，再决定 1 次/天还是 2 次/天',
     ],
-    doc: 'docs/阶段七-00-cross重构审计与方案.md §7',
+    doc: 'docs/handoff/stages/阶段七-00-cross重构审计与方案.md §7',
     files: ['tools/xsec/build_cross.py']
   },
   {
@@ -389,11 +389,11 @@ export const ITEMS = [
       '逐云带受光起止时间（52 项单测）。仍未做：把「几何受光 + 云量/厚度 + AOD」' +
       '合成一句可读的摄影价值结论（归因卡）。',
     how: [
-      '已完成：src/lib/xsec/light.ts 纯函数 + docs/阶段七-01 的公式与假设表',
+      '已完成：src/lib/xsec/light.ts 纯函数 + docs/handoff/stages/阶段七-01-太阳几何与照明引擎-实现报告.md 的公式与假设表',
       '已完成：tools/xsec/test-light.mjs（52 项），接进 /cross 的「太阳与照明几何」卡',
       '待做：摄影价值卡（只说条件与归因，不产生分数、不写回 forecast）',
     ],
-    doc: 'docs/阶段七-01-太阳几何与照明引擎-实现报告.md',
+    doc: 'docs/handoff/stages/阶段七-01-太阳几何与照明引擎-实现报告.md',
     files: ['src/lib/xsec/light.ts', 'tools/xsec/test-light.mjs']
   },
   {
@@ -413,7 +413,7 @@ export const ITEMS = [
       '方案 B：主图下方加 0–400 km 的「光路带」条带（纯几何，不需要新气象数据），标注云场只到 50 km',
       '两者都要重跑 verify_cross.py 并检查缓存体积（9 采样点约 +75%）',
     ],
-    doc: 'docs/阶段七-01 §5、docs/阶段七-00 §9',
+    doc: 'docs/handoff/stages/阶段七-01-太阳几何与照明引擎-实现报告.md §5、docs/handoff/stages/阶段七-00-cross重构审计与方案.md §9',
     files: ['tools/xsec/build_cross.py', 'src/components/xsec/CrossSectionChart.vue']
   },
   {
@@ -432,9 +432,9 @@ export const ITEMS = [
       '在 CDS 注册（免费），取 ERA5 pressure-levels 的 clwc/ciwc/cf，海南窗口 + 近 3 年 11 月',
       '只比较「分位数与量级」，不要直接拟合阈值：两套模式的水物质定义与分辨率都不同',
       '若量级差异 > 一个量级，先查单位（kg/kg vs g/kg）与层定义，再考虑调整 displayBands',
-      '结论写进 docs/阶段五-02 的 §3，并把 quality.json 的 thresholds 换成新依据',
+      '结论写进 docs/handoff/stages/阶段五-02大气剖面-GFS数据管线与验证.md 的 §3，并把 quality.json 的 thresholds 换成新依据',
     ],
-    doc: 'docs/阶段五-02大气剖面-GFS数据管线与验证.md §3、§11',
+    doc: 'docs/handoff/stages/阶段五-02大气剖面-GFS数据管线与验证.md §3、§11',
     files: ['tools/xsec/build_cross.py', 'data/cross/quality.json']
   },
   {
@@ -453,7 +453,7 @@ export const ITEMS = [
       '跑 tools/measure-cache-git.mjs 的同款思路量剖面缓存的每日增长，确认可接受再继续',
       '跨省扩量要先解决「一次只下载一个 2.5° 窗口」的成本问题，别把全国铺开',
     ],
-    doc: 'docs/阶段五-02大气剖面-GFS数据管线与验证.md §9、§11',
+    doc: 'docs/handoff/stages/阶段五-02大气剖面-GFS数据管线与验证.md §9、§11',
     files: ['tools/xsec/build_cross.py']
   },
   {
