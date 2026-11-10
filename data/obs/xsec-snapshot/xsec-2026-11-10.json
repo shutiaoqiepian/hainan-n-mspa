@@ -1,0 +1,1761 @@
+{
+ "version": 1,
+ "date": "2026-11-10",
+ "cycle": "2026-11-09T18:00:00Z",
+ "generatedAt": "2026-11-10T12:55:00Z",
+ "note": "每层 qMax = 所有采样点 × 所有方位上的最大凝结水（CLWMR+ICMR，mg/kg）；cloudTopKm = 有云层（≥1 mg/kg）中最高一层的海拔。缺测=null，不当 0。用于与卫星云顶高度（tools/obs/sample-cth.mjs）逐日比对。",
+ "spots": [
+  {
+   "spot": "hk-xihai",
+   "name": "海口西海岸观海台",
+   "cycle": "2026-11-09T18:00:00Z",
+   "times": [
+    {
+     "t": 0,
+     "utc": "2026-11-10T08:00:00Z",
+     "leadHours": 14,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 175,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 838,
+       "qMaxMgKg": 2
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1546,
+       "qMaxMgKg": 93
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3167,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4422,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5875,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7596,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9705,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12450,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 1.5
+    },
+    {
+     "t": 1,
+     "utc": "2026-11-10T09:00:00Z",
+     "leadHours": 15,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 177,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 841,
+       "qMaxMgKg": 1
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1548,
+       "qMaxMgKg": 22
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3168,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4424,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5876,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7598,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9708,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12454,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 1.5
+    },
+    {
+     "t": 2,
+     "utc": "2026-11-10T10:00:00Z",
+     "leadHours": 16,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 179,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 844,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1552,
+       "qMaxMgKg": 9
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3171,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4426,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5879,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7601,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9711,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12457,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 1.6
+    },
+    {
+     "t": 3,
+     "utc": "2026-11-10T11:00:00Z",
+     "leadHours": 17,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 183,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 848,
+       "qMaxMgKg": 2
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1556,
+       "qMaxMgKg": 16
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3175,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4431,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5883,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7603,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9715,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12462,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 1.6
+    }
+   ]
+  },
+  {
+   "spot": "cm-yingbin",
+   "name": "澄迈盈滨半岛",
+   "cycle": "2026-11-09T18:00:00Z",
+   "times": [
+    {
+     "t": 0,
+     "utc": "2026-11-10T08:00:00Z",
+     "leadHours": 14,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 175,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 838,
+       "qMaxMgKg": 5
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1546,
+       "qMaxMgKg": 107
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3167,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4422,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5875,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7596,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9705,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12450,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 1.5
+    },
+    {
+     "t": 1,
+     "utc": "2026-11-10T09:00:00Z",
+     "leadHours": 15,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 177,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 840,
+       "qMaxMgKg": 1
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1548,
+       "qMaxMgKg": 63
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3168,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4423,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5876,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7598,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9708,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12454,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 1.5
+    },
+    {
+     "t": 2,
+     "utc": "2026-11-10T10:00:00Z",
+     "leadHours": 16,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 179,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 843,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1551,
+       "qMaxMgKg": 7
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3171,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4426,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5878,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7600,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9711,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12457,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 1.6
+    },
+    {
+     "t": 3,
+     "utc": "2026-11-10T11:00:00Z",
+     "leadHours": 17,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 183,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 848,
+       "qMaxMgKg": 4
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1556,
+       "qMaxMgKg": 14
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3175,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4431,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5882,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7603,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9715,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12462,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 1.6
+    }
+   ]
+  },
+  {
+   "spot": "lg-jiao",
+   "name": "临高角",
+   "cycle": "2026-11-09T18:00:00Z",
+   "times": [
+    {
+     "t": 0,
+     "utc": "2026-11-10T08:00:00Z",
+     "leadHours": 14,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 175,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 839,
+       "qMaxMgKg": 10
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1546,
+       "qMaxMgKg": 24
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3166,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4421,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5874,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7595,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9705,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12450,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 1.5
+    },
+    {
+     "t": 1,
+     "utc": "2026-11-10T09:00:00Z",
+     "leadHours": 15,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 176,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 840,
+       "qMaxMgKg": 4
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1548,
+       "qMaxMgKg": 21
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3168,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4423,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5875,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7597,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9708,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12453,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 1.5
+    },
+    {
+     "t": 2,
+     "utc": "2026-11-10T10:00:00Z",
+     "leadHours": 16,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 179,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 843,
+       "qMaxMgKg": 1
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1551,
+       "qMaxMgKg": 13
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3171,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4426,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5877,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7599,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9710,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12457,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 1.6
+    },
+    {
+     "t": 3,
+     "utc": "2026-11-10T11:00:00Z",
+     "leadHours": 17,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 183,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 848,
+       "qMaxMgKg": 2
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1556,
+       "qMaxMgKg": 26
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3175,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4430,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5881,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7602,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9714,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12462,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 1.6
+    }
+   ]
+  },
+  {
+   "spot": "cj-qizhiwan",
+   "name": "昌江棋子湾",
+   "cycle": "2026-11-09T18:00:00Z",
+   "times": [
+    {
+     "t": 0,
+     "utc": "2026-11-10T08:00:00Z",
+     "leadHours": 14,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 172,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 835,
+       "qMaxMgKg": 40
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1543,
+       "qMaxMgKg": 7
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3164,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4419,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5873,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7596,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9707,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12451,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 1.5
+    },
+    {
+     "t": 1,
+     "utc": "2026-11-10T09:00:00Z",
+     "leadHours": 15,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 172,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 836,
+       "qMaxMgKg": 34
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1545,
+       "qMaxMgKg": 2
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3166,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4421,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5874,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7597,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9709,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12455,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 1.5
+    },
+    {
+     "t": 2,
+     "utc": "2026-11-10T10:00:00Z",
+     "leadHours": 16,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 174,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 839,
+       "qMaxMgKg": 30
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1549,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3169,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4425,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5876,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7598,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9711,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12458,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 0.8
+    },
+    {
+     "t": 3,
+     "utc": "2026-11-10T11:00:00Z",
+     "leadHours": 17,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 179,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 844,
+       "qMaxMgKg": 27
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1554,
+       "qMaxMgKg": 22
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3173,
+       "qMaxMgKg": 3
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4429,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5879,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7600,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9714,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12463,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    }
+   ]
+  },
+  {
+   "spot": "df-yulinzhou",
+   "name": "东方鱼鳞洲",
+   "cycle": "2026-11-09T18:00:00Z",
+   "times": [
+    {
+     "t": 0,
+     "utc": "2026-11-10T08:00:00Z",
+     "leadHours": 14,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 168,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 832,
+       "qMaxMgKg": 65
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1542,
+       "qMaxMgKg": 165
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3163,
+       "qMaxMgKg": 1
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4419,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5873,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7596,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9708,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12452,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    },
+    {
+     "t": 1,
+     "utc": "2026-11-10T09:00:00Z",
+     "leadHours": 15,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 168,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 833,
+       "qMaxMgKg": 61
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1544,
+       "qMaxMgKg": 67
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3165,
+       "qMaxMgKg": 4
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4421,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5874,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7597,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9710,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12456,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    },
+    {
+     "t": 2,
+     "utc": "2026-11-10T10:00:00Z",
+     "leadHours": 16,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 171,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 836,
+       "qMaxMgKg": 37
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1548,
+       "qMaxMgKg": 5
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3168,
+       "qMaxMgKg": 30
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4424,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5876,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7599,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9712,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12460,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    },
+    {
+     "t": 3,
+     "utc": "2026-11-10T11:00:00Z",
+     "leadHours": 17,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 175,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 841,
+       "qMaxMgKg": 42
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1553,
+       "qMaxMgKg": 16
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3173,
+       "qMaxMgKg": 58
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4429,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5879,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7601,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9715,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12465,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    }
+   ]
+  },
+  {
+   "spot": "ld-longmuwan",
+   "name": "乐东龙沐湾",
+   "cycle": "2026-11-09T18:00:00Z",
+   "times": [
+    {
+     "t": 0,
+     "utc": "2026-11-10T08:00:00Z",
+     "leadHours": 14,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 158,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 827,
+       "qMaxMgKg": 108
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1541,
+       "qMaxMgKg": 597
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3162,
+       "qMaxMgKg": 142
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4419,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5874,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7597,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9710,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12455,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    },
+    {
+     "t": 1,
+     "utc": "2026-11-10T09:00:00Z",
+     "leadHours": 15,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 159,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 828,
+       "qMaxMgKg": 101
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1543,
+       "qMaxMgKg": 570
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3164,
+       "qMaxMgKg": 208
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4420,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5875,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7599,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9712,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12459,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    },
+    {
+     "t": 2,
+     "utc": "2026-11-10T10:00:00Z",
+     "leadHours": 16,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 163,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 831,
+       "qMaxMgKg": 116
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1547,
+       "qMaxMgKg": 528
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3167,
+       "qMaxMgKg": 214
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4423,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5876,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7600,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9714,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12463,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    },
+    {
+     "t": 3,
+     "utc": "2026-11-10T11:00:00Z",
+     "leadHours": 17,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 167,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 836,
+       "qMaxMgKg": 115
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1551,
+       "qMaxMgKg": 544
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3172,
+       "qMaxMgKg": 176
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4428,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5879,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7603,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9718,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12469,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    }
+   ]
+  },
+  {
+   "spot": "sy-tianya",
+   "name": "三亚天涯海角",
+   "cycle": "2026-11-09T18:00:00Z",
+   "times": [
+    {
+     "t": 0,
+     "utc": "2026-11-10T08:00:00Z",
+     "leadHours": 14,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 153,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 825,
+       "qMaxMgKg": 109
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1541,
+       "qMaxMgKg": 671
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3162,
+       "qMaxMgKg": 193
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4419,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5875,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7598,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9711,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12458,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    },
+    {
+     "t": 1,
+     "utc": "2026-11-10T09:00:00Z",
+     "leadHours": 15,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 154,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 826,
+       "qMaxMgKg": 104
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1542,
+       "qMaxMgKg": 709
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3163,
+       "qMaxMgKg": 231
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4421,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5876,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7600,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9713,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12462,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    },
+    {
+     "t": 2,
+     "utc": "2026-11-10T10:00:00Z",
+     "leadHours": 16,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 158,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 829,
+       "qMaxMgKg": 124
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1545,
+       "qMaxMgKg": 710
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3167,
+       "qMaxMgKg": 183
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4424,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5877,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7601,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9716,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12465,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    },
+    {
+     "t": 3,
+     "utc": "2026-11-10T11:00:00Z",
+     "leadHours": 17,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 163,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 834,
+       "qMaxMgKg": 122
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1550,
+       "qMaxMgKg": 774
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3171,
+       "qMaxMgKg": 127
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4428,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5881,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7605,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9720,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12470,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    }
+   ]
+  },
+  {
+   "spot": "wzs-main",
+   "name": "五指山主峰",
+   "cycle": "2026-11-09T18:00:00Z",
+   "times": [
+    {
+     "t": 0,
+     "utc": "2026-11-10T08:00:00Z",
+     "leadHours": 14,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 164,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 830,
+       "qMaxMgKg": 81
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1542,
+       "qMaxMgKg": 293
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3164,
+       "qMaxMgKg": 12
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4420,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5875,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7598,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9709,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12455,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    },
+    {
+     "t": 1,
+     "utc": "2026-11-10T09:00:00Z",
+     "leadHours": 15,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 165,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 832,
+       "qMaxMgKg": 71
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1544,
+       "qMaxMgKg": 177
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3166,
+       "qMaxMgKg": 38
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4422,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5876,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7599,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9712,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12459,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    },
+    {
+     "t": 2,
+     "utc": "2026-11-10T10:00:00Z",
+     "leadHours": 16,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 168,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 835,
+       "qMaxMgKg": 53
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1547,
+       "qMaxMgKg": 141
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3169,
+       "qMaxMgKg": 101
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4425,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5878,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7601,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9715,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12463,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    },
+    {
+     "t": 3,
+     "utc": "2026-11-10T11:00:00Z",
+     "leadHours": 17,
+     "levels": [
+      {
+       "hPa": 1000,
+       "hgtM": 172,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 925,
+       "hgtM": 839,
+       "qMaxMgKg": 47
+      },
+      {
+       "hPa": 850,
+       "hgtM": 1552,
+       "qMaxMgKg": 181
+      },
+      {
+       "hPa": 700,
+       "hgtM": 3173,
+       "qMaxMgKg": 144
+      },
+      {
+       "hPa": 600,
+       "hgtM": 4429,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 500,
+       "hgtM": 5882,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 400,
+       "hgtM": 7605,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 300,
+       "hgtM": 9719,
+       "qMaxMgKg": 0
+      },
+      {
+       "hPa": 200,
+       "hgtM": 12468,
+       "qMaxMgKg": 0
+      }
+     ],
+     "cloudTopKm": 3.2
+    }
+   ]
+  }
+ ]
+}
