@@ -2090,6 +2090,6 @@
    "note": "MODIS Terra 白天过境（约 13:30 地方时），不是日落时刻；取 32px≈78 km 邻域；只有\"有云顶反演\"的像素会被着色，透明=晴空或无反演（不计入，也不当 0 米云）"
   }
  ],
- "generatedAt": "2026-11-10T12:55:03Z",
+ "generatedAt": "2026-11-10T13:28:02Z",
  "layer": "MODIS_Terra_Cloud_Top_Height_Day (NASA GIBS)"
 }
