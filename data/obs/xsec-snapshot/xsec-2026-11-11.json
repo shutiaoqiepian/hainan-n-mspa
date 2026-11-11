@@ -2,7 +2,7 @@
  "version": 1,
  "date": "2026-11-11",
  "cycle": "2026-11-10T18:00:00Z",
- "generatedAt": "2026-11-11T12:58:18Z",
+ "generatedAt": "2026-11-11T13:33:59Z",
  "note": "每层 qMax = 所有采样点 × 所有方位上的最大凝结水（CLWMR+ICMR，mg/kg）；cloudTopKm = 有云层（≥1 mg/kg）中最高一层的海拔。缺测=null，不当 0。用于与卫星云顶高度（tools/obs/sample-cth.mjs）逐日比对。",
  "spots": [
   {
