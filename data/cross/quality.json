@@ -1,24 +1,24 @@
 {
- "generatedAt": "2026-11-14T17:13:55Z",
- "cycle": "2026-11-14T12:00:00Z",
+ "generatedAt": "2026-11-14T23:11:52Z",
+ "cycle": "2026-11-14T18:00:00Z",
  "downloads": [
   {
-   "fh": 20,
+   "fh": 14,
    "how": "filter",
    "fields": 82
   },
   {
-   "fh": 21,
+   "fh": 15,
    "how": "filter",
    "fields": 82
   },
   {
-   "fh": 22,
+   "fh": 16,
    "how": "filter",
    "fields": 82
   },
   {
-   "fh": 23,
+   "fh": 17,
    "how": "filter",
    "fields": 82
   }
@@ -27,121 +27,121 @@
   {
    "spot": "hk-xihai",
    "t": 0,
-   "lwpGm2": 333.3,
+   "lwpGm2": 284.9,
    "iwpGm2": 0.0
   },
   {
    "spot": "hk-xihai",
    "t": 1,
-   "lwpGm2": 44.9,
+   "lwpGm2": 82.5,
    "iwpGm2": 0.0
   },
   {
    "spot": "hk-xihai",
    "t": 2,
-   "lwpGm2": 2.8,
+   "lwpGm2": 7.6,
    "iwpGm2": 0.0
   },
   {
    "spot": "hk-xihai",
    "t": 3,
-   "lwpGm2": 4.3,
+   "lwpGm2": 5.1,
    "iwpGm2": 0.0
   },
   {
    "spot": "cm-yingbin",
    "t": 0,
-   "lwpGm2": 259.9,
+   "lwpGm2": 251.2,
    "iwpGm2": 0.0
   },
   {
    "spot": "cm-yingbin",
    "t": 1,
-   "lwpGm2": 16.2,
+   "lwpGm2": 27.9,
    "iwpGm2": 0.0
   },
   {
    "spot": "cm-yingbin",
    "t": 2,
-   "lwpGm2": 17.5,
+   "lwpGm2": 3.2,
    "iwpGm2": 0.0
   },
   {
    "spot": "cm-yingbin",
    "t": 3,
-   "lwpGm2": 14.8,
+   "lwpGm2": 20.3,
    "iwpGm2": 0.0
   },
   {
    "spot": "lg-jiao",
    "t": 0,
-   "lwpGm2": 122.0,
+   "lwpGm2": 69.5,
    "iwpGm2": 0.0
   },
   {
    "spot": "lg-jiao",
    "t": 1,
-   "lwpGm2": 149.1,
+   "lwpGm2": 28.6,
    "iwpGm2": 0.0
   },
   {
    "spot": "lg-jiao",
    "t": 2,
-   "lwpGm2": 161.5,
+   "lwpGm2": 62.6,
    "iwpGm2": 0.0
   },
   {
    "spot": "lg-jiao",
    "t": 3,
-   "lwpGm2": 29.9,
+   "lwpGm2": 164.6,
    "iwpGm2": 0.0
   },
   {
    "spot": "cj-qizhiwan",
    "t": 0,
-   "lwpGm2": 1.1,
+   "lwpGm2": 1.8,
    "iwpGm2": 0.0
   },
   {
    "spot": "cj-qizhiwan",
    "t": 1,
-   "lwpGm2": 7.2,
+   "lwpGm2": 6.3,
    "iwpGm2": 0.0
   },
   {
    "spot": "cj-qizhiwan",
    "t": 2,
-   "lwpGm2": 20.1,
+   "lwpGm2": 15.0,
    "iwpGm2": 0.0
   },
   {
    "spot": "cj-qizhiwan",
    "t": 3,
-   "lwpGm2": 33.3,
+   "lwpGm2": 35.2,
    "iwpGm2": 0.0
   },
   {
    "spot": "df-yulinzhou",
    "t": 0,
-   "lwpGm2": 0.1,
+   "lwpGm2": 1.3,
    "iwpGm2": 0.0
   },
   {
    "spot": "df-yulinzhou",
    "t": 1,
-   "lwpGm2": 0.1,
+   "lwpGm2": 2.3,
    "iwpGm2": 0.0
   },
   {
    "spot": "df-yulinzhou",
    "t": 2,
-   "lwpGm2": 1.4,
+   "lwpGm2": 1.3,
    "iwpGm2": 0.0
   },
   {
    "spot": "df-yulinzhou",
    "t": 3,
-   "lwpGm2": 10.6,
+   "lwpGm2": 7.0,
    "iwpGm2": 0.0
   },
   {
@@ -171,13 +171,13 @@
   {
    "spot": "sy-tianya",
    "t": 0,
-   "lwpGm2": 0.6,
+   "lwpGm2": 14.0,
    "iwpGm2": 0.0
   },
   {
    "spot": "sy-tianya",
    "t": 1,
-   "lwpGm2": 1.4,
+   "lwpGm2": 3.1,
    "iwpGm2": 0.0
   },
   {
@@ -189,13 +189,13 @@
   {
    "spot": "sy-tianya",
    "t": 3,
-   "lwpGm2": 0.9,
+   "lwpGm2": 1.8,
    "iwpGm2": 0.0
   },
   {
    "spot": "wzs-main",
    "t": 0,
-   "lwpGm2": 2.9,
+   "lwpGm2": 4.3,
    "iwpGm2": 0.0
   },
   {
@@ -207,13 +207,13 @@
   {
    "spot": "wzs-main",
    "t": 2,
-   "lwpGm2": 8.1,
+   "lwpGm2": 5.9,
    "iwpGm2": 0.0
   },
   {
    "spot": "wzs-main",
    "t": 3,
-   "lwpGm2": 28.3,
+   "lwpGm2": 28.1,
    "iwpGm2": 0.0
   }
  ],
@@ -223,83 +223,83 @@
   "table": [
    {
     "thKgKg": 1e-06,
-    "hit": 154,
+    "hit": 123,
     "missed": 0,
-    "falseAlarm": 280,
-    "correctNegative": 13642,
+    "falseAlarm": 265,
+    "correctNegative": 13688,
     "pod": 1.0,
-    "far": 0.02011,
-    "agreement": 0.9801
+    "far": 0.01899,
+    "agreement": 0.9812
    },
    {
     "thKgKg": 2e-06,
-    "hit": 154,
+    "hit": 123,
     "missed": 0,
-    "falseAlarm": 256,
-    "correctNegative": 13666,
+    "falseAlarm": 235,
+    "correctNegative": 13718,
     "pod": 1.0,
-    "far": 0.01839,
-    "agreement": 0.9818
+    "far": 0.01684,
+    "agreement": 0.9833
    },
    {
     "thKgKg": 5e-06,
-    "hit": 154,
+    "hit": 123,
     "missed": 0,
-    "falseAlarm": 213,
-    "correctNegative": 13709,
+    "falseAlarm": 199,
+    "correctNegative": 13754,
     "pod": 1.0,
-    "far": 0.0153,
-    "agreement": 0.9849
+    "far": 0.01426,
+    "agreement": 0.9859
    },
    {
     "thKgKg": 1e-05,
-    "hit": 154,
+    "hit": 123,
     "missed": 0,
-    "falseAlarm": 175,
-    "correctNegative": 13747,
+    "falseAlarm": 151,
+    "correctNegative": 13802,
     "pod": 1.0,
-    "far": 0.01257,
-    "agreement": 0.9876
+    "far": 0.01082,
+    "agreement": 0.9893
    },
    {
     "thKgKg": 2e-05,
-    "hit": 154,
+    "hit": 123,
     "missed": 0,
-    "falseAlarm": 125,
-    "correctNegative": 13797,
+    "falseAlarm": 100,
+    "correctNegative": 13853,
     "pod": 1.0,
-    "far": 0.00898,
-    "agreement": 0.9911
+    "far": 0.00717,
+    "agreement": 0.9929
    },
    {
     "thKgKg": 5e-05,
-    "hit": 145,
-    "missed": 9,
-    "falseAlarm": 45,
-    "correctNegative": 13877,
-    "pod": 0.9416,
-    "far": 0.00323,
-    "agreement": 0.9962
+    "hit": 113,
+    "missed": 10,
+    "falseAlarm": 41,
+    "correctNegative": 13912,
+    "pod": 0.9187,
+    "far": 0.00294,
+    "agreement": 0.9964
    },
    {
     "thKgKg": 0.0001,
-    "hit": 110,
-    "missed": 44,
-    "falseAlarm": 14,
-    "correctNegative": 13908,
-    "pod": 0.7143,
-    "far": 0.00101,
-    "agreement": 0.9959
+    "hit": 78,
+    "missed": 45,
+    "falseAlarm": 4,
+    "correctNegative": 13949,
+    "pod": 0.6341,
+    "far": 0.00029,
+    "agreement": 0.9965
    },
    {
     "thKgKg": 0.0002,
-    "hit": 69,
-    "missed": 85,
-    "falseAlarm": 1,
-    "correctNegative": 13921,
-    "pod": 0.4481,
-    "far": 7e-05,
-    "agreement": 0.9939
+    "hit": 41,
+    "missed": 82,
+    "falseAlarm": 0,
+    "correctNegative": 13953,
+    "pod": 0.3333,
+    "far": 0.0,
+    "agreement": 0.9942
    }
   ],
   "phases": {
@@ -338,10 +338,10 @@
    },
    "warm": {
     "samples": 7820,
-    "modelCloudPts": 154,
-    "qtPositivePts": 524,
-    "qtGe1e5Pts": 329,
-    "qtMeanAtCloud": 0.00020262259740259746,
+    "modelCloudPts": 123,
+    "qtPositivePts": 479,
+    "qtGe1e5Pts": 274,
+    "qtMeanAtCloud": 0.00017300878048780494,
     "tRangeC": [
      0,
      100
@@ -354,7 +354,7 @@
    0.0001
   ],
   "samples": 14076,
-  "modelCloudPoints": 154,
+  "modelCloudPoints": 123,
   "note": "格点总数含 TCDC≤10% 的晴空点；海南该时次云主要在高空冰云"
  }
 }
