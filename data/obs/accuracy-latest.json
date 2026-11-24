@@ -1,8 +1,8 @@
 {
- "generatedAt": "2026-11-24T00:02:19.219Z",
- "metarRows": 14838,
+ "generatedAt": "2026-11-24T22:10:41.079Z",
+ "metarRows": 15295,
  "stations": 30,
- "snapshots": 918,
+ "snapshots": 952,
  "obsSpots": 55,
  "days": [
   "2026-10-24",
@@ -30,23 +30,24 @@
   "2026-11-20",
   "2026-11-21",
   "2026-11-22",
-  "2026-11-23"
+  "2026-11-23",
+  "2026-11-24"
  ],
  "grades": {
   "A": {
-   "samples": 550,
-   "judged": 550,
+   "samples": 572,
+   "judged": 572,
    "falseAlarm": 13,
-   "ok": 385,
-   "review": 152,
-   "falseAlarmRate": 2.4
+   "ok": 404,
+   "review": 155,
+   "falseAlarmRate": 2.3
   },
   "B": {
-   "samples": 148,
-   "judged": 148,
+   "samples": 153,
+   "judged": 153,
    "falseAlarm": 3,
-   "ok": 122,
-   "review": 23,
+   "ok": 126,
+   "review": 24,
    "falseAlarmRate": 2
   }
  },
@@ -7726,6 +7727,303 @@
    "truth": "无云",
    "spot": "郑州机场观测点",
    "score": 9,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZBAA",
+   "obs": "17:00",
+   "truth": "无云",
+   "spot": "北京机场观测点",
+   "score": 14,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "B",
+   "station": "ZYCC",
+   "obs": "16:00",
+   "truth": "无云",
+   "spot": "长春净月潭",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZGHA",
+   "obs": "18:00",
+   "truth": "无云",
+   "spot": "长沙机场观测点",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZUUU",
+   "obs": "18:30",
+   "truth": "少云 FEW",
+   "spot": "成都机场观测点",
+   "score": 2,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZUCK",
+   "obs": "18:00",
+   "truth": "无云",
+   "spot": "重庆机场观测点",
+   "score": 1,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "B",
+   "station": "ZYTL",
+   "obs": "16:30",
+   "truth": "无云",
+   "spot": "大连星海广场",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZSFZ",
+   "obs": "17:00",
+   "truth": "少云 FEW",
+   "spot": "福州机场观测点",
+   "score": 4,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZGGG",
+   "obs": "18:00",
+   "truth": "无云",
+   "spot": "广州机场观测点",
+   "score": 29,
+   "level": "微烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZUGY",
+   "obs": "18:00",
+   "truth": "少云 FEW",
+   "spot": "贵阳机场观测点",
+   "score": 14,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZJHK",
+   "obs": "18:00",
+   "truth": "低云封挡 OVC 1600ft",
+   "spot": "海口机场观测点",
+   "score": 2,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZSHC",
+   "obs": "17:00",
+   "truth": "无云",
+   "spot": "杭州机场观测点",
+   "score": 22,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "B",
+   "station": "ZYHB",
+   "obs": "16:00",
+   "truth": "无云",
+   "spot": "哈尔滨冰雪大世界",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZSOF",
+   "obs": "17:00",
+   "truth": "无云",
+   "spot": "合肥机场观测点",
+   "score": 20,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZGOW",
+   "obs": "18:00",
+   "truth": "有中高云 BKN 3300ft",
+   "spot": "揭阳机场观测点",
+   "score": 1,
+   "level": "不烧",
+   "verdict": "⚠ 待复核"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZLLL",
+   "obs": "18:00",
+   "truth": "无云",
+   "spot": "兰州机场观测点",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZSNJ",
+   "obs": "17:00",
+   "truth": "无云",
+   "spot": "南京机场观测点",
+   "score": 32,
+   "level": "微烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZSQD",
+   "obs": "17:00",
+   "truth": "无云",
+   "spot": "青岛机场观测点",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZJSY",
+   "obs": "18:00",
+   "truth": "有中高云 BKN 3300ft",
+   "spot": "三亚机场观测点",
+   "score": 6,
+   "level": "不烧",
+   "verdict": "⚠ 待复核"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZSSS",
+   "obs": "17:00",
+   "truth": "无云",
+   "spot": "上海机场观测点",
+   "score": 35,
+   "level": "微烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "B",
+   "station": "ZSPD",
+   "obs": "17:00",
+   "truth": "无云",
+   "spot": "陆家嘴",
+   "score": 19,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZGSZ",
+   "obs": "18:00",
+   "truth": "有中高云 SCT 3000ft",
+   "spot": "深圳机场观测点",
+   "score": 15,
+   "level": "不烧",
+   "verdict": "⚠ 待复核"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "B",
+   "station": "ZGSZ",
+   "obs": "17:30",
+   "truth": "有中高云 SCT 3000ft",
+   "spot": "大澳",
+   "score": 4,
+   "level": "不烧",
+   "verdict": "⚠ 待复核"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZBTJ",
+   "obs": "17:00",
+   "truth": "无云",
+   "spot": "天津机场观测点",
+   "score": 0,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZHHH",
+   "obs": "18:00",
+   "truth": "无云",
+   "spot": "武汉机场观测点",
+   "score": 24,
+   "level": "微烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZLXY",
+   "obs": "18:00",
+   "truth": "无云",
+   "spot": "西安机场观测点",
+   "score": 33,
+   "level": "微烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZSAM",
+   "obs": "17:00",
+   "truth": "低云封挡 BKN 1400ft",
+   "spot": "厦门机场观测点",
+   "score": 2,
+   "level": "不烧",
+   "verdict": "✅ 合理"
+  },
+  {
+   "day": "2026-11-24",
+   "grade": "A",
+   "station": "ZHCC",
+   "obs": "17:00",
+   "truth": "无云",
+   "spot": "郑州机场观测点",
+   "score": 4,
    "level": "不烧",
    "verdict": "✅ 合理"
   }
