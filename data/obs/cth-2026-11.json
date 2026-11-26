@@ -5563,8 +5563,240 @@
    },
    "unknownColors": [],
    "note": "MODIS Terra 白天过境（约 13:30 地方时），不是日落时刻；取 32px≈78 km 邻域；只有\"有云顶反演\"的像素会被着色，透明=晴空或无反演（不计入，也不当 0 米云）"
+  },
+  {
+   "spot": "cj-qizhiwan",
+   "name": "昌江棋子湾",
+   "date": "2026-11-25",
+   "layer": "MODIS_Terra_Cloud_Top_Height_Day",
+   "lat": 19.36,
+   "lon": 108.68,
+   "tile": "6/51/28",
+   "url": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Cloud_Top_Height_Day/default/2026-11-25/GoogleMapsCompatible_Level6/6/51/28.png",
+   "pixels": 1024,
+   "validPixels": 496,
+   "cloudPixels": 496,
+   "cloudFraction": 1,
+   "meanCloudTopM": 399,
+   "bands": {
+    "below2km": 496,
+    "2to5km": 0,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "bandFraction": {
+    "below2km": 1,
+    "2to5km": 0,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "unknownColors": [],
+   "note": "MODIS Terra 白天过境（约 13:30 地方时），不是日落时刻；取 32px≈78 km 邻域；只有\"有云顶反演\"的像素会被着色，透明=晴空或无反演（不计入，也不当 0 米云）"
+  },
+  {
+   "spot": "cm-yingbin",
+   "name": "澄迈盈滨半岛",
+   "date": "2026-11-25",
+   "layer": "MODIS_Terra_Cloud_Top_Height_Day",
+   "lat": 19.95,
+   "lon": 110.13,
+   "tile": "6/51/28",
+   "url": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Cloud_Top_Height_Day/default/2026-11-25/GoogleMapsCompatible_Level6/6/51/28.png",
+   "pixels": 1024,
+   "validPixels": 526,
+   "cloudPixels": 526,
+   "cloudFraction": 1,
+   "meanCloudTopM": 429,
+   "bands": {
+    "below2km": 526,
+    "2to5km": 0,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "bandFraction": {
+    "below2km": 1,
+    "2to5km": 0,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "unknownColors": [],
+   "note": "MODIS Terra 白天过境（约 13:30 地方时），不是日落时刻；取 32px≈78 km 邻域；只有\"有云顶反演\"的像素会被着色，透明=晴空或无反演（不计入，也不当 0 米云）"
+  },
+  {
+   "spot": "df-yulinzhou",
+   "name": "东方鱼鳞洲",
+   "date": "2026-11-25",
+   "layer": "MODIS_Terra_Cloud_Top_Height_Day",
+   "lat": 19.1,
+   "lon": 108.62,
+   "tile": "6/51/28",
+   "url": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Cloud_Top_Height_Day/default/2026-11-25/GoogleMapsCompatible_Level6/6/51/28.png",
+   "pixels": 1024,
+   "validPixels": 413,
+   "cloudPixels": 413,
+   "cloudFraction": 1,
+   "meanCloudTopM": 987,
+   "bands": {
+    "below2km": 413,
+    "2to5km": 0,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "bandFraction": {
+    "below2km": 1,
+    "2to5km": 0,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "unknownColors": [],
+   "note": "MODIS Terra 白天过境（约 13:30 地方时），不是日落时刻；取 32px≈78 km 邻域；只有\"有云顶反演\"的像素会被着色，透明=晴空或无反演（不计入，也不当 0 米云）"
+  },
+  {
+   "spot": "hk-xihai",
+   "name": "海口西海岸观海台",
+   "date": "2026-11-25",
+   "layer": "MODIS_Terra_Cloud_Top_Height_Day",
+   "lat": 20.026,
+   "lon": 110.285,
+   "tile": "6/51/28",
+   "url": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Cloud_Top_Height_Day/default/2026-11-25/GoogleMapsCompatible_Level6/6/51/28.png",
+   "pixels": 1024,
+   "validPixels": 722,
+   "cloudPixels": 722,
+   "cloudFraction": 1,
+   "meanCloudTopM": 385,
+   "bands": {
+    "below2km": 722,
+    "2to5km": 0,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "bandFraction": {
+    "below2km": 1,
+    "2to5km": 0,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "unknownColors": [],
+   "note": "MODIS Terra 白天过境（约 13:30 地方时），不是日落时刻；取 32px≈78 km 邻域；只有\"有云顶反演\"的像素会被着色，透明=晴空或无反演（不计入，也不当 0 米云）"
+  },
+  {
+   "spot": "ld-longmuwan",
+   "name": "乐东龙沐湾",
+   "date": "2026-11-25",
+   "layer": "MODIS_Terra_Cloud_Top_Height_Day",
+   "lat": 18.55,
+   "lon": 108.72,
+   "tile": "6/51/28",
+   "url": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Cloud_Top_Height_Day/default/2026-11-25/GoogleMapsCompatible_Level6/6/51/28.png",
+   "pixels": 1024,
+   "validPixels": 700,
+   "cloudPixels": 700,
+   "cloudFraction": 1,
+   "meanCloudTopM": 1508,
+   "bands": {
+    "below2km": 692,
+    "2to5km": 8,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "bandFraction": {
+    "below2km": 0.989,
+    "2to5km": 0.011,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "unknownColors": [],
+   "note": "MODIS Terra 白天过境（约 13:30 地方时），不是日落时刻；取 32px≈78 km 邻域；只有\"有云顶反演\"的像素会被着色，透明=晴空或无反演（不计入，也不当 0 米云）"
+  },
+  {
+   "spot": "lg-jiao",
+   "name": "临高角",
+   "date": "2026-11-25",
+   "layer": "MODIS_Terra_Cloud_Top_Height_Day",
+   "lat": 19.92,
+   "lon": 109.68,
+   "tile": "6/51/28",
+   "url": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Cloud_Top_Height_Day/default/2026-11-25/GoogleMapsCompatible_Level6/6/51/28.png",
+   "pixels": 1024,
+   "validPixels": 434,
+   "cloudPixels": 434,
+   "cloudFraction": 1,
+   "meanCloudTopM": 614,
+   "bands": {
+    "below2km": 434,
+    "2to5km": 0,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "bandFraction": {
+    "below2km": 1,
+    "2to5km": 0,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "unknownColors": [],
+   "note": "MODIS Terra 白天过境（约 13:30 地方时），不是日落时刻；取 32px≈78 km 邻域；只有\"有云顶反演\"的像素会被着色，透明=晴空或无反演（不计入，也不当 0 米云）"
+  },
+  {
+   "spot": "sy-tianya",
+   "name": "三亚天涯海角",
+   "date": "2026-11-25",
+   "layer": "MODIS_Terra_Cloud_Top_Height_Day",
+   "lat": 18.3,
+   "lon": 109.35,
+   "tile": "6/51/28",
+   "url": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Cloud_Top_Height_Day/default/2026-11-25/GoogleMapsCompatible_Level6/6/51/28.png",
+   "pixels": 1024,
+   "validPixels": 592,
+   "cloudPixels": 592,
+   "cloudFraction": 1,
+   "meanCloudTopM": 1796,
+   "bands": {
+    "below2km": 560,
+    "2to5km": 32,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "bandFraction": {
+    "below2km": 0.946,
+    "2to5km": 0.054,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "unknownColors": [],
+   "note": "MODIS Terra 白天过境（约 13:30 地方时），不是日落时刻；取 32px≈78 km 邻域；只有\"有云顶反演\"的像素会被着色，透明=晴空或无反演（不计入，也不当 0 米云）"
+  },
+  {
+   "spot": "wzs-main",
+   "name": "五指山主峰",
+   "date": "2026-11-25",
+   "layer": "MODIS_Terra_Cloud_Top_Height_Day",
+   "lat": 18.9,
+   "lon": 109.68,
+   "tile": "6/51/28",
+   "url": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Cloud_Top_Height_Day/default/2026-11-25/GoogleMapsCompatible_Level6/6/51/28.png",
+   "pixels": 1024,
+   "validPixels": 255,
+   "cloudPixels": 255,
+   "cloudFraction": 1,
+   "meanCloudTopM": 1168,
+   "bands": {
+    "below2km": 255,
+    "2to5km": 0,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "bandFraction": {
+    "below2km": 1,
+    "2to5km": 0,
+    "5to8km": 0,
+    "above8km": 0
+   },
+   "unknownColors": [],
+   "note": "MODIS Terra 白天过境（约 13:30 地方时），不是日落时刻；取 32px≈78 km 邻域；只有\"有云顶反演\"的像素会被着色，透明=晴空或无反演（不计入，也不当 0 米云）"
   }
  ],
- "generatedAt": "2026-11-25T21:50:19Z",
+ "generatedAt": "2026-11-26T21:13:37Z",
  "layer": "MODIS_Terra_Cloud_Top_Height_Day (NASA GIBS)"
 }
