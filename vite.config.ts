@@ -1,13 +1,28 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
+import { resolve } from 'node:path'
 import { rootStatic } from './tools/plugins/root-static'
 
 /** 每个 HTML 都是独立入口：多页应用，产物文件名与线上 URL 一一对应 */
 const PAGES = ['index', 'about', 'gallery', 'forecast', 'members', 'join', 'login', '404', 'cross']
 
+/**
+ * 入口路径必须与 Vite 的 root 同源，都用 process.cwd() 派生。
+ *
+ * 原来写的是 fileURLToPath(new URL(`./${name}.html`, import.meta.url))，
+ * 它给出的盘符字母是大写（C:，来自 file:///C:/...）；而 Vite 的 config.root
+ * 默认取 process.cwd()，在 Git Bash 下盘符是小写（c:）。
+ * Vite 的 html-inline-proxy 用「字符串 replace(normalizePath(root), '')」算缓存键：
+ * 写入时键是 '/index.html'，读取时因为大小写对不上替换失败、键变成整条绝对路径，
+ * 于是加载内联 <style> 报 "No matching HTML proxy module found"。
+ * Linux（Cloudflare Pages）没有盘符，所以线上构建一直正常，只有本地 Git Bash 会中招。
+ */
+const ROOT = process.cwd().replace(/^[a-zA-Z]:/, (d) => d.toUpperCase())
+
 export default defineConfig({
   base: '/',
+  root: ROOT,
   plugins: [
     vue({
       template: {
@@ -42,9 +57,7 @@ export default defineConfig({
     assetsDir: 'assets',
     target: 'es2020',
     rollupOptions: {
-      input: Object.fromEntries(
-        PAGES.map((name) => [name, fileURLToPath(new URL(`./${name}.html`, import.meta.url))])
-      )
+      input: Object.fromEntries(PAGES.map((name) => [name, resolve(ROOT, `${name}.html`)]))
     }
   }
 })
