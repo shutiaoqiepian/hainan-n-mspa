@@ -20,8 +20,12 @@ export const STATIC_MIRROR = 'https://cdn.jsdelivr.net/gh/shutiaoqiepian/hainan-
  * 重新发布整站，一个月约 400 次，逼近 Cloudflare Pages 免费版 500 次/月的上限。
  * 把 data/ 挪到独立位置（R2 或独立仓库）后，在这里填一个域名即可，
  * 数据更新不再触发站点构建，站点代码一行都不用改。
+ *
+ * 用可选链是因为 tools/test-*.mjs 会把模块打成一个纯 ESM 丢进 Node 跑，
+ * 那边没有 import.meta.env；写成 import.meta.env.VITE_DATA_ORIGIN 会让
+ * 「文档里写着的回归命令」在模块加载阶段就崩掉（2026-11-29 实测踩到）。
  */
-const DATA_ORIGIN = (import.meta.env.VITE_DATA_ORIGIN || '').replace(/\/+$/, '')
+const DATA_ORIGIN = (import.meta.env?.VITE_DATA_ORIGIN || '').replace(/\/+$/, '')
 
 /** 带超时的 fetch：主站不通时浏览器默认会挂很久，不设上限就轮不到下一个源 */
 export function fetchWithTimeout(url: string, ms = 9000): Promise<Response> {
