@@ -2,6 +2,7 @@ import { KINDS, SCORE_MAX, aodBand, gradeRangeOf, levelOf } from '@/data/forecas
 import { matchOtherTimes, matchPhenomena, type PhenoContext } from '@/data/forecast/phenomena'
 import { ALL_MODELS, MODELS, MULTI_MODELS } from '@/data/forecast/models'
 import { DETAIL_SPOT, dataFileFor, spotsFor } from '@/data/forecast/spots'
+import { fetchStaticJson } from '@/lib/net/static-json'
 import { cloudProfile, syntheticProfile } from './clouds'
 import { conflictsOf, interpret } from './interpret'
 import { MID_RH_LEVELS, midCanvasPlan } from './midcloud'
@@ -371,6 +372,7 @@ export function load(force = false): void {
   loadLive(token)
 }
 
+/* 静态缓存走统一取数（本站 → jsDelivr 镜像），原因见 lib/net/static-json.ts */
 /* 优先读预生成的静态缓存（每 3 小时一次），读不到再现场请求 */
 function loadStatic(token: number): void {
   state.loading = true
@@ -380,11 +382,7 @@ function loadStatic(token: number): void {
   const file = dataFileFor(prov)
   /* 用浏览器 HTTP 缓存（_headers 里 /data/* 是 max-age=300）：
      5 分钟内重复打开不再发请求，超过 5 分钟浏览器自己带 If-None-Match 换 304。 */
-  fetch(file)
-    .then((r) => {
-      if (!r.ok) throw new Error('HTTP ' + r.status)
-      return r.json()
-    })
+  fetchStaticJson<StaticFile>(file)
     .then((j: StaticFile) => {
       if (token !== loadToken) return          /* 已经有更新的一次请求了 */
       if (!j || !j.weather || !j.weather.length) throw new Error('缓存为空')

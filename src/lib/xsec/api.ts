@@ -5,6 +5,7 @@
  * 一页只看一个机位，没必要全下）。
  */
 import type { XsecContext, XsecIndex, XsecNationalIndex, XsecSpotFile } from './types'
+import { fetchStaticJson } from '@/lib/net/static-json'
 
 const BASE = 'data/cross'
 
@@ -15,17 +16,13 @@ let nationalCtxPromise: Promise<XsecContext> | null = null
 const spotCache = new Map<string, Promise<XsecSpotFile>>()
 
 async function fetchJson<T>(url: string): Promise<T> {
-  let res: Response
+  /* 与预报页同一套取数：本站（pages.dev）取不到时走 jsDelivr 的仓库镜像，
+     原因见 lib/net/static-json.ts —— 国内网络到 pages.dev 会整段时间不通，
+     剖面页此前同样是一屏「读取失败」。 */
   try {
-    res = await fetch(url, { cache: 'default' })
+    return await fetchStaticJson<T>(url)
   } catch (e) {
-    throw new Error(`网络请求失败：${url}`)
-  }
-  if (!res.ok) throw new Error(`读取失败 ${url} → HTTP ${res.status}`)
-  try {
-    return (await res.json()) as T
-  } catch (e) {
-    throw new Error(`返回的不是有效 JSON：${url}`)
+    throw new Error(`读取失败 ${url} → ${e instanceof Error ? e.message : '网络错误'}`)
   }
 }
 
