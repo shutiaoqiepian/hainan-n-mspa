@@ -63,7 +63,7 @@ onBeforeUnmount(() => {
       <p class="eyebrow">Members</p>
       <div class="page-head-row">
         <h1 class="silver">成员</h1>
-        <button type="button" class="me-trigger" @click="openEdit">成员资料</button>
+        <button type="button" class="me-trigger" @click="openEdit">修改成员资料</button>
       </div>
       <p>小组成员与交流群成员。排名不分先后，每一位都在按下快门。</p>
     </div>
