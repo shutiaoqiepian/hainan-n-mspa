@@ -23,6 +23,16 @@
 <link rel="icon" type="image/png" sizes="96x96" href="images/favicon.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png" />
 <noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+<!-- 首屏第一张图先抢一个请求位：页面要靠 JS 挂载才出 <img>，不 preload 的话
+     这张图要等 JS 下载 + 执行完（国内约 3s）才开始下。 -->
+<link
+  rel="preload"
+  as="image"
+  type="image/webp"
+  href="%VITE_SITE_ORIGIN%/images/thumbs-400-webp/hai.webp"
+  imagesrcset="%VITE_SITE_ORIGIN%/images/thumbs-400-webp/hai.webp 400w, %VITE_SITE_ORIGIN%/images/thumbs-webp/hai.webp 800w"
+  imagesizes="(max-width: 1000px) 46vw, 32vw"
+/>
 <script>
   /* 首帧前定主题，避免刷新白闪。逻辑与 src/lib/theme.ts 保持一致；
      ?theme=dark|gray|light 可临时预览（不写回 localStorage）。 */

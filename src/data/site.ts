@@ -34,7 +34,10 @@ export const FOOTER_LINKS: readonly FooterLink[] = [
 export const BRAND = {
   latin: '18N-MSPA',
   cn: '北纬18度椰青摄联',
-  logo: 'images/mspa透明底.png',
+  /* 导航与页脚只显示到 88px 高，用 176px 的 WebP（4KB）就够；
+     原图 1402px 的 mspa透明底.png 有 128KB，留给名片 canvas 用
+     （canvas.ts 里自己加载，不读这里）。 */
+  logo: 'images/logo-176.webp',
   logoAlt: '18N-MSPA 北纬18度椰青摄联'
 } as const
 

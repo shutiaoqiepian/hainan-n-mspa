@@ -11,6 +11,7 @@
     "predev": "node tools/restore-shells.mjs",
     "prebuild": "node tools/restore-shells.mjs",
     "test:text": "node tools/test/text-lint.mjs",
+    "check:webp": "node tools/check-webp.mjs",
     "health": "node tools/site-health.mjs"
   },
   "dependencies": {

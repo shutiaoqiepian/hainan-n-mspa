@@ -7,7 +7,7 @@ withDefaults(defineProps<{ copyright?: string }>(), { copyright: COPYRIGHT })
 /**
  * logo 自动兜底（旧版 initLogos）：依次尝试几个可能的文件名，都不存在才隐藏
  */
-const LOGO_TRIES = ['images/mspa透明底.png', 'images/nmspa.png', 'images/mspa.png', 'images/logo.png']
+const LOGO_TRIES = ['images/logo-176.webp', 'images/mspa透明底.png', 'images/nmspa.png', 'images/logo.png']
 let logoIndex = 1
 
 function onLogoError(event: Event): void {
@@ -30,8 +30,8 @@ function onLogoError(event: Event): void {
             class="logo"
             :src="BRAND.logo"
             :alt="BRAND.logoAlt"
-            width="1402"
-            height="1402"
+            width="176"
+            height="176"
             @error="onLogoError"
           />
         </div>

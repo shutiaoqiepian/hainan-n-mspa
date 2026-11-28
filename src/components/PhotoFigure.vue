@@ -27,11 +27,22 @@ const size = computed(() => PHOTO_SIZES[props.photo.f] ?? null)
 
 /* 两档缩略图：手机列宽只有 180px 左右，没必要下载 800px 的那张。
    400px 那档由 tools/make-thumb-400.ps1 生成。
-   sizes 按作品墙的实际列宽写：≤1000px 时两列（约 46vw），更宽时三列（约 32vw）。 */
-const srcset = ref(
-  'images/thumbs-400/' + props.photo.f + ' 400w, images/thumbs/' + props.photo.f + ' 800w'
-)
+   sizes 按作品墙的实际列宽写：≤1000px 时两列（约 46vw），更宽时三列（约 32vw）。
+
+   文件名必须先 encodeURI：srcset 里空格是候选之间的分隔符，
+   「D81_6688 拷贝.jpg」这种带空格的名字不编码会被整条解析失败。 */
+const fEnc = encodeURI(props.photo.f)
+const srcset = ref('images/thumbs-400/' + fEnc + ' 400w, images/thumbs/' + fEnc + ' 800w')
 const SIZES = '(max-width: 1000px) 46vw, 32vw'
+
+/* WebP 版：同尺寸、同文件名，只换后缀（tools/make-webp.py 生成）。
+   体积约为 JPG 的 55%，首屏十几张图能少下几百 KB。
+   用 <picture> 让支持的浏览器直接取 WebP，老浏览器自动退回下面的 JPG。
+   注意：新增照片后必须跑一次 tools/make-webp.py，否则这里 404 —— 构建前的
+   npm run check:webp 会提示缺哪张。 */
+const webpName = encodeURI(props.photo.f.replace(/\.(jpe?g|png)$/i, '.webp'))
+const webpSrcset =
+  'images/thumbs-400-webp/' + webpName + ' 400w, images/thumbs-webp/' + webpName + ' 800w'
 
 function onError(): void {
   /* 小图那档没生成（新加了照片但忘了跑脚本）：先退回只用 800px 那张 */
@@ -89,20 +100,22 @@ function onKeydown(event: KeyboardEvent): void {
     :style="figureStyle"
     @keydown="onKeydown"
   >
-    <img
-      v-if="!isMissing"
-      :src="src"
-      :srcset="srcset || undefined"
-      :sizes="srcset ? SIZES : undefined"
-      :alt="photo.t || '18N-MSPA 作品'"
-      :width="size ? size.w : undefined"
-      :height="size ? size.h : undefined"
-      loading="lazy"
-      decoding="async"
-      :class="{ 'is-loaded': isLoaded }"
-      @load="isLoaded = true"
-      @error="onError"
-    />
+    <picture v-if="!isMissing">
+      <source type="image/webp" :srcset="webpSrcset" :sizes="SIZES" />
+      <img
+        :src="src"
+        :srcset="srcset || undefined"
+        :sizes="srcset ? SIZES : undefined"
+        :alt="photo.t || '18N-MSPA 作品'"
+        :width="size ? size.w : undefined"
+        :height="size ? size.h : undefined"
+        loading="lazy"
+        decoding="async"
+        :class="{ 'is-loaded': isLoaded }"
+        @load="isLoaded = true"
+        @error="onError"
+      />
+    </picture>
     <div
       v-if="isMissing && variant === 'gallery'"
       class="photo-missing-note"
