@@ -48,15 +48,9 @@ Cloudflare Pages 的构建配置需要是：
 | 构建命令（Build command） | `npm run build` |
 | 输出目录（Build output directory） | `dist` |
 
-- 仓库根目录**不再**是可直接发布的目录，线上内容一律来自 `dist/`（2026-11-07 线上实测确认）
-- **`dist/` 不进仓库**（`.gitignore` 已忽略）。线上由 Cloudflare 每次构建时生成，
-  本地跑一次 `npm run build` 就能拿到同样的东西，不需要也不应该在 Git 历史里留副本
-- **根目录的 `*.html` 和 `assets/` 也不再跟踪**（2026-11-07 清理）。
-  它们是构建中间产物：`prebuild` 的 `tools/restore-shells.mjs` 从 `src/shells/` 生成，
-  原 `tools/publish-root.ts` 插件已移除。
-  ➜ **改页面 `<head>` / SEO / 标题一律改 `src/shells/*.html`**，不要改根目录。
-  清完后 `npm run build` 之后 `git status` 保持干净，`git add -A` 是安全的
-  （见 `docs/handoff/交接文档.md` 第 5 章）
+- 线上发布 `dist/`；`dist/` 与根目录 `*.html`、`assets/` 都不进 Git，后两者是 `prebuild`
+  从 `src/shells/` 生成的中间产物。**改 head / SEO / 标题一律改 `src/shells/*.html`**。
+  完整背景、回滚记录与踩坑见 [`docs/handoff/交接文档.md`](docs/handoff/交接文档.md) 第 5 章。
 - `images/`、`data/`、`robots.txt`、`sitemap.xml`、`_headers` 仍留在仓库根目录，
   由 `tools/plugins/root-static.ts` 在开发时直通、构建时原样拷进 `dist/`
   （这样图片压缩脚本、GitHub Action 写缓存、`.gitignore` 规则都不用改）
@@ -102,13 +96,15 @@ Cloudflare Pages 的构建配置需要是：
 
 ## 零回归约定
 
-改成组件化之后，**页面观感与交互必须与旧版完全一致**。为此有三条硬规矩：
+改成组件化之后，**页面观感与交互必须与旧版完全一致**。为此有四条硬规矩：
 
 1. **模板里的 class 名与 DOM 结构照抄旧 HTML** —— 样式表是按旧 HTML 写的，class 一变样式就丢
 2. **`src/styles/index.css` 里的 @import 顺序不能改** —— 那正是旧 `style.css` 的行序，
    层叠优先级依赖它（「移动端修补」在页面样式之后、「成员页」样式在最后）
 3. **模板里的图片路径写字面量**（`src="images/x.jpg"`）—— 一旦被当模块引入就会生成带哈希的副本，
    与 `/images/*` 的缓存头、首屏 preload 都会对不上
+4. **文本节点的空白不要动** —— `vite.config.ts` 设了 `compilerOptions.whitespace: 'preserve'`；
+   Vue 默认的 `condense` 会压掉旧 HTML 里的换行缩进，实测像素差 3463
 
 回归比对脚本（改完跑一下，逐页比对改造前后的 DOM 结构、文本、整页截图逐像素）：
 
@@ -154,19 +150,20 @@ LEGACY_REF=<commit> node tools/compare-legacy.mjs      # 换一个基线提交
 
 ## 添加预报机位
 
-机位表是 `src/data/forecast/spots.ts`（页面和 `tools/build-cache.mjs` 共用这一份，
+机位表是 `src/data/forecast/spots.json`（页面和 `tools/build-cache.mjs` 共用这一份，
 不再有两份副本对账的麻烦）。加一行：
 
-```ts
-{ n: '机位名', lat: 20.026, lon: 110.285, face: '西', area: '海口', prov: 'hn' },
+```json
+{ "n": "机位名", "lat": 20.026, "lon": 110.285, "face": "西", "area": "海口", "prov": "hn" }
 ```
 
 - `face`：`东` / `东南` / `南` / `西南` / `西` / `西北` / `北` / `山顶`
 - `area`：省内的分区（海南：`海口/东岸/西岸/南部/中部`；广东：`广州/深圳/珠海/惠州/珠三角/粤东/粤西/粤北`）
-- `prov`：`hn`（海南）或 `gd`（广东）
+- `prov`：省份 key（`hn` 海南、`gd` 广东……共 34 个），完整清单见 `src/data/forecast/spots.ts` 的 `PROVINCES`
 
-加完跑一次 `node tools/build-cache.mjs` 重新生成数据；加**新省份**还要改
-`src/data/forecast/spots.ts` 的 `PROVINCES`、`AREAS_BY_PROV` 和 `tools/build-cache.mjs` 的 `PROVINCES`。
+加完跑一次 `node tools/build-cache.mjs` 重新生成数据；加**新省份**还要在
+`src/data/forecast/spots.ts` 的 `PROVINCES` 和 `tools/build-cache.mjs` 的 `PROVINCES` 各加一项
+（`area` 从机位表自动去重，不需要维护枚举）。
 
 > 经纬度精确到公里级就够：气象格点本身 6–28 km，再精细也不会改变数值。
 
