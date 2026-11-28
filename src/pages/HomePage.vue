@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import PhotoWall from '@/components/PhotoWall.vue'
-import { HERO_IMAGE, PHOTOS } from '@/data/photos'
+import { CATEGORIES, HERO_IMAGE, PHOTOS } from '@/data/photos'
+import { MEMBERS } from '@/data/members'
 
 /** 首页（对应旧版 index.html + initHomeWall） */
+
+/* 首页三个数字都从数据现算：写死会随成员增减和年份推移变成假数字。 */
+const YEARS = Math.max(1, new Date().getFullYear() - 2024)
+const DIRECTIONS = CATEGORIES.length
+const CORE_MEMBERS = MEMBERS.filter((m) => m.group !== 'community').length
 
 const heroSrc = 'images/' + HERO_IMAGE
 
@@ -56,7 +62,7 @@ function onHeroError(event: Event): void {
       <p class="eyebrow">18°N · HAINAN · SINCE 2024</p>
       <h1 class="silver">未来，<br />我们于此刻以影像开启</h1>
       <p class="lead">
-        海南省北纬18度椰青摄影联盟，海南最大的青年摄影师交流组织。<br />
+        海南北纬18度椰青摄影联盟，海南本土覆盖中学生至大学生的青年摄影交流创作平台。<br />
         从海岸线的第一缕晨光，到骑楼老街的最后一盏灯笼 —— 我们拍脚下的这座岛。
       </p>
       <div class="hero-actions">
@@ -76,7 +82,7 @@ function onHeroError(event: Event): void {
         <p class="eyebrow">About Us</p>
         <h2 class="silver">一群生活在海南的人<br />拍自己脚下的地方</h2>
         <p>
-          北纬18度，是海南岛南端所在的纬线；18岁稍后，正是人生最好的时候。
+          北纬18度，从海南岛南端外侧的海面掠过；18岁稍后，正值人生的中点。
           青春有热爱，才更具色彩。
         </p>
       </div>
@@ -84,7 +90,7 @@ function onHeroError(event: Event): void {
       <div class="grid-3">
         <article class="card glass reveal" data-delay="0">
           <span class="idx">01</span>
-          <h3>海南最大的<br />青年摄影师交流组织</h3>
+          <h3>中学生到大学生<br />都在这里拍</h3>
           <p>成员以海南为主，也有散落在北京、上海、广州、深圳、香港、西安、重庆、长沙的伙伴。</p>
         </article>
 
@@ -107,9 +113,9 @@ function onHeroError(event: Event): void {
   <section class="section" style="padding-top:0">
     <div class="wrap">
       <div class="stats reveal">
-        <div><strong class="grad">2</strong><span>年</span></div>
-        <div><strong class="grad">5</strong><span>大作品方向</span></div>
-        <div><strong class="grad">30+</strong><span>核心成员</span></div>
+        <div><strong class="grad">{{ YEARS }}</strong><span>年</span></div>
+        <div><strong class="grad">{{ DIRECTIONS }}</strong><span>大作品方向</span></div>
+        <div><strong class="grad">{{ CORE_MEMBERS }}</strong><span>核心成员</span></div>
         <div><strong class="grad">∞</strong><span>次按下快门</span></div>
       </div>
     </div>
@@ -159,7 +165,7 @@ function onHeroError(event: Event): void {
           <h2 class="silver">这两天，哪里值得跑一趟</h2>
           <p class="home-entry-p">
             根据云层高度、气溶胶与降水，估算各机位的朝霞与晚霞条件 ——
-            目前覆盖海南 25 个机位、广东 40 个机位，东岸拍日出、西岸拍日落，一处看完。
+            目前覆盖全国 34 个省级单元、169 个机位；海南东岸拍日出、西岸拍日落，一处看完。
           </p>
           <a class="btn btn-primary home-entry-btn" href="forecast.html">查看霞光预报</a>
         </article>
@@ -168,7 +174,7 @@ function onHeroError(event: Event): void {
           <p class="eyebrow">Members &amp; Community</p>
           <h2 class="silver">谁在拍这座岛</h2>
           <p class="home-entry-p">
-            小组成员日常一起蹲机位、一起维护这个站；交流群里还有散在北京、上海、广州、香港的伙伴。
+            小组成员日常一起蹲机位、一起维护这个站；交流群里还有散在北京、上海、广州、深圳、香港、西安、重庆、长沙的伙伴。
             每张成员卡都能生成带二维码的名片。
           </p>
           <a class="btn btn-ghost home-entry-btn" href="members.html">看看成员名单</a>

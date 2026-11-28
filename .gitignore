@@ -84,3 +84,6 @@ tools/_tmp-*.mjs
 
 # TRAE 目录
 .marscode/
+
+# 第三方 API 凭证（公众号 AppID/AppSecret 等），绝不入库
+.secrets/

@@ -299,7 +299,7 @@ export function qualityOf(m: Measure): DataQuality {
 }
 
 
-/* 把「唯一坐标响应」摊回 25 个机位；映射失败就退回按顺序 */
+/* 把「唯一坐标响应」摊回该省机位；映射失败就退回按顺序 */
 function remapBySpots(points: RawData | null, prov: string = state.prov): RawData | null {
   if (!points || !points.length) return null
   const spots = spotsFor(prov)

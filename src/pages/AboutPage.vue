@@ -10,7 +10,7 @@ import { ws } from '@/composables/useWhitespace'
   <div class="wrap">
     <p class="eyebrow">About</p>
     <h1 class="silver">我们是谁</h1>
-    <p>{{ ws(8) }}海南省北纬18度椰青摄影联盟，海南最大的青年摄影师交流组织。{{ ws(8) }}我们用影像记录此刻，开启未来。{{ ws(6) }}</p>
+    <p>{{ ws(8) }}海南北纬18度椰青摄影联盟，海南本土覆盖中学生至大学生的青年摄影交流创作平台。{{ ws(8) }}我们用影像记录此刻，开启未来。{{ ws(6) }}</p>
   </div>
 </section>
 <section class="section">
@@ -18,14 +18,14 @@ import { ws } from '@/composables/useWhitespace'
     <div class="two-col">
       <div class="prose reveal">
         <h3 class="silver" style="margin-top:0">关于取名</h3>
-        <p>{{ ws(12) }}首先是<b>北纬18度</b>。海南岛最南端就在北纬18度线上。{{ ws(12) }}这条纬线穿过岛屿，也穿过这里的每一片海。{{ ws(10) }}</p>
-        <p>{{ ws(12) }}其次是<b>18岁</b>。18岁稍后，正是人生最好的时候。{{ ws(12) }}青春有热爱，才更具色彩。{{ ws(10) }}</p>
+        <p>{{ ws(12) }}首先是<b>北纬18度</b>。海南岛最南端的锦母角在北纬18度09分，18度线从岛南侧不远的海面掠过。{{ ws(12) }}这条纬线从岛屿南缘外侧经过，也掠过这里的每一片海。{{ ws(10) }}</p>
+        <p>{{ ws(12) }}其次是<b>18岁</b>。18岁稍后，正值人生的中点。{{ ws(12) }}青春有热爱，才更具色彩。{{ ws(10) }}</p>
         <p>{{ ws(12) }}<b>椰青</b>是海南最日常的东西 —— 不算精致，但解渴、真诚、满地都是。{{ ws(12) }}我们喜欢这个意象。{{ ws(10) }}</p>
         <h3>我们在做什么</h3>
         <p>{{ ws(12) }}一起蹲机位、一起等天气。凌晨三点起床去追一场朝霞，{{ ws(12) }}或者为了台风外围的云，跑到海边吹一整晚的风。{{ ws(10) }}</p>
         <p>{{ ws(12) }}我们拍海岸的日出日落，也拍城市的夜色与灯火；{{ ws(12) }}拍银河和流星，也拍骑楼老街上的年俗与公期的锣鼓。{{ ws(10) }}</p>
         <h3>我们的名字缩写</h3>
-        <p>{{ ws(12) }}<b>18N-MSPA</b>，即 18° North — Hainan <i>M</i>ass <i>S</i>tudent / <i>S</i>enior{{ ws(12) }}<i>P</i>hotographers <i>A</i>ssociation。{{ ws(12) }}这个缩写随 logo 一起，出现在每一件作品上。{{ ws(10) }}</p>
+        <p>{{ ws(12) }}<b>18N-MSPA</b> —— 18N 指北纬 18 度，MSPA 是联盟缩写，沿用自早期名称「中学生摄影联盟」时期。{{ ws(12) }}组织后来从中学生扩到大学生，缩写没有改。{{ ws(12) }}这个缩写和 logo 一起，构成了社团的视觉标识。{{ ws(10) }}</p>
       </div>
       <div class="reveal" data-delay="120">
         <div class="glass" style="padding:40px 32px;text-align:center">

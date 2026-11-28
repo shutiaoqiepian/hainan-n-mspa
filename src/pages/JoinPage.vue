@@ -58,7 +58,7 @@ function onQrError(): void {
           <p>目前有两个群：</p>
           <ul>
             <li><b>交流群（大群）</b>：海南北纬18度椰青摄影联盟</li>
-            <li><b>核心成员小群</b>（暂无申请渠道）</li>
+            <li><b>核心成员小群</b>（暂不开放申请）</li>
           </ul>
           <p>{{ ws(14) }}仅支持通过微信审核入大群。你可以添加任意一位审核员微信，完成入群申请即可。{{ ws(12) }}</p>
           <p class="join-tip">{{ ws(14) }}<b>获取管理员微信</b>：请点开公众号私信 <b class="grad">【我要加入】</b>{{ ws(12) }}</p>
@@ -90,9 +90,9 @@ function onQrError(): void {
             <div
               v-if="qrFailed"
               class="qr-fallback"
-            >把公众号二维码<br />命名为 二维码.jpg<br />放进 images 文件夹</div>
+            >二维码暂时加载不出来<br />请在微信搜索公众号「北纬18度椰青摄联」<br />关注后私信「我要加入」</div>
           </div>
-          <p class="muted" style="margin:22px 0 0;font-size:14px;line-height:1.9">{{ ws(14) }}扫码关注，私信 <b>我要加入</b><br />{{ ws(14) }}<span style="font-size:13px;opacity:.75">北纬18度椰青摄联</span>{{ ws(12) }}</p>
+          <p class="muted" style="margin:22px 0 0;font-size:14px;line-height:1.9">{{ ws(14) }}扫码关注，或在微信搜索 <b>北纬18度椰青摄联</b><br />{{ ws(14) }}关注后私信 <b class="grad">我要加入</b>{{ ws(12) }}</p>
         </div>
       </div>
     </div>
