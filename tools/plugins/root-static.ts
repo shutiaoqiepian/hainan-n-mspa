@@ -1,7 +1,12 @@
 import type { Plugin } from 'vite'
-import { createReadStream, existsSync, statSync } from 'node:fs'
+import { createReadStream, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { cp, rm } from 'node:fs/promises'
 import { extname, join, relative, resolve, sep } from 'node:path'
+
+/** 站点地址的占位符，与 .env 里的 VITE_SITE_ORIGIN 对应 */
+const ORIGIN_MARK = '%VITE_SITE_ORIGIN%'
+/** sitemap.xml 是纯静态 XML，Vite 不会处理它，由插件在复制时替换 */
+const SITEMAP_OLD_ORIGIN = 'https://hainan-n-mspa.pages.dev'
 
 /** 仓库根目录下的大体积静态资源：图片、预报缓存 */
 const DIRS = ['images', 'data']
@@ -81,6 +86,7 @@ function restorePlugin(): Plugin {
 function passthroughPlugin(): Plugin {
   let root = process.cwd()
   let outDir = 'dist'
+  let siteOrigin = SITEMAP_OLD_ORIGIN
 
   return {
     name: 'mspa:root-static',
@@ -88,6 +94,13 @@ function passthroughPlugin(): Plugin {
     configResolved(config) {
       root = config.root
       outDir = resolve(config.root, config.build.outDir)
+      siteOrigin = (config.env.VITE_SITE_ORIGIN || '').replace(/\/+$/, '')
+      /* 构建时必须有值：占位符留在页面上，搜索引擎会把整页当脏数据丢掉，
+         而且不会报错，只有收录消失后才发现 —— 宁可构建失败。 */
+      if (config.command === 'build' && !siteOrigin) {
+        throw new Error('[root-static] 缺少 VITE_SITE_ORIGIN：请在仓库根目录的 .env 里配置站点地址')
+      }
+      if (!siteOrigin) siteOrigin = SITEMAP_OLD_ORIGIN
     },
 
     configureServer(server) {
@@ -136,6 +149,31 @@ function passthroughPlugin(): Plugin {
         const from = join(root, file)
         if (!existsSync(from)) continue
         await cp(from, join(outDir, file))
+      }
+
+      /* sitemap.xml 与 robots.txt 不受 Vite 的 %ENV% 替换影响，单独把域名换掉 */
+      for (const file of ['sitemap.xml', 'robots.txt']) {
+        const p = join(outDir, file)
+        if (!existsSync(p)) continue
+        const text = readFileSync(p, 'utf8').split(SITEMAP_OLD_ORIGIN).join(siteOrigin)
+        writeFileSync(p, text)
+      }
+
+      /* 兜底校验：任何一页还留着占位符，就说明替换没生效，宁可构建失败 */
+      const leftovers: string[] = []
+      for (const name of ['index', 'about', 'gallery', 'forecast', 'members', 'join', 'login', 'cross']) {
+        const p = join(outDir, name + '.html')
+        if (!existsSync(p)) continue
+        const html = readFileSync(p, 'utf8')
+        if (html.includes(ORIGIN_MARK)) leftovers.push(name + '.html（占位符未替换）')
+        /* 配了新域名却还编译出旧域名 —— 只可能是根目录那份入口副本没刷新，
+           也就是漏跑了 prebuild 的 restore-shells，直接构建会静默发出错页 */
+        else if (siteOrigin !== SITEMAP_OLD_ORIGIN && html.includes(SITEMAP_OLD_ORIGIN)) {
+          leftovers.push(name + '.html（仍是旧域名，请用 npm run build）')
+        }
+      }
+      if (leftovers.length) {
+        throw new Error('[root-static] 页面地址未按 .env 生成：' + leftovers.join('、'))
       }
     }
   }

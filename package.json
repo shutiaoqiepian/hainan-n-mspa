@@ -10,7 +10,8 @@
     "typecheck": "vue-tsc --noEmit",
     "predev": "node tools/restore-shells.mjs",
     "prebuild": "node tools/restore-shells.mjs",
-    "test:text": "node tools/test/text-lint.mjs"
+    "test:text": "node tools/test/text-lint.mjs",
+    "health": "node tools/site-health.mjs"
   },
   "dependencies": {
     "vue": "^3.5.13"
