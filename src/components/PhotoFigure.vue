@@ -62,13 +62,32 @@ const figureStyle = computed(() => {
     background: 'linear-gradient(135deg, var(--accent-a-soft), var(--accent-b-soft))'
   }
 })
+
+/** 键盘用户的可读名称：没有标题就说「未命名作品」，别把相机文件名念出来 */
+const openLabel = computed(() => '查看大图：' + (props.photo.t || '未命名作品'))
+
+/**
+ * Enter / 空格等同点击。
+ * 不直接调 openLightbox：灯箱靠 document 上的事件委托收集同一面墙的所有图，
+ * 派发一次 click 才能走到同一条代码路径，翻页组也就自然带上了。
+ */
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key !== 'Enter' && event.key !== ' ') return
+  event.preventDefault()
+  ;(event.currentTarget as HTMLElement).click()
+}
 </script>
 
 <template>
   <figure
-    :data-src="'images/' + photo.f"
+    :data-src="isMissing ? undefined : 'images/' + photo.f"
+    :data-key="isMissing ? undefined : photo.f"
+    :tabindex="isMissing ? undefined : 0"
+    :role="isMissing ? undefined : 'button'"
+    :aria-label="isMissing ? undefined : openLabel"
     :class="{ 'is-missing': isMissing }"
     :style="figureStyle"
+    @keydown="onKeydown"
   >
     <img
       v-if="!isMissing"

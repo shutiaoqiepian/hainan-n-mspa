@@ -57,6 +57,13 @@
 
 .wall figure:hover img { transform: scale(1.035); }
 
+/* 图块本身是 role=button，键盘 Tab 到这里必须看得见焦点。
+   只对 :focus-visible 生效 —— 鼠标点击不会多出一圈描边。 */
+.wall figure:focus-visible {
+  outline: 2px solid var(--accent-b);
+  outline-offset: 3px;
+}
+
 .wall figcaption {
   position: absolute;
   left: 0;

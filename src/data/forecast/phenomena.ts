@@ -553,7 +553,7 @@ export const PHENOMENA: Phenomenon[] = [
   {
     key: 'rainbow',
     name: '彩虹',
-    alias: '双彩虹 / 霓',
+    alias: '虹 / 主虹',
     group: '大气',
     when: '太阳高度 3°–42° 且附近有阵性降水、太阳还能照进来',
     shoot: '彩虹总在太阳正对面，先找背光方向；偏振镜能明显加深彩虹',

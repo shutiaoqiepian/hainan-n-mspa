@@ -31,7 +31,8 @@
 
 .lightbox img {
   max-width: 100%;
-  max-height: 86vh;
+  /* 给底部图注与「第几张 / 共几张」留出位置，避免竖构图把翻页提示挤出屏幕 */
+  max-height: calc(100vh - 190px);
   object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
@@ -50,5 +51,50 @@
   font-size: 22px;
   line-height: 1;
   cursor: pointer;
+}
+
+/* 前后翻页：只在同一面墙有多张时出现 */
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lightbox-nav:hover { background: rgba(255, 255, 255, 0.18); }
+.lightbox-nav.is-prev { left: 18px; }
+.lightbox-nav.is-next { right: 18px; }
+
+.lightbox-count {
+  margin: -4px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: #8f979f;
+  font-variant-numeric: tabular-nums;
+}
+
+.lightbox-hint {
+  margin-left: 12px;
+  opacity: 0.72;
+}
+
+@media (max-width: 720px) {
+  .lightbox-nav {
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+  }
+
+  .lightbox-nav.is-prev { left: 8px; }
+  .lightbox-nav.is-next { right: 8px; }
+  .lightbox-hint { display: none; }
 }
 

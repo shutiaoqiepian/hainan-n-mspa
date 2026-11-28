@@ -48,9 +48,9 @@ export const ITEMS = [
   {
     id: 'grade-ladder-visible',
     title: '六档（不烧…世纪大烧）在页面上没有入口：用户看不到分数线，也看不到最高档长什么样',
-    state: 'open',
+    state: 'done',
     trigger: {
-      text: '随时可做，但会占首屏高度 —— 2026-11-05 刚因为「上半部分信息太密」删掉过一条六档色尺，加回前先问用户',
+      text: '2026-11-29 核实已按方案 A 落地：Legend.vue 由 Explanations.vue 引用，位于「方法说明」折叠面板内，不占首屏；六档与分数线从 LEVELS 自动生成',
       metric: null
     },
     why:
@@ -547,8 +547,14 @@ export const ITEMS = [
   {
     id: 'phenomena-count',
     title: '天象词库显示「60 条」但实际 58 条；且有 2 组重复条目（彩虹/双彩虹、荚状云/荚状云·山帽云）',
-    state: 'open',
-    trigger: { text: '现在就能修，只需决定「补到 60 还是改成 58」以及「重复的合不合并」', metric: null },
+    state: 'done',
+    trigger: {
+      text:
+        '2026-11-29 核实已闭环：ForecastPage 的条数改为 PHENOMENA.length（现 70 条），' +
+        '「荚状云·山帽云」已是单条；彩虹的别名里混进的「双彩虹 / 霓」已移除，' +
+        '双彩虹由独立条目承载（rainbow ≥70 才出），不再两条同义',
+      metric: null
+    },
     why: '是内容决策，需要人来定口径。',
     how: [
       '二选一：补 2 条新词条凑到 60，或把 ForecastPage 里的硬编码改成 PHENOMENA.length',
