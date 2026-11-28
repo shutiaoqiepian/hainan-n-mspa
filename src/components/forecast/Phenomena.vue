@@ -32,6 +32,12 @@ const total = PHENOMENA.length
       <em class="ph-local is-罕见">罕见</em>几年一次 ·
       <em class="ph-local is-几乎不可能">几乎不可能</em>听说过，没人拍到过
     </p>
+    <p class="fc-pheno-rarity">
+      这五个字是<b>海南口径</b>（北纬约 20°），本站有 18°N–53°N 的机位，
+      同一个「几乎不可能」在漠河与三亚并不等价：
+      冰晶类（钻石尘、46° 晕、日柱）在高纬明显更多，极光与夜光云则相反；
+      白天的冰晶光学还随太阳高度改变出现钟点。
+    </p>
 
     <div class="fc-pheno-grid">
       <details v-for="g in groups" :key="g.name" class="fc-pheno-group">

@@ -325,7 +325,8 @@ export function pillarOf(m: Measure, sun: SunPos | null, layers?: CloudLayer[]):
   const visF = m.vis == null ? 0.9 : m.vis >= 15 ? 1 : m.vis >= 8 ? 0.8 : 0.5
 
   /* 光柱是罕见现象：几何条件齐了也只给“有机会”级别，
-     再乘 0.6 压一档，上限 88（不出现满分）。 */
+     再乘 0.6 压一档 —— 所以**实际满值是 60**，不是 88。
+     词条判据（phenomena.ts 的 pillar）必须按 60 标定，写 ≥70 会永不可达。 */
   const v = 100 * sunF * iceF * highF * lowF * aodF * popF * visF
   return Math.round(clamp(v * 0.6, 0, 88))
 }

@@ -67,7 +67,7 @@ const airCells = computed(() => {
   return [
     { k: '相对湿度', v: n0(mm.rh), u: '%' },
     { k: '露点差', v: mm.t2m != null && mm.td2m != null ? (mm.t2m - mm.td2m).toFixed(1) : '—', u: '℃' },
-    { k: '能见度', v: mm.vis == null ? '—' : (mm.vis / 1000).toFixed(1), u: 'km' },
+    { k: '能见度', v: mm.vis == null ? '—' : mm.vis.toFixed(1), u: 'km' },
     { k: '降水概率', v: n0(mm.pop), u: '%' },
     { k: 'AOD 气溶胶', v: fx(mm.aod), u: mm.aodMissing ? '缺测' : r.aodName },
     { k: '2 m 气温', v: mm.t2m == null ? '—' : mm.t2m.toFixed(1), u: '℃' },

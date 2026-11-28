@@ -239,7 +239,12 @@ onBeforeUnmount(() => {
               {{ selected.spot.n }} · 从 {{ phenoTotal }} 条词库里按当前天况挑出的 {{ selected.detail.tips.length }} 条 · 带稀有度评级 · 点卡片看怎么拍
             </span>
           </div>
-          <TipCards :tips="selected.detail.tips" :row="selected" @open-all="gotoPhenomena" />
+          <TipCards
+            :tips="selected.detail.tips"
+            :other-tips="selected.detail.otherTips"
+            :row="selected"
+            @open-all="gotoPhenomena"
+          />
         </div>
 
         <!-- ② 各模式怎么看 -->

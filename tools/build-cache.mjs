@@ -171,7 +171,7 @@ function buildUrls(spots) {
     count: coords.length,
     weather:
       `https://api.open-meteo.com/v1/forecast?${LL}` +
-      `&hourly=cloud_cover_low,cloud_cover_mid,cloud_cover_high,relative_humidity_2m,precipitation_probability` +
+      `&hourly=cloud_cover_low,cloud_cover_mid,cloud_cover_high,relative_humidity_2m,precipitation_probability,visibility` +
       `&daily=sunrise,sunset&models=${MULTI.join(",")}&${TZ}`,
     prof:
       `https://api.open-meteo.com/v1/forecast?${LL}` +
@@ -231,7 +231,7 @@ function buildChunkUrls(coords) {
   return {
     weather:
       `https://api.open-meteo.com/v1/forecast?${LL}` +
-      `&hourly=cloud_cover_low,cloud_cover_mid,cloud_cover_high,relative_humidity_2m,precipitation_probability` +
+      `&hourly=cloud_cover_low,cloud_cover_mid,cloud_cover_high,relative_humidity_2m,precipitation_probability,visibility` +
       `&daily=sunrise,sunset&models=${MULTI.join(",")}&${TZ}`,
     prof:
       `https://api.open-meteo.com/v1/forecast?${LL}` +

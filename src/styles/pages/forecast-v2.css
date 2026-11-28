@@ -361,6 +361,42 @@
 }
 .fc-tipmore:hover { color: var(--text); border-color: var(--accent-a-line); }
 
+/* 「今天其它时段」：白天冰晶（环地平弧、46° 晕）与夜间星空（银河、星轨）这类
+   当下不成立、但今天另有窗口的词条。只报名字、不展开，避免和「此刻可拍」抢注意力。
+   2026-11-28 新增：这些词条以前被塞进日落那一刻评估，要么永远判不出来、要么白占名额。 */
+.fc-tipother {
+  grid-column: 1 / -1;
+  border-top: 1px dashed var(--fc-line);
+  padding-top: 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fc-tipother p {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11.5px;
+  line-height: 1.65;
+}
+.fc-tipother b {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--muted-2);
+}
+.fc-tipother em { font-style: normal; color: var(--text-2); }
+.fc-tipother em + em::before { content: ' · '; color: var(--line-strong); }
+/* 出现时间跟在名字后面，弱一档 —— 名字是「拍什么」，时间是「几点去」 */
+.fc-tipother em span {
+  margin-left: 5px;
+  font-size: 10.5px;
+  color: var(--muted-2);
+}
+
 /* 锚点跳转时给固定导航留出位置（scrollIntoView 认 scroll-margin） */
 #fc-rank,
 #fc-layers,

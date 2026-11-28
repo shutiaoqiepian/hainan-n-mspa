@@ -1,5 +1,5 @@
 import { KINDS, SCORE_MAX, aodBand, gradeRangeOf, levelOf } from '@/data/forecast/levels'
-import { matchPhenomena } from '@/data/forecast/phenomena'
+import { matchOtherTimes, matchPhenomena, type PhenoContext } from '@/data/forecast/phenomena'
 import { ALL_MODELS, MODELS, MULTI_MODELS } from '@/data/forecast/models'
 import { DETAIL_SPOT, dataFileFor, spotsFor } from '@/data/forecast/spots'
 import { cloudProfile, syntheticProfile } from './clouds'
@@ -14,7 +14,7 @@ import { state } from './state'
 import { faceMatch, sunPosition } from './sun'
 import { localDateStr, nextUpdateMs, parseIso } from './time'
 import type {
-  CacheData, CloudLayer, DataQuality, Detail, DetailHour, HorizonCols, Interpretation, KindKey, Measure, MidLight, Phototip, RawData, RawPoint, RawSeries, Row, Spot, SpotDetail, StaticFile, SunPos
+  CacheData, CloudLayer, DataQuality, Detail, DetailHour, HorizonCols, Interpretation, KindKey, Measure, MidLight, Phototip, RawData, RawPoint, RawSeries, Row, Spot, SpotDetail, StaticFile, SunPos, TimeScope
 } from './types'
 
 /* ---------- 工具 ---------- */
@@ -197,6 +197,16 @@ export function measureAt(
     return vals.reduce((a, b) => a + b, 0) / vals.length
   }
 
+  /* 能见度：Open-Meteo 返回**米**（实测 16400），而全站判据都按**千米**写
+     （晨雾 vis≤5、雾虹 vis≤2、绿闪 vis≥25、通透 ≥15、云隙光 ≥10）。
+     2026-11-28 之前这里直接用米，导致「能见度 16400 km」这种荒谬值一路传到
+     评分与界面：雾类判据永不成立、通透/光柱的能见度因子恒为 1。
+     统一在数据入口换算成 km，判据与展示都不再各自猜单位。 */
+  function avgVis(): number | null {
+    const v = avg('visibility')
+    return v == null ? null : v / 1000
+  }
+
   /* AOD 缺测时填 0.2（气溶胶不清澈也不脏），但要记下来 ——
      否则「没数据」和「空气一般」在界面上长得一模一样。
      aodReal 保留原始值（缺测 = null），供影子分数与展示区分"默认值"和"实测"。 */
@@ -217,7 +227,7 @@ export function measureAt(
     pop: avg('precipitation_probability'),
     t2m: avg('temperature_2m'),
     td2m: avg('dew_point_2m'),
-    vis: avg('visibility'),
+    vis: avgVis(),
     aod: aod,
     aodReal: aodReal,
     aodMissing: aodMissing,
@@ -421,7 +431,9 @@ function loadLive(token: number): void {
   const fUrl = buildUrl(
     'https://api.open-meteo.com/v1/forecast',
     'hourly=cloud_cover_low,cloud_cover_mid,cloud_cover_high,relative_humidity_2m,' +
-    'precipitation_probability&daily=sunrise,sunset',
+    /* visibility：ECMWF 与 ICON 都不提供（实测 24/24 为 null），只有 GFS 有值。
+       放在多模式天气请求里，avg() 会自然取到唯一有值的那个模型。 */
+    'precipitation_probability,visibility&daily=sunrise,sunset',
     mids
   )
 
@@ -581,6 +593,8 @@ function buildSpotDetail(o: {
   score: number
   spread: number
   faceOff: boolean
+  /** 机位朝向与反日点的匹配度（0.55–1），反云隙光这类背向现象要用 */
+  antiFace: number
   cape: number | null
   crep: number
   pillar: number
@@ -604,7 +618,36 @@ function buildSpotDetail(o: {
      现在改成惰性求值 + 各自缓存，取值时机变了，算出来的结果完全一样。 */
   let itCache: Interpretation | null = null
   let tipsCache: Phototip[] | null = null
+  let otherCache: Phototip[] | null = null
   let hoursCache: DetailHour[] | null = null
+
+  /* 天象匹配的时段域：日出场景按 'dawn'（含「仅日出」的朝霞、云海），
+     日落场景按 'lowSun'。两者都属于低太阳角，lowSun 词条在两边都显示。 */
+  const nowScope: TimeScope = state.kind === 'sunrise' ? 'dawn' : 'lowSun'
+  /* 上下文只建一份，tips 与 otherTips 共用 —— 两处各写一遍迟早会漂移 */
+  const phenoCtx = (): PhenoContext => ({
+    kind: state.kind,
+    score: o.score,
+    high: o.m.high ?? 0,
+    mid: o.m.mid ?? 0,
+    low: o.m.low ?? 0,
+    aod: o.m.aod,
+    pop: o.m.pop ?? 0,
+    rh: o.m.rh,
+    vis: o.m.vis,
+    cape: o.cape,
+    sunEl: o.sun ? o.sun.el : null,
+    crep: o.crep,
+    pillar: o.pillar,
+    clarity: o.clarity,
+    rainbow: o.rainbow,
+    cloudBaseLow: o.cbLow,
+    spread: o.spread,
+    faceOff: o.faceOff,
+    antiFace: o.antiFace,
+    layers: o.layers,
+    t2m: o.m.t2m
+  })
 
   const detail: SpotDetail = {
     spot: o.spot,
@@ -642,31 +685,51 @@ function buildSpotDetail(o: {
       return itCache
     },
     get tips(): Phototip[] {
-      if (!tipsCache) {
-        tipsCache = matchPhenomena({
-          kind: state.kind,
-          score: o.score,
-          high: o.m.high ?? 0,
-          mid: o.m.mid ?? 0,
-          low: o.m.low ?? 0,
-          aod: o.m.aod,
-          pop: o.m.pop ?? 0,
-          rh: o.m.rh,
-          vis: o.m.vis,
-          cape: o.cape,
-          sunEl: o.sun ? o.sun.el : null,
-          crep: o.crep,
-          pillar: o.pillar,
-          clarity: o.clarity,
-          rainbow: o.rainbow,
-          cloudBaseLow: o.cbLow,
-          spread: o.spread,
-          faceOff: o.faceOff,
-          layers: o.layers,
-          t2m: o.m.t2m
-        })
-      }
+      if (!tipsCache) tipsCache = matchPhenomena(phenoCtx(), nowScope)
       return tipsCache
+    },
+    get otherTips(): Phototip[] {
+      if (!otherCache) {
+        /* 「其它时段」不能借日落时刻的上下文：白天冰晶词条要求太阳高度 15–32°，
+           而本页 iso 是日落时刻（el≈0），照原样判一条都命中不了。
+           这里各取一个代表小时重建上下文：白天取最接近 30° 的，夜间取最接近 -15° 的。
+           极端高纬冬季可能整日没有 el≥10° 的小时，那就返回空，不硬凑。 */
+        const tm = hourTimes(o.w)
+        const ctxFor = (lo: number, hi: number, target: number): PhenoContext | null => {
+          let best = -1
+          let bestD = Infinity
+          let bestSun: SunPos | null = null
+          for (let k = 0; k < tm.length; k++) {
+            const ms = Date.parse(tm[k] + ':00+08:00')
+            if (isNaN(ms)) continue
+            const sp = sunPosition(ms, o.spot.lat, o.spot.lon)
+            if (!sp || sp.el < lo || sp.el > hi) continue
+            const d = Math.abs(sp.el - target)
+            if (d < bestD) { bestD = d; best = k; bestSun = sp }
+          }
+          if (best < 0 || !bestSun) return null
+          const mk = best === o.idx ? o.m : measureAt(o.w, o.air, best, o.mids)
+          return {
+            ...phenoCtx(),
+            high: mk.high ?? 0,
+            mid: mk.mid ?? 0,
+            low: mk.low ?? 0,
+            aod: mk.aod,
+            pop: mk.pop ?? 0,
+            rh: mk.rh,
+            vis: mk.vis,
+            sunEl: bestSun.el,
+            cloudBaseLow: lclMeters(mk.t2m, mk.td2m)
+          }
+        }
+        const dayCtx = ctxFor(10, 55, 30)
+        const nightCtx = ctxFor(-45, -6, -15)
+        otherCache = [
+          ...(dayCtx ? matchOtherTimes(dayCtx, 'day') : []),
+          ...(nightCtx ? matchOtherTimes(nightCtx, 'night') : [])
+        ]
+      }
+      return otherCache
     },
     get hourly(): DetailHour[] {
       if (!hoursCache) hoursCache = buildHours(o.w, o.air, o.idx, o.mids, o.spot)
@@ -738,7 +801,13 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
     if (pr && pr.hourly) {
       m.t2m = profField(pr, 'temperature_2m', idx)
       m.td2m = profField(pr, 'dew_point_2m', idx)
-      m.vis = profField(pr, 'visibility', idx)
+      /* 能见度：优先用剖面值（若将来 ECMWF 支持），否则保留上面多模式取到的 GFS 值。
+         ⚠️ 2026-11-28 之前这里是无条件覆盖，而 ECMWF 的 visibility 恒为 null
+         （实测 24/24），于是把天气请求里唯一有效的值抹成 null，
+         全站能见度判据（晨雾、雾虹、通透、云隙光、日柱）因此长期是死分支。
+         单位：接口是米，全站按 km，故除以 1000。 */
+      const visProf = profField(pr, 'visibility', idx)
+      if (visProf != null) m.vis = visProf / 1000
       /* 10 m 风速也只在剖面里有（多模式那份 weather 里没有这个字段）。
          雾判据要用它，所以必须在这里覆盖，否则永远是 null。
          2026-11-05 实测：`prof[].hourly.wind_speed_10m` 有值（42/72 小时非空）。 */
@@ -945,7 +1014,30 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
     const pop = m.pop ?? 0
     const rainNear = rainbowHint(spot, times, idx, prof, (k) => measureAt(w, null, k, mids).pop)
     const clarity = clarityOf(m)
-    const rainbow = rainbowOf(m, sun, cape, rainNear)
+    /* 彩虹要太阳高度 3°–42°（最好 15°–35°）。本刀的 iso 是日落时刻（el≈0），
+       直接拿 sun 去算 rainbowOf 恒等于 0 —— 决策卡的「彩虹窗口」一直在空转。
+       改为向前回溯到当天最接近 el=25° 的整点，用那个时次的云雨与太阳位置评估。
+       （彩虹是白天的现象，本来就该按白天的太阳高度判。） */
+    let rainbow = 0
+    {
+      let bestK = -1
+      let bestD = Infinity
+      for (let k = 0; k <= idx; k++) {
+        const ms = Date.parse(times[k] + ':00+08:00')
+        if (isNaN(ms)) continue
+        const sp = sunPosition(ms, spot.lat, spot.lon)
+        if (!sp || sp.el < 6 || sp.el > 42) continue
+        const d = Math.abs(sp.el - 25)
+        if (d < bestD) { bestD = d; bestK = k }
+      }
+      if (bestK >= 0) {
+        const ms = Date.parse(times[bestK] + ':00+08:00')
+        const sp = sunPosition(ms, spot.lat, spot.lon)
+        const mk = bestK === idx ? m : measureAt(w, airObj, bestK, mids)
+        const capeK = pr ? profField(pr, 'cape', bestK) : null
+        if (sp) rainbow = rainbowOf(mk, sp, capeK ?? cape, rainNear)
+      }
+    }
 
     /* 云层剖面与云种（SunsetBot 大气截面图的同款思路） */
     const prof2 = cloudProfile(pr, idx, { pop, cape, sunEl: sun ? sun.el : null })
@@ -983,6 +1075,9 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
     const crep = crepuscularOf(m, sunExact, { face, cloudBase: cbLow })
     const pillar = pillarOf(m, sunExact, layers)
     const faceOff = face < 0.85
+    /* 反日点方向的朝向匹配度：把「太阳方位 +180°」当成一个虚拟太阳再算一次 faceMatch。
+       反云隙光的几何前提是真的背对太阳，faceOff（偏离太阳 >37°）判不了这件事。 */
+    const antiFace = sunExact ? faceMatch(spot, (sunExact.az + 180) % 360) : 0.55
 
     /* ECMWF 单模式的三档云量：云种剖面就是用这套，和上面的平均值对照用 */
     const ecmM = mids.length > 1 ? measureAt(w, airObj, idx, ['ecmwf_ifs025']) : null
@@ -1030,7 +1125,7 @@ function compute(weather: RawData, air: RawData | null, profs: RawData | null, h
       : ''
 
     const detail = buildSpotDetail({
-      spot, w, air: airObj, idx, iso, mids, m, sun: sunExact, score, spread, faceOff,
+      spot, w, air: airObj, idx, iso, mids, m, sun: sunExact, score, spread, faceOff, antiFace,
       cape, crep, pillar, clarity, rainbow, cbLow, layers, sheets, genusText,
       profLabel: prof ? prof.label : '', profMod: prof ? prof.mod : 1,
       ecmwf: ecmM ? { high: ecmM.high, mid: ecmM.mid, low: ecmM.low } : undefined,

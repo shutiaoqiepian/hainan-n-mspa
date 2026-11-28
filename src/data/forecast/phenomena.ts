@@ -16,7 +16,7 @@
    注意：词条里的「条件」是按我们的数据能判断的近似，不是严格气象判据。
    ============================================================ */
 
-import type { CloudLayer, KindKey, PhenoRarity, Phototip } from '@/lib/forecast/types'
+import type { CloudLayer, KindKey, PhenoRarity, Phototip, TimeScope } from '@/lib/forecast/types'
 
 export type PhenoGroup = '霞' | '光束' | '冰晶光学' | '云' | '大气' | '平台口语'
 
@@ -39,6 +39,13 @@ export interface PhenoContext {
   cloudBaseLow: number | null
   spread: number
   faceOff: boolean
+  /**
+   * 机位朝向与**反日点**（太阳方位 +180°）的匹配度，0.55–1，1 = 正对反日点。
+   * 反云隙光、反日弧这类现象的几何前提是「真的背对太阳」，
+   * 而 faceOff 只表示「偏离太阳 37° 以上」—— 37° 离 180° 差得很远，
+   * 用它判反云隙光会把侧逆光的机位也算成能拍到反日点的光条。
+   */
+  antiFace: number
   layers: CloudLayer[]
   t2m: number | null
 }
@@ -49,6 +56,10 @@ export interface Phenomenon {
   /** 别名 / 黑话 */
   alias: string
   group: PhenoGroup
+  /** 时段域。不写就按下面的 SCOPES 表查，再查不到按 any —— 老词条一行都不用改 */
+  scope?: TimeScope
+  /** 出现时间（人话）。不写就按 HOURS 表查，再查不到按 scope 给粗标签 */
+  hours?: string
   /** 出现的条件，人话（词典里展示） */
   when: string
   /** 怎么拍 */
@@ -66,7 +77,14 @@ function has(layers: CloudLayer[], code: string, minCover = 25): boolean {
 }
 function highGenus(c: PhenoContext): string {
   const hi = c.layers.filter((l) => l.height >= 6000 && l.code !== '--')
-  return hi.length ? hi[hi.length - 1].genus : ''
+  if (hi.length) return hi[hi.length - 1].genus
+  /* 退路：剖面里没有高云层时，用高云量（cloud_cover_high）代理。
+     实测海南 3 天 42 小时：300 hPa 云量恒为 0、200 hPa 仅 4 小时 ≥30%，
+     而 cloud_cover_high 同一时段明显更高。只认 layers 的结果就是
+     白天五条冰晶判据整年几乎不命中，「其它时段」永远是空的。
+     退路只判「有高云」，不细分属名 —— 所以下面各条的属名判断都接受「卷云」。 */
+  if ((c.high ?? 0) >= 30) return '卷云'
+  return ''
 }
 
 export const PHENOMENA: Phenomenon[] = [
@@ -249,7 +267,12 @@ export const PHENOMENA: Phenomenon[] = [
     shoot: '转身 180° 找背阴面，光条会在地平线附近汇聚成一点，用长焦压缩更明显',
     platform: 'B站 / 气象爱好者',
     local: '少见',
-    match: (c) => (c.faceOff && c.crep >= 28 ? 1 : 0)
+    /* 反日点几何：机位朝向必须接近「太阳方位 +180°」。
+       旧判据用 faceOff（= 偏离太阳超过约 37°），那只说明「不是顺光」，
+       离背对还差 140°，于是几乎所有倒向机位都会误报。
+       antiFace ≥ 0.72 ≈ 与反日点夹角 68° 以内，和「光条在反日点附近汇聚」
+       的实际可见范围对得上。 */
+    match: (c) => (c.antiFace >= 0.72 && c.crep >= 28 ? 1 : 0)
   },
   {
     key: 'stage',
@@ -260,7 +283,10 @@ export const PHENOMENA: Phenomenon[] = [
     shoot: '等光斑落到你想要的地景上再按，光斑移动很快，连拍更保险',
     platform: '抖音 / 小红书',
     local: '少见',
-    match: (c) => (c.crep >= 55 && c.low <= 35 ? 2 : 0)
+    /* 光斑要落在地面/水面上，太阳必须还在地平线以上。
+       crep 在日落后仍会留分数（它本来就是给暮光设计的），不加这条会在
+       天已经黑透时提示「舞台光」。-1° 是太阳上缘刚没入地平线的位置。 */
+    match: (c) => (c.crep >= 55 && c.low <= 35 && (c.sunEl ?? -9) > -1 ? 2 : 0)
   },
   {
     key: 'pillar',
@@ -271,7 +297,9 @@ export const PHENOMENA: Phenomenon[] = [
     shoot: '光柱很细，用 70–200mm 中长焦切；曝光按天空测，让柱子不过曝才看得清',
     platform: 'B站 / 气象摄影',
     local: '少见',
-    match: (c) => (c.pillar >= 70 ? 2 : c.pillar >= 45 ? 1 : 0)
+    /* 阈值与 pillarLabel 对齐：pillarOf 的实际上限是 60（100×0.6），
+       旧判据写 ≥70 是永远达不到的「很有戏」，日柱因此从未作为预测出现过。 */
+    match: (c) => (c.pillar >= 55 ? 2 : c.pillar >= 35 ? 1 : 0)
   },
   {
     key: 'knife',
@@ -311,7 +339,7 @@ export const PHENOMENA: Phenomenon[] = [
     local: '罕见',
     match: (c) => {
       const el = c.sunEl ?? 0
-      return highGenus(c) === '卷层云' && c.high >= 40 && el >= 5 && el <= 30 ? 1 : 0
+      return (highGenus(c) === '卷层云' || highGenus(c) === '卷云') && c.high >= 40 && el >= 5 && el <= 30 ? 1 : 0
     }
   },
   {
@@ -396,10 +424,16 @@ export const PHENOMENA: Phenomenon[] = [
     name: '排骨云',
     alias: '波状层积云 / 排骨天 / 地震云（误称）',
     group: '云',
-    when: '低空粗大云条排成波浪状，多在强冷空气过境前出现，预示天气要大变',
+    /* 文案原来写「多在强冷空气过境前出现，预示天气要大变」——这是华北/江淮的
+       经验说法，低纬并不成立（海南的波状层积云多出现在信风逆温层顶）。
+       而且判据里既没有风场也没有季节，撑不起「冷空气」这个结论。
+       改成只讲成因，不承诺预报意义。 */
+    when: '低空云条排成波浪状，多出现在逆温层顶或冷暖平流交界处；云条走向与高空风向接近平行',
     shoot: '广角拍它的层叠，压低曝光让云条的立体感更强',
     platform: '小红书 / 抖音',
     local: '少见',
+    /* 只判云型与降水概率。缺 850/700 hPa 风场，判不了「是否冷空气过境」，
+       所以词条里也不再声称能预示天气大变。 */
     match: (c) => (c.layers.some((l) => l.code === 'Sc' && l.cover >= 45) && c.pop >= 40 ? 1 : 0)
   },
   {
@@ -509,8 +543,11 @@ export const PHENOMENA: Phenomenon[] = [
     platform: 'B站 / 摄影教程',
     local: '常见',
     match: (c) => {
+      /* 地影是地球本身挡住阳光投在大气里的暗带，**太阳必须已经落到地平线下**
+         才会形成。旧判据上限写 +2°（太阳还在地平线上），那时候地影尚未成形、
+         粉带也被直射光冲淡，物理上讲不通。改到 -0.5° 以下，-8° 以下天光就压过它了。 */
       const el = c.sunEl ?? 9
-      return c.low <= 25 && el >= -6 && el <= 2 ? 1 : 0
+      return c.low <= 25 && el >= -8 && el <= -0.5 ? 1 : 0
     }
   },
   {
@@ -561,7 +598,10 @@ export const PHENOMENA: Phenomenon[] = [
     local: '每天',
     match: (c) => {
       const el = c.sunEl ?? 9
-      return el <= -4 && el >= -12 ? 1 : 0
+      /* 下限收到 -8°（民用暮光结束）而不是 -12°：-12° 已是航海暮光末尾，
+         天基本黑了，只剩最后一点深蓝，和「日落后 15–35 分钟」的文案也不符。
+         -4°～-8° 正好对应日落后约 15–35 分钟。 */
+      return el <= -4 && el >= -8 ? 1 : 0
     }
   },
   {
@@ -640,7 +680,9 @@ export const PHENOMENA: Phenomenon[] = [
     key: 'glory',
     name: '宝光（佛光）',
     alias: '佛光 / 光环 / 峨眉宝光',
-    group: '冰晶光学',
+    /* 宝光是**水滴**的背向散射 + 衍射（和彩虹同族），不是冰晶折射。
+       旧版归到「冰晶光学」是分类错误，会让用户以为它跟晕是同一种成因。 */
+    group: '大气',
     when: '背对太阳、前方有云雾，自己的影子会落在彩色光环中央',
     shoot: '背影 + 光环同时入镜；山上或飞机上最容易遇到',
     platform: 'B站 / 摄影教程',
@@ -649,14 +691,42 @@ export const PHENOMENA: Phenomenon[] = [
   },
   {
     key: 'moonhalo',
+    /* 原先这条叫「月晕 / 幻月」、别名里还挂着「月华」，把三种成因不同的现象
+       塞进了一条：22° 月晕和幻月是**冰晶折射**，月华是**水滴衍射**（半径只有几度）。
+       拆开之后这条只管冰晶族的两个，月华另立一条。 */
     name: '月晕 / 幻月',
-    alias: '月亮套圈 / 月华',
+    alias: '月亮套圈 / 幻月 / 22° 月晕',
     group: '冰晶光学',
-    when: '夜间高空有薄卷层云，月亮周围出现 22° 光晕',
+    when: '夜间高空有薄卷层云，月亮周围出现 22° 光晕；晕圈左右两侧的亮点是幻月',
     shoot: '上三脚架长曝；月晕很暗，ISO 放到 1600 也不嫌高',
     platform: 'B站 / 天文爱好者',
     local: '少见',
-    match: () => 0
+    /* 22° 月晕与日晕同源（卷层云冰晶折射），判据也照日晕那一套。
+       ⚠️ 没有月相数据，「月亮在不在天上」判不了 —— 只判云与降水。 */
+    match: (c) => {
+      const g = highGenus(c)
+      return (g === '卷层云' || g === '卷云') && c.high >= 30 && c.pop <= 20 ? 1 : 0
+    }
+  },
+  {
+    key: 'mooncorona',
+    name: '月华',
+    alias: '华 / 月冠 / 月亮彩环',
+    /* 与宝光、虹彩云同族：都是**水滴（或小冰晶）衍射**，不是冰晶折射。
+       所以归「大气」，不归「冰晶光学」。 */
+    group: '大气',
+    when: '月亮周围出现一圈几度大的彩色环，内蓝外红，薄高积云或卷积云时最常见',
+    shoot: '长焦对月，欠曝 1–2 档颜色才出得来；环很小，别用广角',
+    platform: 'B站 / 天文爱好者',
+    local: '少见',
+    /* 华看的是「薄中云」而不是「卷层云」：半径只有几度，云滴要小而均匀。
+       layers 里没有 Ac/Cc 时退回中云量判断（与 highGenus 的退路同一思路）。
+       ⚠️ 同样缺月相数据，判不了月亮在不在。 */
+    match: (c) => {
+      const thin = c.layers.some((l) => (l.code === 'Ac' || l.code === 'Cc') && l.cover >= 20 && l.cover <= 70)
+      if (thin) return c.pop <= 25 ? 1 : 0
+      return c.mid >= 30 && c.mid <= 70 && c.pop <= 25 ? 1 : 0
+    }
   },
   {
     key: 'circumzenithal',
@@ -669,7 +739,7 @@ export const PHENOMENA: Phenomenon[] = [
     local: '少见',
     match: (c) => {
       const el = c.sunEl ?? 0
-      return el >= 15 && el <= 32 && highGenus(c) === '卷层云' ? 1 : 0
+      return el >= 15 && el <= 32 && (highGenus(c) === '卷层云' || highGenus(c) === '卷云') ? 1 : 0
     }
   },
   {
@@ -682,10 +752,13 @@ export const PHENOMENA: Phenomenon[] = [
     platform: '气象爱好者',
     local: '罕见',
     /* 46° 晕比 22° 晕苛刻得多：冰晶必须是规整的六棱柱且取向纯净，
-       所以条件叠得更紧（云更薄、太阳更高）。 */
+       所以条件叠得更紧（云更薄、云量更窄）。
+       ⚠️ 旧版还有一条 `el >= 20`，没有物理依据：46° 晕的角半径是固定的，
+       太阳高度只决定「能看到哪一段弧」，不决定它能不能出现。
+       去掉之后，低太阳角时也能正确提示（那时看到的是上方弧段）。 */
     match: (c) => {
-      const el = c.sunEl ?? 0
-      return highGenus(c) === '卷层云' && c.high >= 50 && c.high <= 80 && el >= 20 ? 1 : 0
+      const g = highGenus(c)
+      return (g === '卷层云' || g === '卷云') && c.high >= 50 && c.high <= 80 ? 1 : 0
     }
   },
   {
@@ -699,7 +772,7 @@ export const PHENOMENA: Phenomenon[] = [
     local: '少见',
     match: (c) => {
       const el = c.sunEl ?? 99
-      return highGenus(c) === '卷层云' && c.high >= 35 && el >= -2 && el <= 20 ? 1 : 0
+      return (highGenus(c) === '卷层云' || highGenus(c) === '卷云') && c.high >= 35 && el >= -2 && el <= 20 ? 1 : 0
     }
   },
   {
@@ -749,12 +822,18 @@ export const PHENOMENA: Phenomenon[] = [
     shoot: '这种天改拍雨雾和湿地纹理，别死等太阳',
     platform: '摄影教程',
     local: '常见',
-    match: (c) => (has(c.layers, 'Ns', 50) ? 1 : 0)
+    /* 雨层云是中低云：云底 0.5–2 km、云顶可到 6 km，只判 700 hPa 一层（≈3 km）
+       会漏掉「云底已经压到地面附近」的典型雨层云，也会把单纯的高层云误判成它。
+       改成「中云层判到 Ns」或「低云几乎铺满 + 近饱和 + 正在降水」两条取一。 */
+    match: (c) => (has(c.layers, 'Ns', 50) || (c.low >= 70 && (c.rh ?? 0) >= 90 && c.pop >= 60) ? 1 : 0)
   },
   {
-    key: 'velum',
-    name: '幡状云',
-    alias: '雨幡 / 云下雨帘',
+    /* key 原本写作 `velum`，但 velum 是「幞状云」（积云顶上那层薄纱），
+       和这条讲的东西不是一回事；雨幡的规范名是 virga。
+       改 key 前查过全仓：只有本文件引用，无外部链接依赖。 */
+    key: 'virga',
+    name: '雨幡',
+    alias: '幡状云 / 云下雨帘 / 雨丝',
     group: '云',
     when: '降水还没落到地面就在半空蒸发，云底挂下一条条雨丝',
     shoot: '长焦对着云底拍雨丝，逆光时最明显',
@@ -771,7 +850,11 @@ export const PHENOMENA: Phenomenon[] = [
     shoot: '广角横构图交代它的长度，注意保护相机别被风沙打',
     platform: '抖音 / B站',
     local: '少见',
-    match: (c) => (c.low >= 50 && c.pop >= 50 ? 1 : 0)
+    /* 滚轴云是锋面/雷暴出流的产物，单看「低云多 + 降水概率高」等于每个
+       阴雨天都报一次。缺 10 m 阵风与风切变数据，用 CAPE 当对流环境的代理：
+       没有不稳定能量就不可能滚起来。宁可漏报（红线：宁漏不误）。
+       真要做准，需要阵风锋的 METAR 风向突变或雷达细线回波，目前数据里没有。 */
+    match: (c) => (c.low >= 50 && c.pop >= 60 && (c.cape ?? 0) >= 1000 ? 1 : 0)
   },
   {
     key: 'noctilucent',
@@ -804,7 +887,12 @@ export const PHENOMENA: Phenomenon[] = [
     shoot: '20–30 秒曝光、f/2.8、ISO 3200，后期堆栈降噪',
     platform: '小红书 / B站',
     local: '少见',
-    match: () => 0
+    /* 银河要的是「云少 + 不降水 + 通透」。⚠️ 同样没有月相与光害数据，
+       「无月夜」判不了，只判云与降水；文案里的「无月夜」是观测要求，不是预测结论。 */
+    match: (c) => {
+      const cloud = (c.high ?? 0) + (c.mid ?? 0)
+      return (c.low ?? 99) <= 25 && cloud <= 40 && c.pop <= 20 && (c.vis ?? 0) >= 15 ? 1 : 0
+    }
   },
   {
     key: 'startrail',
@@ -815,7 +903,8 @@ export const PHENOMENA: Phenomenon[] = [
     shoot: '对北天极、间隔 30 秒连拍 200 张堆栈，别用单张长曝免得热噪',
     platform: 'B站 / 摄影教程',
     local: '少见',
-    match: () => 0
+    /* 星轨比银河更怕薄云（长曝会把薄云拉成灰幕），阈值更严一档 */
+    match: (c) => ((c.low ?? 99) <= 20 && ((c.high ?? 0) + (c.mid ?? 0)) <= 30 && c.pop <= 15 ? 1 : 0)
   },
   {
     key: 'doublerainbow',
@@ -880,10 +969,19 @@ export const PHENOMENA: Phenomenon[] = [
     when: '高空冰晶云被夕阳从下方照亮，整片云呈现饱和橙红',
     shoot: '这种云的红色最纯，广角直接铺满天空就够',
     platform: '追霞群',
-    local: '常见',
+    /* 「本地常见」这个评级不成立：低纬 6000 m 以上常年 -20℃ 上下，
+       真正的冰晶云（要够冷 + 够厚）一年里没几天。降为「少见」。 */
+    local: '少见',
     match: (c) => {
-      const ice = c.layers.some((l) => l.height >= 6000 && l.t != null && l.t <= -25 && l.cover >= 30)
-      return ice && c.score >= 62 ? 2 : 0
+      /* ⚠️ 旧判据写 t ≤ -25℃。6000 m 标准大气约 -24℃，低纬实际常在 -20℃ 左右，
+         这一条等于把整个低纬挡在门外；冰晶在 -15℃ 以下就已占优，
+         取 -20℃ 作为「以冰晶为主」的保守门槛。
+         另外剖面里 300/200 hPa 云量常年为 0，高云层被判成无云，
+         所以补一条用 c.high（高云量）的退路。 */
+      const ice = c.layers.some((l) => l.height >= 6000 && l.t != null && l.t <= -20 && l.cover >= 30)
+      if (ice) return c.score >= 62 ? 2 : 0
+      const cold = c.layers.some((l) => l.height >= 6000 && l.t != null && l.t <= -20)
+      return (c.high ?? 0) >= 35 && cold && c.score >= 62 ? 2 : 0
     }
   },
   {
@@ -906,7 +1004,8 @@ export const PHENOMENA: Phenomenon[] = [
     shoot: '高处俯拍，让云影和亮带（水面反光、雪地、大片平地）形成强对比',
     platform: '摄影教程',
     local: '常见',
-    match: (c) => (c.crep >= 35 && c.low <= 35 ? 1 : 0)
+    /* 云影的方向由太阳定，太阳落到地平线以下就没有「影」了 */
+    match: (c) => (c.crep >= 35 && c.low <= 35 && (c.sunEl ?? -9) > -1 ? 1 : 0)
   },
   {
     key: 'skylight',
@@ -917,7 +1016,8 @@ export const PHENOMENA: Phenomenon[] = [
     shoot: '广角逆光 + 收两档曝光，把光缝压成利落的一束',
     platform: '抖音 / 小红书',
     local: '少见',
-    match: (c) => (c.crep >= 60 && c.low >= 35 ? 1 : 0)
+    /* 云缝里下来的直射光，同样要求太阳在地平线以上 */
+    match: (c) => (c.crep >= 60 && c.low >= 35 && (c.sunEl ?? -9) > -1 ? 1 : 0)
   },
   {
     key: 'lightdust',
@@ -957,6 +1057,108 @@ export const PHENOMENA: Phenomenon[] = [
 
 export const PHENO_GROUPS: PhenoGroup[] = ['霞', '光束', '冰晶光学', '云', '大气', '平台口语']
 
+/* ---------------- 时段域归属（2026-11-28） ----------------
+   匹配器原来只在「日出/日落那一刻」评估全部词条，于是：
+     · 白天冰晶（环地平弧要太阳 58°）与夜间天象（银河）结构上永远判不出来；
+     · 判据不含太阳高度的云形态（鱼鳞云、低云压顶）照样命中，
+       又因为只取前 5 条，把只有此刻才成立的低角度词条挤掉。
+   这里给每条词条标一个时段域，匹配器据此分组 —— 词条一条没删、判据一行没改。
+
+   标注依据分三类：
+     ① 判据里已经含 sunEl 的（彩虹 / 日柱 / 幻日 / 环天顶弧 / 七彩祥云 …）→ 不标，按 any，
+        它自己就管得住太阳高度，标了反而会在边界上误分组；
+     ② 判据只有云量 / 评分 / crep，但文案明确是低太阳角的（火烧云 / 云隙光 / 蓝调）→ lowSun；
+     ③ 只在对侧或其它时段成立的（朝霞写死 sunrise、银河只在夜里）→ dawn / night。
+   未列出的 key 一律按 any 处理。 */
+const SCOPES: Record<string, TimeScope> = {
+  /* 仅日出侧 3 条：match 里本身写死 kind === 'sunrise'，日落预报里本就命中不了 */
+  sunriseglow: 'dawn', cloudsea: 'dawn', lightdust: 'dawn',
+
+  /* 需要太阳高度更高 5 条：日落时刻 el≈0，结构上判不出来 */
+  circumzenithal: 'day', halo46: 'day', circumhorizon: 'day', sundog: 'day', halo: 'day',
+
+  /* 夜间 7 条：日落时刻评估等于空转 */
+  milkyway: 'night', startrail: 'night', moonbow: 'night',
+  moonhalo: 'night', mooncorona: 'night', noctilucent: 'night', aurora: 'night',
+
+  /* 暮曙光窗口 27 条：判据不含 sunEl，但语义只在低太阳角成立 */
+  burn: 'lowSun', smallburn: 'lowSun', burnthrough: 'lowSun', pinkdusk: 'lowSun',
+  orange: 'lowSun', dustburn: 'lowSun', afterglow: 'lowSun', symmetric: 'lowSun',
+  palette: 'lowSun', noshow: 'lowSun', crepuscular: 'lowSun', anticrepuscular: 'lowSun',
+  stage: 'lowSun', knife: 'lowSun', venusbelt: 'lowSun', goldenhour: 'lowSun',
+  bluehour: 'lowSun', greenslash: 'lowSun', skyspejo: 'lowSun', reflect: 'lowSun',
+  rosegold: 'lowSun', glitter: 'lowSun', sunbeam: 'lowSun', firenice: 'lowSun',
+  cloudshadow: 'lowSun', skylight: 'lowSun', silhouette: 'lowSun'
+}
+
+/** 词条所属时段域，没标注的按 any（= 改造前的老行为） */
+export function scopeOf(p: Phenomenon): TimeScope {
+  return p.scope ?? SCOPES[p.key] ?? 'any'
+}
+
+/* 出现时间（人话）。和 SCOPES 分工：
+     SCOPES 决定这条词归到哪一组（此刻 / 白天 / 今晚），
+     HOURS  告诉用户一天里具体几点去看。
+   白天词条的钟点按海口（北纬约 20°）太阳高度—时角关系给的经验值；
+   冬季太阳高度偏低的情况，由词条自身的 el 判据拦住，这里不写死季节。
+   没列出的按 scope 给粗标签（日落前后 / 白天 / 夜间），所以一条都不会缺。 */
+const HOURS: Record<string, string> = {
+  /* 仅日出侧 3 条 */
+  sunriseglow: '日出前 30–50 分钟',
+  cloudsea: '日出前 20 分钟–日出后 1 小时',
+  lightdust: '日出前后 1 小时',
+
+  /* 白天高太阳 5 条：这是原来在日落页永远看不到的那批。
+     ⚠️ 写法刻意是「太阳高度 X° 时（海口约 …）」而不是直接写钟点：
+     判据用的是太阳高度，钟点随纬度与季节变。漠河夏季 5°–30° 出现在早晚、
+     冬季几乎不出现；三亚全年都在正午前后。写死「9–11 时」等于把海南口径
+     当成全国口径发出去。 */
+  circumhorizon: '太阳高于 58° 时（海口 4–8 月正午前后）',
+  halo46: '太阳高于 0° 时（海口约 9–15 时；高纬冬季明显缩短）',
+  circumzenithal: '太阳高度 15°–32° 时（海口约 9–11、14–16 时）',
+  sundog: '太阳高度 5°–30° 时（海口约 9–11、14–16 时）',
+  halo: '太阳高度 10° 以上时（海口约 9–16 时）',
+
+  /* 夜间 7 条 */
+  milkyway: '20 时后–次日 2 时（无月夜）',
+  startrail: '21 时后整夜',
+  moonbow: '满月夜的阵雨后',
+  moonhalo: '夜间有薄卷层云时',
+  mooncorona: '夜间有薄高积云时',
+  noctilucent: '日落后 1–2 小时（本地基本不可见）',
+  aurora: '强地磁暴的夜间（本地不可见）',
+
+  /* 暮光里窗口很窄、值得单独标钟点的几条 */
+  burn: '日落前 20 分钟–日落后 5 分钟',
+  afterglow: '日落后 10–15 分钟',
+  firenice: '日落前 10 分钟–日落后 10 分钟',
+  greenslash: '日落入海的一瞬',
+  bluehour: '日落后 15–35 分钟',
+  goldenhour: '日出后 / 日落前 30–40 分钟',
+  venusbelt: '日出前 / 日落后 10–20 分钟',
+  noshow: '日落后 10 分钟仍无起色即可收机'
+}
+
+/** 该词条的出现时间；没有具体钟点的按时段域给粗标签 */
+export function hoursOf(p: Phenomenon): string {
+  const h = p.hours ?? HOURS[p.key]
+  if (h) return h
+  const s = scopeOf(p)
+  if (s === 'lowSun') return '日落前后'
+  if (s === 'dawn') return '日出前后'
+  if (s === 'day') return '白天'
+  if (s === 'night') return '夜间'
+  return '全天'
+}
+
+/** 该词条在此刻成立吗。lowSun 与 dawn 同属「太阳很低」，互相兼容 —— 
+    日出场景下火烧云、云隙光照样能拍，不能因为标了 lowSun 就不显示。 */
+function scopeOk(s: TimeScope, now: TimeScope): boolean {
+  if (s === 'any') return true
+  if (s === 'lowSun') return now === 'lowSun' || now === 'dawn'
+  return s === now
+}
+
 /** 稀缺度：越难得的词条越该排在前面。
     「每天」都能拍的东西（剪影、玫瑰金）不该挤掉「少见 / 罕见」的（对称霞、46° 晕）——
     否则用户看到的永远是那几条平平无奇的，词库扩充了也白扩。 */
@@ -969,34 +1171,65 @@ export function rarityOf(p: Phenomenon): PhenoRarity {
   return p.local ?? '常见'
 }
 
-/** 这个时刻最值得拍的天象（按“很有戏”优先，取前 5 条） */
-export function matchPhenomena(c: PhenoContext): Phototip[] {
-  const hits = PHENOMENA
-    .map((p, i) => ({ p, v: p.match(c), i, r: RARITY[p.local ?? '常见'] ?? 2 }))
+/** 排序：**当前时段优先** > 很有戏 > 霞优先 > 越少见 > 词库顺序。
+    第一级是 2026-11-28 新增的时段域，解决「白天/夜间词条挤掉此刻词条」。 */
+function rank(c: PhenoContext, now: TimeScope) {
+  return PHENOMENA
+    .map((p, i) => ({ p, v: p.match(c), i, r: RARITY[p.local ?? '常见'] ?? 2, s: scopeOf(p) }))
     .filter((x) => x.v > 0)
-    /* 四级排序，每一级都必须给出完整的序 ——
+    /* 每一级都必须给出完整的序 ——
        写成 `a.p.group === '霞' ? -1 : 1` 这种两值比较器没有传递性：
        两个非霞词条互相比较时，a 比 b 和 b 比 a 都返回 1，
        结果取决于引擎实现、可能把该显示的词条随机挤掉。
        所以这里每一级都用「相减」表达，最后一定有 a.i - b.i 兜底。 */
     .sort((a, b) =>
+      (scopeOk(a.s, now) ? 0 : 1) - (scopeOk(b.s, now) ? 0 : 1) || /* 0. 当前时段优先 */
       b.v - a.v ||                       /* 1. 很有戏 > 有机会 */
       (a.p.group === '霞' ? 0 : 1) - (b.p.group === '霞' ? 0 : 1) || /* 2. 霞优先 */
       b.r - a.r ||                       /* 3. 越少见越靠前 */
       a.i - b.i                          /* 4. 稳定兜底 */
     )
+}
 
-  const out: Phototip[] = []
-  for (const h of hits) {
-    out.push({
-      key: h.p.key,
-      name: h.p.name,
-      alias: h.p.alias,
-      rarity: rarityOf(h.p),
-      why: h.p.when,
-      shoot: h.p.shoot
-    })
-    if (out.length >= 5) break
+function toTip(p: Phenomenon, s: TimeScope): Phototip {
+  return {
+    key: p.key,
+    name: p.name,
+    alias: p.alias,
+    rarity: rarityOf(p),
+    why: p.when,
+    shoot: p.shoot,
+    scope: s,
+    window: hoursOf(p)
   }
-  return out
+}
+
+/** 这个时刻最值得拍的天象（只含当前时段成立的，取前 5 条）
+    now 由调用方按场景给：日出 → 'dawn'，日落 → 'lowSun'。 */
+export function matchPhenomena(c: PhenoContext, now: TimeScope = 'lowSun'): Phototip[] {
+  return rank(c, now)
+    .filter((x) => scopeOk(x.s, now))
+    .slice(0, 5)
+    .map((x) => toTip(x.p, x.s))
+}
+
+/** 指定时段（day / night）当天有机会的天象，给「其它时段」那一行用。
+    ⚠️ 调用方必须传入**该时段代表时刻**的上下文：白天冰晶词条要求太阳高度
+       15–32°，拿日落时刻（el≈0）去判会全数落空；夜间词条同理。
+
+    2026-11-28 之前这里只过一次粗门（高云≥25 / 低云≥35）、不跑判据，
+    于是天气再变也永远输出同样两条（白天「环天顶弧 + 日晕」、夜间「银河 + 月晕」），
+    幻日、46° 晕、环地平弧、夜光云、极光一辈子排不上。
+    现在直接过判据，命中才提示 —— 宁可这条提示空着，也不空许诺。 */
+export function matchOtherTimes(c: PhenoContext, slot: TimeScope = 'day'): Phototip[] {
+  if (slot !== 'day' && slot !== 'night') return []
+  const picked = PHENOMENA
+    .filter((p) => scopeOf(p) === slot)
+    .map((p) => ({ p, v: p.match(c), r: RARITY[p.local ?? '常见'] ?? 2 }))
+    .filter((x) => x.v > 0)
+    /* 命中强度优先，同强度按「越常见越靠前」—— 这是「今天去看什么」的提示，
+       不是稀缺度排行榜，把「几乎不可能」的极光排在幻日前面对用户没用。 */
+    .sort((a, b) => b.v - a.v || a.r - b.r || (a.p.key < b.p.key ? -1 : 1))
+    .slice(0, 2)
+  return picked.map((x) => toTip(x.p, slot))
 }

@@ -99,10 +99,16 @@ export interface Measure {
    * 10 m 风速（m/s）。
    * 数据源本来就有 `wind_speed_10m`（`prof[]` 里，42/72 小时非空），
    * 但 2026-11-05 之前从没被提取进 Measure —— 雾判据要用它才补上。
-   * ⚠️ 同一批数据里 `boundary_layer_height` 和 `visibility` 虽然请求了，
-   *    但**全部返回 null**（0/72），所以这两个不能拿来当判据。
+   * ⚠️ 同一批数据里 `boundary_layer_height` 仍然经常返回 null；
+   *    `visibility` 有值但单位是米（见下面 vis 字段的说明）。
    */
   wind10: number | null
+  /**
+   * 能见度（**km**，已从接口的米换算过）。
+   * 接口 `visibility` 单位是米；2026-11-28 之前直接当 km 用，
+   * 导致晨雾/雾虹判据永不成立、通透与光柱的能见度因子恒为 1。
+   * 换算集中在 `api.ts` 的 `avgVis()` 与剖面覆写处，判据一律按 km 写。
+   */
   vis: number | null
   /** ⚠ 缺测时这里是**计算用的默认值**（0.2），不是观测值；真实与否看 aodMissing */
   aod: number
@@ -212,6 +218,22 @@ export interface FogResult {
 /** 天象的稀有度评级 —— 词库、当次卡片、名片共用同一套词 */
 export type PhenoRarity = '每天' | '常见' | '少见' | '罕见' | '几乎不可能'
 
+/** 天象词条的**时段域** —— 决定它该出现在哪个时段的推荐里。
+ *
+ *  2026-11-28 新增。改造之前，匹配器只在「日出/日落那一刻」评估全部 69 条，
+ *  结果是：白天冰晶（环地平弧需太阳高度 58°）与夜间天象（银河）结构上永远判不出来，
+ *  反过来判据不含太阳高度的云形态又会挤掉只有此刻才成立的低角度词条。
+ *  现在按域分组，词条一条没删、判据一行没改。
+ *
+ *  · `dawn`   仅日出侧（朝霞、云海、晨雾；match 里本身写死 kind==='sunrise'）
+ *  · `lowSun` 暮曙光窗口（太阳约 −8°~+8°，日出与日落通用）
+ *  · `day`    需要太阳高度更高（白天冰晶光学、22° 晕）
+ *  · `night`  夜间（银河、星轨、月虹、极光）
+ *  · `any`    时段无关；判据自身已含太阳高度约束的也归这里（它自己管得住）
+ *
+ *  缺省（不写）= `any`，与改造前行为完全一致。 */
+export type TimeScope = 'dawn' | 'lowSun' | 'day' | 'night' | 'any'
+
 /** 一条天象词条（原先叫「拍摄题材」，2026-11-05 全部改为「天象」） */
 export interface Phototip {
   key: string
@@ -223,6 +245,10 @@ export interface Phototip {
   why: string
   /** 怎么拍 */
   shoot: string
+  /** 时段域：缺省视为 any。用于把「此刻可拍」与「今天其它时段」分开 */
+  scope?: TimeScope
+  /** 出现时间（人话，如「上午 9–11 时、下午 14–16 时」）。空的表示时段无关 */
+  window?: string
 }
 
 /** 一个模式与平均值打架的说明 */
@@ -300,8 +326,10 @@ export interface SpotDetail {
   conflicts: Conflict[]
   /** 这个机位落到的模式格点（吸附后的中心坐标） */
   grid: string
-  /** 匹配到的天象/黑话 */
+  /** 匹配到的天象/黑话（只含当前时段成立的） */
   tips: Phototip[]
+  /** 今天其它时段才成立的天象（白天冰晶、夜间星空等），用于「其它时段」提示 */
+  otherTips: Phototip[]
   /** 逐小时（只有 DETAIL_SPOT 会填） */
   hourly: DetailHour[]
 }
