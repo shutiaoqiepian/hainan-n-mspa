@@ -109,6 +109,7 @@
 | [`analysis/iridescent-cloud-plan.md`](analysis/iridescent-cloud-plan.md) | 165 行 | 七彩祥云（虹彩云）预测：现状 + 文献 + 整合方案 |
 | [`analysis/sky-glow-learning-notes.md`](analysis/sky-glow-learning-notes.md) | 98 行 | 天空霞方向 · 学习验收与依据对照表 |
 | [`analysis/phenomena-audit-national.md`](analysis/phenomena-audit-national.md) | 297 行 | **天象词库 70 条的气象学合理性审计**：逐条判定（合理 / 存疑 / 不合理）、判据阈值与时空尺度的矛盾、死判据清单、资料缺口。2026-11-28 据此重写了 `phenomena.ts` 的几何判据与时段域 |
+| [`analysis/org-facts.md`](analysis/org-facts.md) | 189 行 | **组织事实的外部核验**：名称谱系（早期「中学生摄影联盟」→ 现「椰青摄影联盟」）、群结构与加入七步、成员履历、**凯迪网/公众号《摄影新势力》五期**（第一、四期为本联盟首领与审核员）、与站内文案的逐项冲突、待组织方确认项。改「关于 / 加入 / 成员」页文案前先看 |
 
 > 相关：`tools/_tmp-exp-scan.mjs` 的结论已作为**反向证据**写进
 > `ALGORITHM-COLLAB.md` §1.1（"为什么 1.8 次方不能动"），那一项不需要再看分析文档。
