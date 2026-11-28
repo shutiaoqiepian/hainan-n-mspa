@@ -96,7 +96,7 @@ onMounted(() => {
     <div class="wrap">
       <p class="eyebrow">Gallery</p>
       <h1 class="silver">作品集</h1>
-      <p>社内成员镜头下的海南：海岸、夜色、星空与火箭升空。</p>
+      <p>成员们按下快门的那一刻：光线、等待，和一点运气。镜头所及，不止海南。</p>
     </div>
   </section>
 
