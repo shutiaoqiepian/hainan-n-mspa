@@ -37,34 +37,34 @@ export const MEMBERS: readonly Member[] = [
   {
     id: 'shixucaigouya',
     name: '是徐菜狗鸭',
-    group: 'core',
+    group: 'community',
     titles: ['中国国家地理供稿人', '图虫百大摄影师', '2024 IPA 建筑类银奖']
   },
   {
     id: 'erictian',
     name: 'ERIC TIAN',
-    group: 'core',
+    group: 'community',
     titles: ['中国爬楼联盟成员', '500px 北京风光联盟首领', '佳能合作摄影师']
   },
   {
     id: 'senlin',
     name: '森林 Cyber-traveller',
-    group: 'core',
+    group: 'community',
     titles: ['12000z62 主理人', '寰宇追光部落首领']
   },
-  { id: 'xiaochen', name: '萧晨WaterGhost', group: 'core', titles: ['重庆·雾核 FOCUS 首领'] },
+  { id: 'xiaochen', name: '萧晨WaterGhost', group: 'community', titles: ['重庆·雾核 FOCUS 首领'] },
   {
     id: 'leihai',
     name: '髅海',
-    group: 'core',
+    group: 'community',
     titles: ['中国爬楼联盟核心成员', '上海爬楼联盟成员']
   },
   { id: 'echoism', name: 'ECHOISM', group: 'core', titles: [] },
-  { id: 'mak', name: 'mak', group: 'core', titles: [] },
+  { id: 'mak', name: 'mak', group: 'community', titles: [] },
   { id: 'baoxue', name: '暴雪踏墨行', group: 'core', titles: ['审核员'] },
   { id: 'duo', name: 'DUO', group: 'core', titles: ['审核员'] },
-  { id: 'dynamiczzr', name: 'Dynamic·ZZR', group: 'core', titles: [] },
-  { id: 'raven', name: 'Raven', group: 'core', titles: [] },
-  { id: 'y1', name: 'Y-1', group: 'core', titles: [] },
-  { id: 'yms', name: 'yms', group: 'core', titles: [] }
+  { id: 'dynamiczzr', name: 'Dynamic·ZZR', group: 'community', titles: [] },
+  { id: 'raven', name: 'Raven', group: 'community', titles: [] },
+  { id: 'y1', name: 'Y-1', group: 'community', titles: [] },
+  { id: 'yms', name: 'yms', group: 'community', titles: [] }
 ]
