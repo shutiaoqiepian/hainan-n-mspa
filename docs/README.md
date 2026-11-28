@@ -108,6 +108,7 @@
 | [`analysis/thin-cloud-v2-plan.md`](analysis/thin-cloud-v2-plan.md) | 125 行 | 少云被斩杀 · 根因诊断与 v2 优化方案 |
 | [`analysis/iridescent-cloud-plan.md`](analysis/iridescent-cloud-plan.md) | 165 行 | 七彩祥云（虹彩云）预测：现状 + 文献 + 整合方案 |
 | [`analysis/sky-glow-learning-notes.md`](analysis/sky-glow-learning-notes.md) | 98 行 | 天空霞方向 · 学习验收与依据对照表 |
+| [`analysis/phenomena-audit-national.md`](analysis/phenomena-audit-national.md) | 297 行 | **天象词库 70 条的气象学合理性审计**：逐条判定（合理 / 存疑 / 不合理）、判据阈值与时空尺度的矛盾、死判据清单、资料缺口。2026-11-28 据此重写了 `phenomena.ts` 的几何判据与时段域 |
 
 > 相关：`tools/_tmp-exp-scan.mjs` 的结论已作为**反向证据**写进
 > `ALGORITHM-COLLAB.md` §1.1（"为什么 1.8 次方不能动"），那一项不需要再看分析文档。
@@ -147,7 +148,7 @@
 | 位置 | 是什么 |
 |---|---|
 | **[`research/README.md`](../research/README.md)** | ★ **参考文献库总索引**：13 条权威文献 + 数据源规范 + D 级实测反推值 + A/B/C/D 可信度分级。**改算法前先查这里** |
-| `research/jargon.md`（243 行）/ `research/jargon.json` | 摄影圈天象黑话调研（102 条，含 67 条可验证来源），站内 68 条是它的精选子集 |
+| `research/jargon.md`（243 行）/ `research/jargon.json` | 摄影圈天象黑话调研（102 条，含 67 条可验证来源），站内 70 条是它的精选子集 |
 | `research/rays.md`（200 行） | 云隙光 / 光柱的联网调研（窗口、阈值出处） |
 | `research/scoring-thresholds.md`（68 行） | 评分各系数的阈值来源笔记，**调参前必读** |
 | [`使用说明.md`](../使用说明.md)（380 行） | 面向**非开发者**：加图、发布、排错、反馈通道现状 |
