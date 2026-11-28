@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { SCORE_MAX } from '@/data/forecast/levels'
+import { SCORE_MAX, levelOf } from '@/data/forecast/levels'
 import type { Row } from '@/lib/forecast/types'
 
 /** 各模式怎么看：8 个模式各自报的逐层云量与对应分数。
@@ -18,10 +18,9 @@ const rows = computed(() =>
       main: MAIN.includes(p.id),
       diff,
       diffText: diff == null ? '' : diff === 0 ? '与均值持平' : (diff > 0 ? '高于均值 +' : '低于均值 ') + diff,
-      color:
-        p.score == null ? 'var(--muted-2)'
-          : p.score >= 92 ? '#ff6a3d' : p.score >= 82 ? '#ff9640' : p.score >= 66 ? '#ffd166'
-            : p.score >= 48 ? '#9ad9b8' : p.score >= 24 ? '#8f979f' : '#5b636a'
+      /* 颜色直接取等级表的档位色，不在这里抄一份阈值 ——
+         以前这串三元表达式把 92/82/66/48/24 又写了一遍，改档位时两处必然失步 */
+      color: p.score == null ? 'var(--muted-2)' : levelOf(p.score).color
     }
   })
 )

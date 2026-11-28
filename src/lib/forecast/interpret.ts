@@ -243,7 +243,10 @@ export function interpret(i: InterpretInput): Interpretation {
   const hasWeak = weakest !== null
   let headline: string
   if (i.score >= B_MAX) {
-    headline = '这是「世纪大烧」档：' + strongPhrase() + '，各项都在线，一年里也没几次'
+    /* 原文写「一年里也没几次」，与本站自己的存档对不上：
+       1054 份快照、6889 个机位日里 ≥92 只有 4 条（0.06%），
+       摊到单个机位约五年一次，不是「一年几次」。改成不编频率的说法。 */
+    headline = '这是「世纪大烧」档：' + strongPhrase() + '，各项都在线，本站历史上极少报出'
   } else if (i.score >= B_TOP) {
     headline = '条件到顶了：' + strongPhrase() + '，各项都在线，值得专程跑一趟'
   } else if (i.score >= B_GOOD) {

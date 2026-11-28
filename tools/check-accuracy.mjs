@@ -16,8 +16,10 @@
  *   实况有 BKN/OVC 且云底低于 2000 ft    → 低云封挡，也几乎不可能有霞
  *      若算法给 ≥ 48 分                  → 记一次【误报】
  *   实况有 SCT/BKN 中高云（≥ 2000 ft）   → 有可能出霞，但不能证明一定烧
- *      若算法给 < 30 分（微烧以下）      → 记一次【待复核】
+ *      若算法给 < 24 分（微烧线以下）    → 记一次【待复核】
  *   其余                                  → 不判定
+ *
+ * ★ 两个门槛（48 / 24）都从 src/data/forecast/levels.ts 现读，不再写死。
  *
  * 用法：
  *   node tools/check-accuracy.mjs
@@ -27,13 +29,26 @@
  */
 
 import { readFile, readdir, writeFile, mkdir } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 const ROOT = process.cwd()
 const OBS_DIR = path.join(ROOT, 'data', 'obs')
 const STATION_TABLE = path.join(OBS_DIR, 'stations-cn.json')
 const SPOTS_JSON = path.join(ROOT, 'src', 'data', 'forecast', 'spots.json')
+
+/* 判定门槛直接取自等级表，不在这里另写一份。
+   「微烧以下」原来写死 30，而微烧线在 2026-11-08 已从 30 下调到 24：
+   两处失步会把 24–29 分这段本该「待复核」的样本判成「合理」。
+   读不到就抛错 —— 宁可脚本挂掉，也不静默沿用旧数。 */
+const LEVELS_SRC = readFileSync(path.join(ROOT, 'src', 'data', 'forecast', 'levels.ts'), 'utf8')
+function levelMin(name) {
+  const m = LEVELS_SRC.match(new RegExp('min:\\s*(\\d+),\\s*name:\\s*\'' + name + '\''))
+  if (!m) throw new Error('levels.ts 里找不到档位：' + name)
+  return Number(m[1])
+}
+const REPORT_AT = levelMin('小烧')     /* 48：达到它才算「报了烧」 */
+const REVIEW_BELOW = levelMin('微烧')  /* 24：低于它才算「报得太低」 */
 
 const MAX_SPOT_KM = 45
 
@@ -208,11 +223,11 @@ async function main() {
 
       let verdict = '—'
       if (truth.kind === 'clear' || truth.kind === 'blocked') {
-        verdict = row.score >= 48 ? '❌ 误报' : '✅ 合理'
+        verdict = row.score >= REPORT_AT ? '❌ 误报' : '✅ 合理'
       } else if (truth.kind === 'cloudy') {
-        verdict = row.score < 30 ? '⚠ 待复核' : '✅ 合理'
+        verdict = row.score < REVIEW_BELOW ? '⚠ 待复核' : '✅ 合理'
       } else {
-        verdict = row.score >= 48 ? '⚠ 待复核' : '✅ 合理'
+        verdict = row.score >= REPORT_AT ? '⚠ 待复核' : '✅ 合理'
       }
 
       results.push({
