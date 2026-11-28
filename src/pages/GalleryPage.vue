@@ -96,7 +96,7 @@ onMounted(() => {
     <div class="wrap">
       <p class="eyebrow">Gallery</p>
       <h1 class="silver">作品集</h1>
-      <p>收录社内成员作品，目前以薯条切片的创作为主，点击任意一张可看大图。</p>
+      <p>社内成员镜头下的海南：海岸、夜色、星空与火箭升空。</p>
     </div>
   </section>
 
