@@ -10,7 +10,7 @@ import { worksOf } from '@/data/photos'
  */
 
 const props = defineProps<{ member: Member }>()
-const emit = defineEmits<{ card: [member: Member]; title: [member: Member] }>()
+const emit = defineEmits<{ card: [member: Member] }>()
 
 interface StripItem {
   photo: Photo
@@ -69,7 +69,6 @@ function onImgError(item: StripItem): void {
         >{{ works.length ? '看作品' : '去作品集' }}</a
       >
       <button type="button" class="member-btn" @click="emit('card', member)">名片</button>
-      <button type="button" class="member-btn" @click="emit('title', member)">＋头衔</button>
     </div>
   </article>
 </template>

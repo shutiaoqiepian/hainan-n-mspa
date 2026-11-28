@@ -350,3 +350,274 @@
 @media (max-width: 760px) {
   .card-preview { width: min(92vw, 460px); }
 }
+
+/* ---------- 成员资料入口与弹窗 ---------- */
+
+/* 页头标题与「成员资料」按钮同排；标题原本带 18px 下边距，这里挪到行容器上 */
+.page-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.page-head-row h1 { margin: 0; }
+
+.me-trigger {
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  padding: 9px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--fill-1);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.me-trigger:hover {
+  background: var(--accent-a-soft);
+  border-color: var(--accent-a-line);
+  color: var(--link);
+}
+
+.me-panel {
+  max-width: 520px;
+  /* 760px 装不下「名单 + 名字 + 分组 + 头衔 + 按钮」，勾完人还得往下滚才看得到生成按钮 */
+  max-height: min(92vh, 880px);
+  display: flex;
+  flex-direction: column;
+  padding: 30px 28px 24px;
+}
+
+.me-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--fill-1);
+  border: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+
+.me-tab {
+  flex: 1;
+  font-family: inherit;
+  font-size: 13.5px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.me-tab.is-on {
+  background: var(--accent-a-soft);
+  color: var(--link);
+}
+
+/* 面板本身不滚，只让中段滚：标题和两个标签页始终留在视野里。
+   名单再单独限高滚动——16 个人排下来会把下面的编辑区顶到看不见，
+   勾完人还得自己往下翻，等于没入口。 */
+.me-body {
+  overflow-y: auto;
+  margin: 0 -6px;
+  padding: 0 6px 2px;
+}
+
+.me-list {
+  max-height: 22vh;
+  overflow-y: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+
+.me-group + .me-group { margin-top: 16px; }
+
+.me-group-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--muted-2);
+}
+
+.me-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.me-row:hover { background: var(--fill-1); }
+
+.me-check {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  accent-color: var(--accent-a-line);
+  cursor: pointer;
+}
+
+.me-row-name {
+  font-size: 14px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.me-row-titles {
+  font-size: 12px;
+  color: var(--muted-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.me-editor {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.me-editor-head {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+
+/* 名字一行：左边是小标签，右边是输入框 */
+.me-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.me-field-label {
+  flex: 0 0 auto;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--muted-2);
+}
+
+.me-field-label-block {
+  display: block;
+  margin: 12px 0 7px;
+}
+
+.me-field-input { margin-bottom: 0; flex: 1; min-width: 0; }
+
+.me-warn {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--warn);
+}
+
+/* 输入框下面的一句解释，比如 id 是干什么的 */
+.me-note {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  line-height: 1.75;
+  color: var(--muted-2);
+}
+
+.me-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 12px;
+}
+
+.me-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  padding: 4px 6px 4px 11px;
+  border-radius: 7px;
+  background: var(--accent-a-soft);
+  color: var(--link);
+}
+
+.me-chip-x {
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.me-chip-x:hover { opacity: 1; background: var(--fill-2); }
+
+.me-chips-empty {
+  font-size: 12px;
+  color: var(--muted-2);
+}
+
+.me-add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* .fb-input 自带 10px 下边距，这里和「加入」按钮同一行，归零 */
+.me-input { margin-bottom: 0; flex: 1; min-width: 0; }
+
+.me-add-btn { padding: 11px 16px; font-size: 13px; white-space: nowrap; }
+
+.me-hint {
+  margin: 18px 0 0;
+  font-size: 12.5px;
+  color: var(--muted-2);
+  text-align: center;
+}
+
+.me-pick {
+  display: flex;
+  gap: 8px;
+  margin: 2px 0 14px;
+}
+
+.me-pick-btn {
+  flex: 1;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--fill-1);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.me-pick-btn.is-on {
+  background: var(--accent-a-soft);
+  border-color: var(--accent-a-line);
+  color: var(--link);
+}
+
+@media (max-width: 760px) {
+  .me-panel { padding: 24px 18px 20px; max-height: 92vh; }
+  .page-head-row { gap: 12px; }
+  .me-trigger { font-size: 12.5px; padding: 8px 14px; }
+  .me-list { max-height: 26vh; }
+  .me-row-titles { font-size: 11.5px; }
+  .fb-submit { font-size: 13.5px; }
+}

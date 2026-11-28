@@ -1,32 +1,37 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import MemberCard from '@/components/members/MemberCard.vue'
+import MemberEditModal from '@/components/members/MemberEditModal.vue'
 import NameCardModal from '@/components/members/NameCardModal.vue'
-import TitleRequestModal from '@/components/members/TitleRequestModal.vue'
 import { MEMBERS, type Member } from '@/data/members'
 
-/** 两个弹窗的当前成员；null 表示关闭（旧版 closeModals） */
+/** 名片弹窗的当前成员；null 表示关闭（旧版 closeModals） */
 const cardMember = ref<Member | null>(null)
-const titleMember = ref<Member | null>(null)
+/** 成员资料弹窗（修改已有 / 添加新成员） */
+const editOpen = ref(false)
 
 /** 分组：group 为 community 的进交流群网格，其余都进小组成员网格（同旧版） */
 const coreMembers = computed(() => MEMBERS.filter((m) => m.group !== 'community'))
 const communityMembers = computed(() => MEMBERS.filter((m) => m.group === 'community'))
 
-function openCard(m: Member): void {
-  cardMember.value = m
-  document.body.style.overflow = 'hidden'
+function lockScroll(on: boolean): void {
+  document.body.style.overflow = on ? 'hidden' : ''
 }
 
-function openTitle(m: Member): void {
-  titleMember.value = m
-  document.body.style.overflow = 'hidden'
+function openCard(m: Member): void {
+  cardMember.value = m
+  lockScroll(true)
+}
+
+function openEdit(): void {
+  editOpen.value = true
+  lockScroll(true)
 }
 
 function closeModals(): void {
   cardMember.value = null
-  titleMember.value = null
-  document.body.style.overflow = ''
+  editOpen.value = false
+  lockScroll(false)
 }
 
 function onKeydown(e: KeyboardEvent): void {
@@ -56,7 +61,10 @@ onBeforeUnmount(() => {
   <section class="page-head">
     <div class="wrap">
       <p class="eyebrow">Members</p>
-      <h1 class="silver">成员</h1>
+      <div class="page-head-row">
+        <h1 class="silver">成员</h1>
+        <button type="button" class="me-trigger" @click="openEdit">成员资料</button>
+      </div>
       <p>小组成员与交流群成员。排名不分先后，每一位都在按下快门。</p>
     </div>
   </section>
@@ -75,7 +83,6 @@ onBeforeUnmount(() => {
           :key="m.id"
           :member="m"
           @card="openCard"
-          @title="openTitle"
         />
         <p v-if="!coreMembers.length" class="muted member-empty">名单整理中，欢迎在群里认领。</p>
       </div>
@@ -96,7 +103,6 @@ onBeforeUnmount(() => {
           :key="m.id"
           :member="m"
           @card="openCard"
-          @title="openTitle"
         />
         <p v-if="!communityMembers.length" class="muted member-empty">名单整理中，欢迎在群里认领。</p>
       </div>
@@ -121,6 +127,6 @@ onBeforeUnmount(() => {
   <!-- 名片预览 -->
   <NameCardModal :member="cardMember" @close="closeModals" />
 
-  <!-- 申请头衔 -->
-  <TitleRequestModal :member="titleMember" @close="closeModals" />
+  <!-- 成员资料：修改已有 / 添加新成员 -->
+  <MemberEditModal :open="editOpen" @close="closeModals" />
 </template>
