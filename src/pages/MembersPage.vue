@@ -58,7 +58,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="page-head">
+  <section class="page-head page-head--tight">
     <div class="wrap">
       <p class="eyebrow">Members</p>
       <div class="page-head-row">
@@ -69,9 +69,9 @@ onBeforeUnmount(() => {
     </div>
   </section>
 
-  <section class="section" style="padding-top:56px">
+  <section class="section section--tight">
     <div class="wrap">
-      <div class="section-head reveal" style="margin-bottom:34px">
+      <div class="section-head reveal">
         <p class="eyebrow">Core Team</p>
         <h2 class="silver">小组成员</h2>
         <p id="core-note">这些是日常一起蹲机位、一起维护这个站的人。</p>
@@ -89,9 +89,9 @@ onBeforeUnmount(() => {
     </div>
   </section>
 
-  <section class="section" style="padding-top:0">
+  <section class="section section--tight">
     <div class="wrap">
-      <div class="section-head reveal" style="margin-bottom:34px">
+      <div class="section-head reveal">
         <p class="eyebrow">Community</p>
         <h2 class="silver">交流群成员</h2>
         <p id="community-note">名单持续补充中 · 想把自己加进来，见「加入我们」。</p>
@@ -109,9 +109,9 @@ onBeforeUnmount(() => {
     </div>
   </section>
 
-  <section class="section" style="padding-top:0">
+  <section class="section section--tight">
     <div class="wrap">
-      <div class="glass reveal" style="padding:34px 32px;text-align:center">
+      <div class="glass reveal" style="padding:26px 28px;text-align:center">
         <p class="eyebrow" style="margin-bottom:12px">Name Card</p>
         <p class="muted" style="margin:0 0 8px;font-size:14.5px;line-height:1.9">
           每张成员卡都能生成一张<b>名片图</b>：带你的头衔、作品数，<br />

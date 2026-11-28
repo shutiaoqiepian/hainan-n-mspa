@@ -2,17 +2,32 @@
    成员页：分组、作品条、名片
    ============================================================ */
 
+/* 这一页信息密度高（16 个人 + 两段说明），页头与段间距比全站默认更紧；
+   只在本页生效，不动 layout/page-head.css 与 sections.css 的全站口径 */
+.page-head--tight {
+  padding: 64px 0 40px;
+}
+
+.page-head--tight h1 { margin-bottom: 12px; }
+.page-head--tight .eyebrow { margin-bottom: 12px; }
+
+.section--tight { padding: 34px 0 54px; }
+.section--tight + .section--tight { padding-top: 0; }
+.section--tight .section-head { margin-bottom: 22px; }
+.section--tight .section-head h2 { margin-bottom: 10px; }
+.section--tight .section-head .eyebrow { margin-bottom: 8px; }
+
 .member-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
+  gap: 14px;
 }
 
 .member {
-  padding: 24px 24px 20px;
+  padding: 18px 18px 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 11px;
   transition: transform 0.22s ease, background 0.22s ease, border-color 0.22s ease;
 }
 
@@ -31,11 +46,11 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .member .name {
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: 0.04em;
 }
@@ -58,8 +73,8 @@
 .member-works {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  min-height: 62px;
+  gap: 5px;
+  min-height: 52px;
 }
 
 .member-works figure {
@@ -112,8 +127,8 @@
 .member-link,
 .member-btn {
   font-family: inherit;
-  font-size: 12.5px;
-  padding: 7px 14px;
+  font-size: 12px;
+  padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--fill-1);
