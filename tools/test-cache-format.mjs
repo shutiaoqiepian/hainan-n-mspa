@@ -21,7 +21,7 @@ async function makeComputer() {
   const tmp = mkdtempSync(path.join(tmpdir(), 'mspa-fmt-'))
   const entry = path.join(tmp, 'entry.ts')
   await writeFile(entry, `
-import { load } from '@/lib/forecast/api'
+import { load, clearCache } from '@/lib/forecast/api'
 import { state } from '@/lib/forecast/state'
 
 export async function run(prov: string, fixture: string, spotCount?: number) {
@@ -34,6 +34,13 @@ export async function run(prov: string, fixture: string, spotCount?: number) {
   state.day = 0
   state.model = 'multi'
   state.area = '全部'
+
+  /* 每次换 fixture 前必须清掉上一份缓存。
+     原实现没有这一步：同一进程里连着跑「正常缓存 → 被改坏的缓存」两次时，
+     第二次会命中第一次留下的 CACHE（prov 相同、generatedAt 还是新的），
+     直接 compute 旧数据并回报 fromStatic=true，于是「条数对不上必须识别」
+     这一项变成假阴性。缓存新鲜时才会暴露，所以时好时坏。 */
+  clearCache()
 
   load()
   await new Promise((r) => setTimeout(r, 120))

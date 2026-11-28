@@ -415,6 +415,21 @@ async function writeProvince(prov, spots, data, horizon, prev, reusePrev) {
       return reusePrev ? prev?.[key]?.[i] ?? null : null;
     });
 
+  const weather = align("weather", (s) => data.get(s.n)?.weather);
+  const missing = weather.filter((x) => !x).length;
+  /* 整省一个机位都没抓到 → 拒绝写盘。
+     2026-11-28 事故：`node tools/build-cache.mjs hn` 只抓了海南 28 个机位，
+     但写盘循环把 34 个省全写了一遍，其余 33 省因此变成「条数对、内容全 null」。
+     前端条数校验照样通过（place 与 spots 一致），于是切换省份后是一屏空白，
+     而 generatedAt 还是新的 —— 比过期更难发现。宁可构建失败，也不写空壳。 */
+  if (spots.length && missing === spots.length) {
+    throw new Error(
+      `${prov.name}：${spots.length} 个机位全部没抓到数据，拒绝写入空缓存。` +
+        `若是单省调试，请用 --pick ${prov.key}（只动这个省）而不是位置参数。`
+    );
+  }
+  if (missing) console.warn(`  ⚠ ${prov.name}：${missing}/${spots.length} 个机位缺数据（按缺测填 null）`);
+
   const payload = {
     generatedAt: new Date().toISOString(),
     models: MULTI,
@@ -483,6 +498,11 @@ const main = async () => {
 
     /* pick 模式：这个省一个机位都没被 pick 到 → 文件原样不动 */
     if (pick && !spots.some((s) => pick.includes(s.prov))) continue;
+
+    /* 单省模式（位置参数 hn）：只写这一个省。
+       原实现漏了这句，抓完海南仍逐省写盘，其余 33 省被写成全 null
+       （2026-11-28 事故，见 writeProvince 里的说明）。 */
+    if (only && prov.key !== only) continue;
 
     const prev = await readCacheFile(prov.key);
     /* 被 pick 的省里，也可能有少数机位没抓到（接口抽风）—— 这时沿用本省旧值 */
